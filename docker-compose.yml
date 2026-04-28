@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cemac-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cemac_connect
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cemac-backend
+    depends_on:
+      - postgres
+    env_file:
+      - .env.example
+    ports:
+      - '5000:5000'
+    command: npm run dev
+
+volumes:
+  postgres_data:
