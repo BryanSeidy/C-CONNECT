@@ -17,50 +17,87 @@ enum OrderStatus {
   PENDING
   CONFIRMED
   CANCELLED
+  COMPLETED
 }
 
 enum PaymentStatus {
   PENDING
   PAID
   RELEASED
+  REFUNDED
+}
+
+enum EscrowStatus {
+  HOLDING
+  RELEASED
 }
 
 model User {
-  id       Int       @id @default(autoincrement())
-  email    String    @unique
-  password String
-  role     UserRole  @default(BUYER)
-  products Product[]
-  orders   Order[]
-  createdAt DateTime @default(now())
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  fullName      String
+  companyName   String?
+  country       String?
+  role          UserRole  @default(BUYER)
+  products      Product[]
+  buyerOrders   Order[]   @relation("BuyerOrders")
+  sellerOrders  Order[]   @relation("SellerOrders")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Product {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Float
-  country   String
-  category  String
-  stock     Int
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  country     String
+  category    String
+  stock       Int
+  isActive    Boolean   @default(true)
+  producerId  Int
+  producer    User      @relation(fields: [producerId], references: [id])
+  orders      Order[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Order {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  user      User        @relation(fields: [userId], references: [id])
-  status    OrderStatus @default(PENDING)
-  total     Float
-  payment   Payment?
-  createdAt DateTime    @default(now())
+  id            Int         @id @default(autoincrement())
+  buyerId       Int
+  sellerId      Int
+  productId     Int
+  quantity      Int
+  unitPrice     Float
+  total         Float
+  status        OrderStatus @default(PENDING)
+  buyer         User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller        User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  product       Product     @relation(fields: [productId], references: [id])
+  payment       Payment?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Payment {
-  id        Int           @id @default(autoincrement())
-  orderId   Int           @unique
-  order     Order         @relation(fields: [orderId], references: [id])
-  status    PaymentStatus @default(PENDING)
-  createdAt DateTime      @default(now())
+  id            Int           @id @default(autoincrement())
+  orderId        Int           @unique
+  amount         Float
+  method         String
+  status         PaymentStatus @default(PENDING)
+  order          Order         @relation(fields: [orderId], references: [id])
+  escrow         Escrow?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Escrow {
+  id             Int          @id @default(autoincrement())
+  paymentId      Int          @unique
+  status         EscrowStatus @default(HOLDING)
+  releasedAt     DateTime?
+  payment        Payment      @relation(fields: [paymentId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
