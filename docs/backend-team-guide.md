@@ -14,6 +14,7 @@ Si on casse un format, on casse les intégrations.
 ## Pourquoi respecter la structure de dossiers
 
 La structure modulaire (`controller/service/routes`) sépare les responsabilités:
+
 - controller: I/O HTTP
 - service: logique métier
 - routes: mapping URL
