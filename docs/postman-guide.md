@@ -2,7 +2,7 @@
 
 ## 1) Installer Postman
 
-1. Télécharger Postman: <https://www.postman.com/downloads/>
+1. Télécharger Postman: [https://www.postman.com/downloads/]
 2. Installer et lancer l'application.
 
 ## 2) Créer une collection
