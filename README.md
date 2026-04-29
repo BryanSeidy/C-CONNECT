@@ -14,14 +14,16 @@ Le projet est structuré en monorepo pour simplifier le travail d'équipe et l'�
 
 ## Stack technique
 
-### Frontend
+### Frontend_Stack
+
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
 - Axios
 - Context API pour auth
 
-### Backend
+### Backend_Stack
+
 - Node.js
 - Express
 - TypeScript
@@ -95,24 +97,27 @@ Depuis la racine:
 npm run dev
 ```
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:5000/api
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:5000/api`
 
 ## Scripts utiles
 
 ### Racine
+
 - `npm run dev`
 - `npm run dev:frontend`
 - `npm run dev:backend`
 - `npm run build`
 
 ### Backend
+
 - `npm run dev`
 - `npm run build`
 - `npm run prisma:generate`
 - `npm run prisma:migrate`
 
 ### Frontend
+
 - `npm run dev`
 - `npm run build`
 - `npm run lint`
@@ -120,26 +125,32 @@ npm run dev
 ## Endpoints API principaux
 
 ### Auth
+
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 
 ### Products
+
 - `GET /api/products`
 - `POST /api/products`
 - `GET /api/products/:id`
 
 ### Orders
+
 - `POST /api/orders`
 - `GET /api/orders`
 
 ### Payments
+
 - `POST /api/payments`
 - `PATCH /api/payments/:id`
 
 ### Escrow
+
 - `PATCH /api/escrow/release/:paymentId`
 
 ### Matching
+
 - `GET /api/matching?country=CM&category=agro`
 
 ## Docker (bonus)
