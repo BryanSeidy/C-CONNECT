@@ -19,9 +19,11 @@ Cette API backend alimente CEMAC Connect, une plateforme B2B entre producteurs e
 ## Auth
 
 ### `POST /auth/register`
+
 Créer un compte.
 
-**Request**
+**Request** :
+
 ```json
 {
   "email": "producer@cemac.com",
@@ -33,7 +35,8 @@ Créer un compte.
 }
 ```
 
-**Response**
+**Response** :
+
 ```json
 {
   "success": true,
@@ -50,42 +53,53 @@ Créer un compte.
 ```
 
 ### `POST /auth/login`
+
 Connexion et génération de JWT.
 
 ## Users
 
 ### `GET /users`
+
 Lister les utilisateurs (auth requis).
 
 ### `GET /users/me`
+
 Récupérer son profil (auth requis).
 
 ### `PUT /users/me`
+
 Mettre à jour son profil (auth requis).
 
 ## Products
 
 ### `GET /products`
+
 Lister les produits actifs. Filtres optionnels: `country`, `category`.
 
 ### `POST /products`
+
 Créer un produit (auth requis).
 
 ### `GET /products/:id`
+
 Lire le détail d'un produit.
 
 ### `PUT /products/:id`
+
 Mettre à jour son propre produit (auth requis).
 
 ### `DELETE /products/:id`
+
 Supprimer logiquement son produit (auth requis).
 
 ## Orders
 
 ### `POST /orders`
+
 Créer une commande à partir d'un produit.
 
 Exemple request:
+
 ```json
 {
   "productId": 10,
@@ -94,33 +108,41 @@ Exemple request:
 ```
 
 ### `GET /orders`
+
 Lister les commandes de l'utilisateur (acheteur/vendeur).
 
 ### `PATCH /orders/:id/status`
+
 Mettre à jour le statut (`PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`).
 
 ## Payments
 
 ### `POST /payments`
+
 Créer un paiement pour une commande. Crée aussi un escrow en `HOLDING`.
 
 ### `GET /payments`
+
 Lister les paiements visibles par l'utilisateur.
 
 ### `PATCH /payments/:id`
+
 Mettre à jour le statut (`PENDING`, `PAID`, `RELEASED`, `REFUNDED`).
 
 ## Escrow
 
 ### `GET /escrow/:paymentId`
+
 Récupérer le détail escrow associé au paiement.
 
 ### `PATCH /escrow/release/:paymentId`
+
 Libérer le paiement escrow.
 
 ## Matching
 
 ### `GET /matching`
+
 Retourner une liste de recommandations de fournisseurs/produits.
 
 Exemple: `/matching?country=CM&category=agro&limit=5`

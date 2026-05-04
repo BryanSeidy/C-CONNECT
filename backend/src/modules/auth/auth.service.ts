@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { UserRole } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/app-error';
@@ -8,31 +8,15 @@ import { AppError } from '../../utils/app-error';
 interface RegisterInput {
   email: string;
   password: string;
-  fullName: string;
-  role: UserRole;
-  companyName?: string;
-  country?: string;
+  role: Role;
 }
 
-export const registerUser = async (input: RegisterInput) => {
-  const existingUser = await prisma.user.findUnique({ where: { email: input.email } });
+export const register = async ({ email, password, role }: RegisterInput) => {
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) throw new AppError('Email already exists', 409);
 
-  if (existingUser) {
-    throw new AppError('Email déjà utilisé', 409);
-  }
-
-  const hashedPassword = await bcrypt.hash(input.password, 10);
-
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      password: hashedPassword,
-      fullName: input.fullName,
-      role: input.role,
-      companyName: input.companyName,
-      country: input.country
-    }
-  });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({ data: { email, password: hashedPassword, role } });
 
   return {
     id: user.id,
@@ -44,22 +28,14 @@ export const registerUser = async (input: RegisterInput) => {
   };
 };
 
-export const loginUser = async (email: string, password: string) => {
+export const login = async (email: string, password: string) => {
   const user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    throw new AppError('Identifiants invalides', 401);
-  }
+  if (!user) throw new AppError('Invalid credentials', 401);
 
   const isValidPassword = await bcrypt.compare(password, user.password);
+  if (!isValidPassword) throw new AppError('Invalid credentials', 401);
 
-  if (!isValidPassword) {
-    throw new AppError('Identifiants invalides', 401);
-  }
-
-  const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, env.jwtSecret, {
-    expiresIn: '1d'
-  });
+  const token = jwt.sign({ userId: user.id, role: user.role }, env.jwtSecret, { expiresIn: '1d' });
 
   return {
     token,
