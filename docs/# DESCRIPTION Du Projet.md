@@ -4,7 +4,7 @@
 
 ### Thème du projet
 
-**La sur-importation dans la zone CEMAC et la souveraineté économique par le numérique**
+: **La sur-importation dans la zone CEMAC et la souveraineté économique par le numérique**
 
 ---
 
