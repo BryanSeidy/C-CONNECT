@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { api, setAuthToken } from '@/services/api';
+import { authService } from '@/services/auth';
 import { User } from '@/types';
 
 interface AuthContextType {
@@ -25,21 +25,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
-      setAuthToken(savedToken);
     }
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data } = await api.post('/auth/login', { email, password });
-    setToken(data.data.token);
-    setUser(data.data.user);
-    localStorage.setItem('token', data.data.token);
-    localStorage.setItem('user', JSON.stringify(data.data.user));
-    setAuthToken(data.data.token);
+    const response: any = await authService.login({ email, password });
+    if(response && response.data) {
+      setToken(response.data.token);
+      setUser(response.data.user);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
   };
 
   const register = async (email: string, password: string, role: string) => {
-    await api.post('/auth/register', { email, password, role });
+    await authService.register({ email, password, role });
   };
 
   const logout = () => {
@@ -47,7 +47,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setAuthToken(null);
   };
 
   const value = useMemo(() => ({ user, token, login, register, logout }), [user, token]);

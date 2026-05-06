@@ -1,0 +1,17 @@
+.productLink {
+  display: block;
+  text-align: center;
+  padding: 0.5rem;
+  background-color: var(--bg-app);
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  margin-top: auto;
+  border: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.productLink:hover {
+  background-color: rgba(10, 46, 54, 0.05);
+}
