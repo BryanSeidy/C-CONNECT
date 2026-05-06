@@ -1,0 +1,70 @@
+.layout {
+  display: flex;
+  min-height: calc(100vh - 72px);
+  background-color: var(--bg-app);
+}
+
+.mainWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 260px;
+  width: calc(100% - 260px);
+}
+
+.dashboardHeader {
+  height: auto;
+  padding: 1.5rem 2rem 0.5rem 2rem;
+  background-color: var(--bg-app);
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.notification {
+  position: relative;
+  cursor: pointer;
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.notification:hover {
+  background-color: rgba(10, 46, 54, 0.05);
+  color: var(--primary-color);
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background-color: var(--error);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
