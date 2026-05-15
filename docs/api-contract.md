@@ -26,7 +26,7 @@ Toutes les réponses suivent cette forme :
   "email": "buyer@cemac.com",
   "password": "StrongPass123",
   "fullName": "Alice Ngono",
-  "role": "BUYER",
+  "role": "buyer",
   "companyName": "CEMAC Distribution",
   "country": "CM"
 }
@@ -41,7 +41,7 @@ Toutes les réponses suivent cette forme :
     "id": 1,
     "email": "buyer@cemac.com",
     "fullName": "Alice Ngono",
-    "role": "BUYER",
+    "role": "buyer",
     "companyName": "CEMAC Distribution",
     "country": "CM"
   },

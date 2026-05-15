@@ -16,7 +16,7 @@ interface AuthFormProps {
 export const AuthForm = ({ type, title, subtitle, submitText, withRole, onSubmit }: AuthFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('BUYER');
+  const [role, setRole] = useState('buyer');
   const [loading, setLoading] = useState(false);
 
   return (
@@ -72,8 +72,8 @@ export const AuthForm = ({ type, title, subtitle, submitText, withRole, onSubmit
                 borderRadius: 'var(--radius-sm)', outline: 'none'
               }}
             >
-              <option value="BUYER">Acheteur (B2B)</option>
-              <option value="PRODUCER">Producteur / Vendeur</option>
+              <option value="buyer">Acheteur (B2B)</option>
+              <option value="seller">Producteur / Vendeur</option>
             </select>
           </div>
         )}

@@ -34,7 +34,7 @@ Body:
   "email": "buyer1@cemac.com",
   "password": "StrongPass123",
   "fullName": "Acheteur Test",
-  "role": "BUYER",
+  "role": "buyer",
   "country": "CM"
 }
 ```
