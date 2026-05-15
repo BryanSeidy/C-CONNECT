@@ -12,7 +12,7 @@ export const Sidebar = () => {
     { href: '/dashboard', label: 'Vue Générale', Icon: FcHome },
     { href: '/dashboard/products', label: 'Mes Produits', Icon: FcPackage },
     { href: '/dashboard/orders', label: 'Commandes', Icon: FcInTransit },
-  ];
+  ] as const;
 
   return (
     <aside className={styles.sidebar}>

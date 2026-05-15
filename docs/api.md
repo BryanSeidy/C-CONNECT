@@ -29,7 +29,7 @@ Créer un compte.
   "email": "producer@cemac.com",
   "password": "StrongPass123",
   "fullName": "Jean Mvondo",
-  "role": "PRODUCER",
+  "role": "seller",
   "companyName": "Agro CEMAC",
   "country": "CM"
 }
@@ -44,7 +44,7 @@ Créer un compte.
     "id": 2,
     "email": "producer@cemac.com",
     "fullName": "Jean Mvondo",
-    "role": "PRODUCER",
+    "role": "seller",
     "companyName": "Agro CEMAC",
     "country": "CM"
   },

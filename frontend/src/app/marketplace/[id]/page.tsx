@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/services/api';
+import { productService } from '@/services/products';
 import { Product } from '@/types';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    api.get(`/products/${params.id}`).then((res) => setProduct(res.data.data));
+    productService.getProductById(params.id).then((res: any) => setProduct(res.data));
   }, [params.id]);
 
   if (!product) return <p>Chargement...</p>;

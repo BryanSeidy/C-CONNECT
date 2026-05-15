@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   email: string;
-  role: 'BUYER' | 'PRODUCER' | 'ADMIN';
+  role: 'buyer' | 'seller' | 'admin';
 }
 
 export interface Product {

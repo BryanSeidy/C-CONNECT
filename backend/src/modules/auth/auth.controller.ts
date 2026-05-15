@@ -3,19 +3,36 @@ import { Role } from '@prisma/client';
 import * as authService from './auth.service';
 import { sendError, sendSuccess } from '../../utils/http';
 
+const roleAliases: Record<string, Role> = {
+  buyer: Role.buyer,
+  BUYER: Role.buyer,
+  seller: Role.seller,
+  SELLER: Role.seller,
+  producer: Role.seller,
+  PRODUCER: Role.seller,
+  admin: Role.admin,
+  ADMIN: Role.admin
+};
+
+const normalizeRole = (role: unknown): Role | null => {
+  if (typeof role !== 'string') return null;
+  return roleAliases[role] ?? null;
+};
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, role = Role.buyer } = req.body;
+    const normalizedRole = normalizeRole(role);
 
     if (!email || !password) {
       return sendError(res, 'email and password are required', 400);
     }
 
-    if (!Object.values(Role).includes(role)) {
+    if (!normalizedRole) {
       return sendError(res, 'role must be buyer, seller or admin', 400);
     }
 
-    const user = await authService.register({ email, password, role });
+    const user = await authService.register({ email, password, role: normalizedRole });
     return sendSuccess(res, user, 'User created successfully', 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Registration failed';
