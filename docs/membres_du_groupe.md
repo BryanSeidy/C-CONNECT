@@ -1,6 +1,6 @@
 # membre et role
 
-## 🧑‍💻 **Assom** — Chief Technology Officer (CTO) & Lead Backend Developer
+## 🧑‍💻 **ASSOM ABOMBA SIADE RAPHAEL BRYAN** — Chief Technology Officer (CTO) & Lead Backend Developer
 
 Role : Architecte Système et Responsable de la Sécurité Core API.
 
@@ -10,7 +10,7 @@ Il assure la "Maîtrise du procédé technique" et structure les fondations pour
 
 ---
 
-## 👩‍💻 **Geraldine** — Frontend Application & Transactional UX Developer
+## 👩‍💻 **OYANG M GERALDINE NKEUM** — Frontend Application & Transactional UX Developer
 
 Role : Responsable des Interfaces Connectées et des Dashboards Utilisateurs.
 
@@ -20,7 +20,7 @@ Elle valide le critère d'ergonomie et de résilience technique (low-data) de l'
 
 ---
 
-## 👩‍💻 **Gift** — UI/UX & Frontend Engineer (Storefront)
+## 👩‍💻 **TCHOUKEU GIFT NDANGANG** — UI/UX & Frontend Engineer (Storefront)
 
 Role : Responsable de la Vitrine Publique et de l'Optimisation SEO de Référencement.
 
@@ -30,7 +30,7 @@ Il maximise les points sur le critère "Présentation concrète" et "Forme" face
 
 ---
 
-## 🧑‍💻 **Simo** — FinTech & Gamification Engineer
+## 🧑‍💻 **SIMO NGUEMALEU WILLIAMS JUNIOR** — FinTech & Gamification Engineer
 
 Role : Responsable des Intégrations de Paiement et du Moteur de Rétention.
 
@@ -40,7 +40,7 @@ Il est le garant de "L'innovation de rupture" et de la faisabilité technique de
 
 ---
 
-## 👩‍💻 **Synthia** — Chief Product Officer (CPO) & Backend Engineer
+## 👩‍💻 **WOUCHE DJINGANG SYNTHIA BLONDELLE** — Chief Product Officer (CPO) & Backend Engineer
 
 Role : Responsable de l'Architecture Métier et de la Logique Commerciale.
 
