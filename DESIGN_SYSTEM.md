@@ -52,6 +52,15 @@ If a visual element has no purpose, remove it.
 
 ---
 
+## DESIGN SYSTEM CONSTRAINT: ACCESSIBILITÉ PRODUCTEURS LOCAUX
+
+- Typographie et Lisibilité : Titres massifs, textes clairs, contrastes élevés (normes WCAG AAA) pour une lecture parfaite en plein soleil sur les marchés ou dans les champs.
+- Icons over Text : Chaque action critique (Vendre, Ajouter du Stock, Voir mes Gains) doit être accompagnée d'une icône SVG (Lucide) ultra-explicite. L'icône doit être comprise instantanément sans avoir besoin de lire le texte.
+- Formulaires Simplifiés : Pas de menus déroulants complexes ou de jargon technique. Les formulaires doivent utiliser des boutons de sélection massifs (Radio Cards) plutôt que des listes cachées.
+- Localisation Visuelle : Utiliser des termes familiers du commerce camerounais (ex: "Région du Grand Nord", "Fonds Sécurisés (Escrow)", "Prix Total (FCFA)") pour instaurer une confiance immédiate.
+
+---
+
 # DESIGN SYSTEM
 
 Create a complete design system before implementing interfaces.

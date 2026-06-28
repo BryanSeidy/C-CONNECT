@@ -1,102 +1,89 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Product;
-use App\Models\User;
+use App\Models\SellerProfile;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Find or create a verified seller to attach products to
-        $seller = User::firstOrCreate(
-            ['email' => 'producteur@c-connect.cm'],
-            [
-                'name'        => 'Producteurs Certifiés C-Connect',
-                'fullName'    => 'Producteurs Certifiés C-Connect',
-                'companyName' => 'C-Connect Premium Producers',
-                'password'    => Hash::make('SecurePass123!'),
-                'role'        => 'seller',
-                'country'     => 'CM-LT',
-                'isVerified'  => true,
-            ]
-        );
+        $sellers = SellerProfile::with('user')->get();
+        $categories = Category::all();
 
-        $products = [
+        $productsData = [
+            // Saveurs du Terroir Cécile
             [
-                'name'        => 'Poivre Blanc de Penja',
-                'description' => 'Poivre blanc d\'appellation d\'origine Penja, réputé pour son arôme délicat et ses notes florales. Cultivé dans la région du Littoral depuis des générations, il est reconnu comme l\'un des meilleurs poivres au monde. Conditionné en vrac pour acheteurs professionnels.',
-                'price'       => 18500,
-                'stock'       => 500,
-                'country'     => 'CM-LT',
-                'category'    => 'Agroalimentaire',
-                'imageUrl'    => null,
-                'isActive'    => true,
+                'seller_email' => 'cecile@example.cm',
+                'category' => 'Agroalimentaire',
+                'products' => [
+                    ['nom' => 'Jus de Gingembre Naturel 1L', 'description' => 'Jus de gingembre 100% naturel, sans conservateur. Produit à Bafoussam.', 'prix' => 2500, 'stock' => 50, 'region' => 'Ouest'],
+                    ['nom' => 'Confiture de Mangue Sauvage', 'description' => 'Confiture artisanale aux mangues sauvages du pays bamiléké.', 'prix' => 3000, 'stock' => 30, 'region' => 'Ouest'],
+                    ['nom' => 'Miel Pur de Montagne', 'description' => 'Miel récolté dans les montagnes de l\'Ouest Cameroun. Non pasteurisé.', 'prix' => 4500, 'stock' => 20, 'region' => 'Ouest'],
+                ]
             ],
+            // Pauline Cosmetics
             [
-                'name'        => 'Sac en Cuir Artisanal de Maroua',
-                'description' => 'Maroquinerie artisanale de Maroua, confectionnée par des artisans de l\'Extrême-Nord selon des techniques traditionnelles séculaires. Cuir naturel tanné, coutures à la main, finitions soignées. Disponible en commande groupée pour détaillants et exportateurs.',
-                'price'       => 42000,
-                'stock'       => 80,
-                'country'     => 'CM-EN',
-                'category'    => 'Textile',
-                'imageUrl'    => null,
-                'isActive'    => true,
+                'seller_email' => 'pauline@example.cm',
+                'category' => 'Cosmétique & Bien-être',
+                'products' => [
+                    ['nom' => 'Beurre de Karité Brut 250g', 'description' => 'Beurre de karité non raffiné du Nord Cameroun. Hydratant intense.', 'prix' => 3500, 'stock' => 100, 'region' => 'Nord'],
+                    ['nom' => 'Savon Noir Africain', 'description' => 'Savon noir traditionnel à base de cendres de plantain et huile de coco.', 'prix' => 1500, 'stock' => 200, 'region' => 'Nord'],
+                ]
             ],
+            // Esther Fashion Design
             [
-                'name'        => 'Café Arabica du Muanenguba',
-                'description' => 'Café 100% Arabica cultivé sur les hauteurs du Mont Muanenguba, région Sud-Ouest. Altitude entre 1 400 et 1 900 m. Profil aromatique: notes de fruits rouges, caramel et épices douces. Torréfaction légère disponible. Certifié agriculture durable.',
-                'price'       => 12900,
-                'stock'       => 300,
-                'country'     => 'CM-SW',
-                'category'    => 'Agroalimentaire',
-                'imageUrl'    => null,
-                'isActive'    => true,
+                'seller_email' => 'esther@example.cm',
+                'category' => 'Mode & Textile',
+                'products' => [
+                    ['nom' => 'Robe Toghu Moderne', 'description' => 'Robe contemporaine en tissu Toghu brodé main. Pièce unique.', 'prix' => 45000, 'stock' => 3, 'region' => 'Littoral'],
+                    ['nom' => 'Ensemble Pagne Ndop', 'description' => 'Ensemble femme en authentique Ndop de l\'Ouest. Sur mesure.', 'prix' => 35000, 'stock' => 5, 'region' => 'Littoral'],
+                ]
             ],
+            // Coopérative Tchinda
             [
-                'name'        => 'Huile de Palme Rouge Bio de Ngaoundéré',
-                'description' => 'Huile de palme rouge non raffinée, extraite à froid à partir de régimes de palme biologiques certifiés de la région de l\'Adamaoua. Riche en caroténoïdes et vitamines E. Conditionnée en bidons de 5 et 25 litres pour la restauration et l\'industrie agroalimentaire.',
-                'price'       => 8750,
-                'stock'       => 200,
-                'country'     => 'CM-AD',
-                'category'    => 'Agroalimentaire',
-                'imageUrl'    => null,
-                'isActive'    => true,
+                'seller_email' => 'jean@example.cm',
+                'category' => 'Épicerie fine',
+                'products' => [
+                    ['nom' => 'Cacao en Poudre 500g', 'description' => 'Cacao camerounais 100% pur, torréfié artisanalement.', 'prix' => 4000, 'stock' => 80, 'region' => 'Centre'],
+                    ['nom' => 'Café Robusta 250g', 'description' => 'Café robusta des plateaux de l\'Ouest. Torréfaction traditionnelle.', 'prix' => 3000, 'stock' => 60, 'region' => 'Centre'],
+                ]
             ],
+            // Artisanat Kamga
             [
-                'name'        => 'Raphia Tressé du Centre',
-                'description' => 'Fibres de raphia naturel tressées manuellement par des coopératives féminines de la région Centre. Produit phare de l\'artisanat camerounais, utilisé pour la confection de paniers, nattes et mobilier décoratif. Vente en rouleaux de 10 m ou en articles finis.',
-                'price'       => 5500,
-                'stock'       => 450,
-                'country'     => 'CM-CE',
-                'category'    => 'Textile',
-                'imageUrl'    => null,
-                'isActive'    => true,
-            ],
-            [
-                'name'        => 'Cacao Fermenté de Bafoussam',
-                'description' => 'Fèves de cacao fermentées et séchées, origine Bamiléké, région de l\'Ouest. Variété Trinitario à haute teneur en beurre. Taux de fermentation contrôlé, sans résidus chimiques. Idéal pour chocolatiers et transformateurs premium. Disponible en sacs de 50 kg.',
-                'price'       => 9800,
-                'stock'       => 600,
-                'country'     => 'CM-OU',
-                'category'    => 'Agroalimentaire',
-                'imageUrl'    => null,
-                'isActive'    => true,
+                'seller_email' => 'pierre@example.cm',
+                'category' => 'Artisanat',
+                'products' => [
+                    ['nom' => 'Masque Bamileke Authentique', 'description' => 'Masque cérémoniel sculpté main. Bois d\'ébène. Collection.', 'prix' => 85000, 'stock' => 2, 'region' => 'Ouest'],
+                    ['nom' => 'Statue Reine Mère', 'description' => 'Statuette en bronze représentant une reine mère. H 30cm.', 'prix' => 65000, 'stock' => 4, 'region' => 'Ouest'],
+                ]
             ],
         ];
 
-        foreach ($products as $data) {
-            Product::firstOrCreate(
-                ['name' => $data['name'], 'producerId' => $seller->id],
-                [...$data, 'producerId' => $seller->id]
-            );
-        }
+        foreach ($productsData as $sellerData) {
+            $seller = $sellers->first(fn($s) => $s->user->email === $sellerData['seller_email']);
+            $category = $categories->first(fn($c) => $c->nom === $sellerData['category']);
 
-        $this->command->info('Products seeded: ' . count($products) . ' premium C-Connect catalogue items created.');
+            foreach ($sellerData['products'] as $p) {
+                Product::create([
+                    'seller_id' => $seller->id,
+                    'category_id' => $category->id,
+                    'nom' => $p['nom'],
+                    'slug' => Str::slug($p['nom']) . '-' . Str::random(4),
+                    'description' => $p['description'],
+                    'prix' => $p['prix'],
+                    'stock' => $p['stock'],
+                    'region' => $p['region'],
+                    'statut' => 'active',
+                    'quality_rating' => fake()->randomFloat(2, 3.5, 5.0),
+                    'reviews_count' => fake()->numberBetween(0, 50),
+                    'sales_count' => fake()->numberBetween(0, 200),
+                ]);
+            }
+        }
     }
 }
