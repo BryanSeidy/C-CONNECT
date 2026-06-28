@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await authService.logout();
+      // await authService.logout();
     } catch {
       // Proceed with client-side logout even if server call fails
     } finally {
