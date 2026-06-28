@@ -1,90 +1,145 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Public catalogue — no authentication required.
+     * Supports keyword search, region filter, category filter and pagination.
+     */
+    public function index(Request $request): JsonResponse
     {
-        $products = Product::query()->with('producer:id,fullName,companyName,country,isVerified');
+        $query = Product::query()
+            ->with('producer:id,fullName,companyName,country,isVerified')
+            ->where('isActive', true);
 
-        // Simple filtering to match frontend
-        if ($request->has('country')) {
-            $products->where('country', $request->country);
-        }
-        if ($request->has('category')) {
-            $products->where('category', $request->category);
-        }
-        if ($request->has('q')) {
-            $products->where('name', 'like', '%' . $request->q . '%');
+        if ($request->filled('country')) {
+            $query->where('country', $request->input('country'));
         }
 
-        $page = $request->input('page', 1);
-        $pageSize = $request->input('pageSize', 12);
-        
-        $paginated = $products->paginate($pageSize, ['*'], 'page', $page);
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        if ($request->filled('q')) {
+            $searchTerm = '%' . $request->input('q') . '%';
+            $query->where(function ($q) use ($searchTerm): void {
+                $q->where('name', 'like', $searchTerm)
+                  ->orWhere('description', 'like', $searchTerm);
+            });
+        }
+
+        $pageSize  = min((int) $request->input('pageSize', 12), 50);
+        $page      = max((int) $request->input('page', 1), 1);
+        $paginated = $query->orderBy('created_at', 'desc')->paginate($pageSize, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'items' => $paginated->items(),
-                'meta' => [
-                    'total' => $paginated->total(),
-                    'page' => $paginated->currentPage(),
-                    'pageSize' => $paginated->perPage(),
+                'meta'  => [
+                    'total'      => $paginated->total(),
+                    'page'       => $paginated->currentPage(),
+                    'pageSize'   => $paginated->perPage(),
                     'totalPages' => $paginated->lastPage(),
-                ]
+                ],
             ],
-            'message' => 'Products retrieved successfully'
+            'message' => 'Products retrieved successfully.',
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'required|string',
-            'prix' => 'required|numeric',
-            'stock' => 'required|integer',
-            'region' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            'seller_id' => 'required|exists:users,id',
-            'imageUrl' => 'nullable|string'
-        ]);
-
-        $product = Product::create($request->all());
-
-        return response()->json(['success' => true, 'data' => $product, 'message' => 'Product created successfully'], 201);
-    }
-
-    public function show(Product $product)
+    /**
+     * Display a single product — public.
+     */
+    public function show(Product $product): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $product->load(['producer:id,fullName,companyName,country,isVerified']),
-            'message' => 'Product retrieved successfully',
+            'data'    => $product->load('producer:id,fullName,companyName,country,isVerified'),
+            'message' => 'Product retrieved successfully.',
         ]);
     }
 
-    public function update(Request $request, Product $product)
+    /**
+     * Create a new product — authenticated sellers only.
+     */
+    public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'nom' => 'string|max:255',
-            'prix' => 'numeric',
-            'stock' => 'integer',
+        $validated = $request->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'price'       => ['required', 'numeric', 'min:0'],
+            'stock'       => ['required', 'integer', 'min:0'],
+            'country'     => ['required', 'string', 'max:100'],
+            'category'    => ['required', 'string', 'max:100'],
+            'imageUrl'    => ['nullable', 'url', 'max:2048'],
         ]);
 
-        $product->update($request->all());
+        $product = Product::create([
+            ...$validated,
+            'producerId' => $request->user()->id,
+            'isActive'   => true,
+        ]);
 
-        return response()->json(['success' => true, 'data' => $product, 'message' => 'Product updated successfully']);
+        return response()->json([
+            'success' => true,
+            'data'    => $product->load('producer:id,fullName,companyName,country,isVerified'),
+            'message' => 'Product created successfully.',
+        ], 201);
     }
 
-    public function destroy(Product $product)
+    /**
+     * Update a product — authenticated seller who owns the product.
+     */
+    public function update(Request $request, Product $product): JsonResponse
     {
+        $user = $request->user();
+
+        if ($user->id !== $product->producerId && ! $user->isAdmin()) {
+            return response()->json(['message' => 'Not authorized to update this product.'], 403);
+        }
+
+        $validated = $request->validate([
+            'name'        => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'string'],
+            'price'       => ['sometimes', 'numeric', 'min:0'],
+            'stock'       => ['sometimes', 'integer', 'min:0'],
+            'country'     => ['sometimes', 'string', 'max:100'],
+            'category'    => ['sometimes', 'string', 'max:100'],
+            'imageUrl'    => ['nullable', 'url', 'max:2048'],
+            'isActive'    => ['sometimes', 'boolean'],
+        ]);
+
+        $product->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $product->fresh()->load('producer:id,fullName,companyName,country,isVerified'),
+            'message' => 'Product updated successfully.',
+        ]);
+    }
+
+    /**
+     * Delete a product — owner or admin only.
+     */
+    public function destroy(Request $request, Product $product): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->id !== $product->producerId && ! $user->isAdmin()) {
+            return response()->json(['message' => 'Not authorized to delete this product.'], 403);
+        }
+
         $product->delete();
-        return response()->json(null, 204);
+
+        return response()->json(['message' => 'Product deleted successfully.']);
     }
 }

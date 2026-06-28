@@ -1,3 +1,10 @@
+// ============================================================================
+// C-Connect — Central TypeScript Interface Registry
+// All interfaces mirror the backend snake_case PostgreSQL schema
+// ============================================================================
+
+export type UserRole = 'buyer' | 'seller' | 'admin';
+
 export interface User {
   id: number;
   email: string;
@@ -5,8 +12,33 @@ export interface User {
   fullName?: string | null;
   companyName?: string | null;
   country?: string | null;
-  role: 'buyer' | 'seller' | 'admin';
+  role: UserRole;
   isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SellerProfile {
+  id: number;
+  userId: number;
+  businessName?: string | null;
+  businessSector?: string | null;
+  businessRegion?: string | null;
+  nationalIdRef?: string | null;
+  bankAccountType?: string | null;
+  isOnboardingComplete: boolean;
+  verificationScore?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GamificationStat {
+  id: number;
+  userId: number;
+  points: number;
+  level: number;
+  ordersCompleted: number;
+  reviewsGiven: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,17 +70,26 @@ export interface Product {
   updatedAt?: string;
 }
 
+export type EscrowStatus =
+  | 'pending'
+  | 'escrow_locked'
+  | 'shipped'
+  | 'received'
+  | 'released'
+  | 'disputed';
+
 export interface Order {
   id: number;
   buyerId: number;
   sellerId: number;
-  productId: number;
+  productId?: number | null;
   quantity: number;
-  unitPrice: number;
-  total: number;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  product?: Pick<Product, 'id' | 'name' | 'country' | 'category' | 'stock'>;
-  payment?: Payment | null;
+  amount: number;
+  escrowStatus: EscrowStatus;
+  transactionReference?: string | null;
+  product?: Pick<Product, 'id' | 'name' | 'country' | 'category' | 'stock'> | null;
+  buyer?: Pick<User, 'id' | 'fullName' | 'email'> | null;
+  seller?: Pick<User, 'id' | 'fullName' | 'companyName'> | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -73,6 +114,10 @@ export interface Escrow {
   updatedAt?: string;
 }
 
+// ============================================================================
+// API Envelope — standard response wrapper from Laravel
+// ============================================================================
+
 export interface ApiEnvelope<T> {
   success?: boolean;
   data: T;
@@ -91,4 +136,25 @@ export interface PaginationMeta {
 export interface PaginatedResult<T> {
   items: T[];
   meta: PaginationMeta;
+}
+
+// ============================================================================
+// Raw API shapes — snake_case keys returned by the backend before camelCase
+// mapping. Used only in service layer normalizers, not in UI components.
+// ============================================================================
+
+export interface RawOrder {
+  id: number;
+  buyer_id: number;
+  seller_id: number;
+  product_id?: number | null;
+  quantity: number;
+  amount: string | number;
+  escrow_status: EscrowStatus;
+  transaction_reference?: string | null;
+  product?: Pick<Product, 'id' | 'name' | 'country' | 'category' | 'stock'> | null;
+  buyer?: Pick<User, 'id' | 'fullName' | 'email'> | null;
+  seller?: Pick<User, 'id' | 'fullName' | 'companyName'> | null;
+  created_at?: string;
+  updated_at?: string;
 }
