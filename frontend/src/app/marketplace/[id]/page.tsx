@@ -61,7 +61,7 @@ export default function ProductDetailPage() {
 
   return (
     <section className="glass-panel" style={{ maxWidth: '960px', margin: '3rem auto', padding: '2rem', display: 'grid', gap: '1rem' }}>
-      <Link href="/marketplace" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 600 }}>Retour à la marketplace</Link>
+      <Link href="/marketplace" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 600 }}>← Retour à la marketplace</Link>
       <h1 style={{ color: 'var(--primary-color)', fontSize: '2rem', margin: 0 }}>{product.name}</h1>
       <p style={{ color: 'var(--text-muted)', lineHeight: 1.7, margin: 0 }}>{product.description || 'Aucune description détaillée disponible.'}</p>
       <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', margin: '1rem 0' }}>
