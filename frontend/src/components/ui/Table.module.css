@@ -1,0 +1,51 @@
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.thead {
+  background-color: rgba(245, 247, 250, 0.8);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.th {
+  padding: 12px 24px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.tbody {
+  background-color: var(--bg-card);
+}
+
+.tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background-color: rgba(10, 46, 54, 0.02);
+}
+
+.td {
+  padding: 16px 24px;
+  color: var(--text-main);
+  vertical-align: middle;
+}

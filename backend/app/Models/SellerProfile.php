@@ -1,22 +1,21 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SellerProfile extends Model
 {
-    protected $fillable = ['user_id', 'business_name', 'is_female_owned'];
+    use HasFactory;
 
-    protected function casts(): array
-    {
-        return ['is_female_owned' => 'boolean'];
-    }
+    protected $fillable = [
+        'user_id', 'business_name', 'biographie', 'region', 
+        'is_female_owned', 'is_local_producer', 'quality_score'
+    ];
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
