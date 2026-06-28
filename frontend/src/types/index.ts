@@ -1,6 +1,7 @@
 export interface User {
   id: number;
   email: string;
+  name?: string | null;
   fullName?: string | null;
   companyName?: string | null;
   country?: string | null;
@@ -72,11 +73,13 @@ export interface Escrow {
   updatedAt?: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
+export interface ApiEnvelope<T> {
+  success?: boolean;
   data: T;
-  message: string;
+  message?: string;
 }
+
+export type ApiResponse<T> = ApiEnvelope<T>;
 
 export interface PaginationMeta {
   total: number;

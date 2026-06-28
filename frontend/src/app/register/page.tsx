@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const redirect = getSafeRedirect(params?.get('redirect') ?? null);
+  const requestedRole = params?.get('role') === 'seller' ? 'seller' : 'buyer';
   const loginUrl = redirect === '/dashboard'
     ? '/login?registered=true'
     : `/login?registered=true&redirect=${encodeURIComponent(redirect)}`;
@@ -25,6 +26,7 @@ export default function RegisterPage() {
       subtitle="Accélérez votre croissance sur le marché Camerounais."
       submitText="Créer mon compte"
       alternateHref={alternateHref}
+      initialRole={requestedRole}
       onSubmit={async (email, password, fullName, role) => {
         await register(email, password, fullName, role);
         router.push(loginUrl);

@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::query();
+        $products = Product::query()->with('producer:id,fullName,companyName,country,isVerified');
 
         // Simple filtering to match frontend
         if ($request->has('country')) {
@@ -51,18 +51,22 @@ class ProductController extends Controller
             'stock' => 'required|integer',
             'region' => 'required|string',
             'category_id' => 'required|exists:categories,id',
-            'seller_id' => 'required|exists:User,id',
+            'seller_id' => 'required|exists:users,id',
             'imageUrl' => 'nullable|string'
         ]);
 
         $product = Product::create($request->all());
 
-        return response()->json($product, 201);
+        return response()->json(['success' => true, 'data' => $product, 'message' => 'Product created successfully'], 201);
     }
 
     public function show(Product $product)
     {
-        return response()->json($product->load(['category', 'seller']));
+        return response()->json([
+            'success' => true,
+            'data' => $product->load(['producer:id,fullName,companyName,country,isVerified']),
+            'message' => 'Product retrieved successfully',
+        ]);
     }
 
     public function update(Request $request, Product $product)
@@ -75,7 +79,7 @@ class ProductController extends Controller
 
         $product->update($request->all());
 
-        return response()->json($product);
+        return response()->json(['success' => true, 'data' => $product, 'message' => 'Product updated successfully']);
     }
 
     public function destroy(Product $product)

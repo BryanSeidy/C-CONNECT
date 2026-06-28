@@ -23,7 +23,13 @@ class AuthController extends Controller
             'role' => ['sometimes', 'string', Rule::in(['buyer', 'seller', 'admin'])],
         ]);
 
-        $user = User::create($validated + ['role' => $validated['role'] ?? 'buyer']);
+        $user = User::create([
+            'name' => $validated['name'],
+            'fullName' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => $validated['role'] ?? 'buyer',
+        ]);
 
         return response()->json(['message' => 'Registration successful.', 'data' => ['user' => $user, 'token' => $user->createToken('cconnect_auth_token')->plainTextToken]], 201);
     }
@@ -53,5 +59,24 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json(['data' => ['user' => $request->user()->loadMissing(['sellerProfile', 'gamificationStat'])]]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'fullName' => ['sometimes', 'string', 'max:255'],
+            'companyName' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'country' => ['sometimes', 'nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        if (isset($validated['fullName'])) {
+            $validated['name'] = $validated['fullName'];
+        }
+
+        $user->fill($validated);
+        $user->save();
+
+        return response()->json(['message' => 'Profile updated successfully.', 'data' => ['user' => $user->fresh()]]);
     }
 }

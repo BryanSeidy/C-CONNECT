@@ -15,7 +15,7 @@ function try_sql($sql) {
     }
 }
 
-echo "Force Aligning 'User' table...\n";
+echo "Force Aligning 'users' table...\n";
 
 // Add and rename columns. Using double quotes for table and column names to ensure case sensitivity compliance.
 try_sql("ALTER TABLE \"User\" ADD COLUMN IF NOT EXISTS nom VARCHAR(255)");

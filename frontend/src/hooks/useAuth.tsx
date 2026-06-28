@@ -2,16 +2,9 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/services/auth';
-
-export interface User {
-  id: number;
-  email: string;
-  fullName?: string | null;
-  companyName?: string | null;
-  country?: string | null;
-  role: 'buyer' | 'seller' | 'admin';
-}
+import { User } from '@/types';
+import { authService, ProfileResponse } from '@/services/auth';
+import { sessionService } from '@/services/session';
 
 interface AuthContextType {
   user: User | null;
@@ -23,20 +16,35 @@ interface AuthContextType {
   logout: () => void;
 }
 
+interface ApiValidationError {
+  response?: {
+    data?: {
+      message?: string;
+      errors?: string | Record<string, string[]>;
+    };
+  };
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Helper: extract a human-readable error message from an axios error response.
- */
-function extractServerError(err: any): string | null {
-  const data = err?.response?.data;
+function extractServerError(error: unknown): string | null {
+  const data = (error as ApiValidationError).response?.data;
   if (!data) return null;
   if (typeof data.message === 'string') return data.message;
-  if (data.errors) {
-    if (typeof data.errors === 'string') return data.errors;
-    return Object.values(data.errors).flat().join(', ');
-  }
+  if (typeof data.errors === 'string') return data.errors;
+  if (data.errors) return Object.values(data.errors).flat().join(', ');
   return null;
+}
+
+function normalizeProfile(response: ProfileResponse): User | null {
+  const payload = response.data;
+  if (!payload?.user) return null;
+
+  const user = payload.user;
+  return {
+    ...user,
+    fullName: user.fullName ?? user.name ?? null,
+  };
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -45,89 +53,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Restaurer la session depuis localStorage au montage
   useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      }
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    } finally {
-      setIsLoading(false);
-    }
+    const restoredSession = sessionService.read();
+    setToken(restoredSession.token);
+    setUser(restoredSession.user);
+    setIsLoading(false);
   }, []);
 
   const setSession = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    document.cookie = `auth-token=${newToken}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+    sessionService.save(newToken, newUser);
   };
 
   const clearSession = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    sessionService.clear();
   };
 
   const login = async (email: string, password: string) => {
     try {
-      const response: any = await authService.login({ email, password });
-      const payload = response?.data ?? response;
-      if (payload?.access_token && payload?.user) {
-        setSession(payload.access_token, payload.user);
+      const response = await authService.login({ email, password });
+      const authToken = response.data.token ?? response.data.access_token;
+      if (authToken && response.data.user) {
+        setSession(authToken, response.data.user);
         return;
       }
-      throw new Error('Reponse de connexion invalide');
-    } catch (err: any) {
-      const msg = extractServerError(err);
-      if (msg) throw new Error(msg);
-      throw err;
+      throw new Error('Réponse de connexion invalide');
+    } catch (error: unknown) {
+      const message = extractServerError(error);
+      if (message) throw new Error(message);
+      throw error;
     }
   };
 
   const register = async (email: string, password: string, fullName: string, role: string) => {
     try {
-      const response: any = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
-      const payload = response?.data ?? response;
-      if (payload?.access_token && payload?.user) {
-        // Le user veut Inscription -> Connexion -> Dashboard (pas de session auto)
-        // setSession(payload.access_token, payload.user);
-        return;
-      }
-      throw new Error('Reponse d\'inscription invalide');
-    } catch (err: any) {
-      const msg = extractServerError(err);
-      if (msg) throw new Error(msg);
-      throw err;
+      await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
+    } catch (error: unknown) {
+      const message = extractServerError(error);
+      if (message) throw new Error(message);
+      throw error;
     }
   };
 
   const refreshProfile = async () => {
     try {
-      const profile: any = await authService.getProfile();
-      if (!profile?.data) return;
+      const profile = await authService.getProfile();
+      const nextUser = normalizeProfile(profile);
+      if (!nextUser) return;
 
-      const nextUser: User = {
-        id: profile.data.id,
-        email: profile.data.email,
-        fullName: profile.data.fullName ?? null,
-        companyName: profile.data.companyName ?? null,
-        country: profile.data.country ?? null,
-        role: profile.data.role
-      };
       setUser(nextUser);
-      localStorage.setItem('user', JSON.stringify(nextUser));
+      sessionService.saveUser(nextUser);
     } catch {
-      // noop: UI already has fallback local user data
+      // Keep current local session until the next authenticated request confirms invalidation.
     }
   };
 
@@ -146,6 +126,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth doit etre utilise dans AuthProvider');
+  if (!context) throw new Error('useAuth doit être utilisé dans AuthProvider');
   return context;
 };

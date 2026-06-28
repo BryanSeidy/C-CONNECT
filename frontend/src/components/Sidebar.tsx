@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FcHome, FcPackage, FcInTransit, FcBusinessman, FcCurrencyExchange } from 'react-icons/fc';
+import { Home, Package, Truck, UserRound, HandCoins } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Sidebar.module.css';
 
@@ -11,10 +11,10 @@ export const Sidebar = () => {
   const { user } = useAuth();
 
   const links = [
-    { href: '/dashboard', label: 'Vue Générale', Icon: FcHome },
-    { href: '/dashboard/products', label: 'Mes Produits', Icon: FcPackage },
-    { href: '/dashboard/orders', label: 'Commandes', Icon: FcInTransit },
-    { href: '/dashboard/negotiations', label: 'Négociations & Devis', Icon: FcCurrencyExchange },
+    { href: '/dashboard', label: 'Vue Générale', Icon: Home },
+    { href: '/dashboard/products', label: 'Mes Produits', Icon: Package },
+    { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+    { href: '/dashboard/negotiations', label: 'Négociations & Devis', Icon: HandCoins },
   ] as const;
 
 
@@ -40,7 +40,7 @@ export const Sidebar = () => {
       <div className={styles.footer}>
         <div className={styles.userCard}>
           <div className={styles.avatar} style={{ background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <FcBusinessman size={36} />
+            <UserRound size={36} aria-hidden="true" />
           </div>
           <div className={styles.userInfo}>
             <span className={styles.userName}>{user?.fullName || user?.email || 'Utilisateur'}</span>

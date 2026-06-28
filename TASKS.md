@@ -8,11 +8,17 @@
 - [x] Add the missing ESLint toolchain dependency so the configured Next.js lint stack can be installed and evolved intentionally.
 - [x] Fix the reusable Input component hook ordering issue detected by the stricter React lint rules.
 
+- [x] Fix PostgreSQL table casing for `users` and `products` model/query references.
+- [x] Open product and category browse routes for guest marketplace access while keeping mutations authenticated.
+- [x] Replace auth and product service `any` usage with typed API contracts and a session service abstraction.
+- [x] Replace interface emoji markers with Lucide React SVG icons.
+- [x] Launch a premium SaaS homepage focused on Made in Cameroon commerce outcomes.
+
 ## Priority 0 — Production blockers
 
-- [ ] Complete typed API response contracts to remove `any` usage across dashboard, marketplace, auth, and service modules.
+- [ ] Continue typed API response contracts across remaining dashboard, negotiations, orders, reviews, and matching modules.
 - [ ] Re-enable full ESLint enforcement in `next build` after resolving legacy lint debt.
-- [ ] Replace localStorage bearer-token persistence with an httpOnly cookie/session strategy coordinated with the Laravel API.
+- [ ] Complete migration from localStorage bearer-token fallback to httpOnly Sanctum cookie sessions once backend cookie mode is enabled.
 - [ ] Add automated frontend tests for auth, marketplace filtering, protected dashboard routing, and order creation.
 - [ ] Add backend feature tests for auth, product CRUD, order lifecycle, escrow release, roles, and payment webhooks.
 

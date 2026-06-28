@@ -15,6 +15,7 @@ interface AuthFormProps {
   onSubmit: (email: string, password: string, fullName: string, role: AuthRole) => Promise<void>;
   alternateHref?: string;
   successMessage?: string;
+  initialRole?: AuthRole;
 }
 
 type FieldErrors = Partial<Record<'email' | 'password' | 'fullName', string>>;
@@ -46,11 +47,11 @@ function validateAuthForm(type: AuthFormProps['type'], email: string, password: 
   return errors;
 }
 
-export const AuthForm = ({ type, title, subtitle, submitText, onSubmit, alternateHref, successMessage }: AuthFormProps) => {
+export const AuthForm = ({ type, title, subtitle, submitText, onSubmit, alternateHref, successMessage, initialRole = 'buyer' }: AuthFormProps) => {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<AuthRole>('buyer');
+  const [role, setRole] = useState<AuthRole>(initialRole);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -98,7 +99,7 @@ export const AuthForm = ({ type, title, subtitle, submitText, onSubmit, alternat
 
         {error && (
           <div id="auth-error" role="alert" style={{ padding: '0.875rem 1rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#dc2626', fontSize: '0.875rem', fontWeight: 500 }}>
-            ⚠️ {error}
+            {error}
           </div>
         )}
 

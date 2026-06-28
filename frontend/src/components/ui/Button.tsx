@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaSpinner } from 'react-icons/fa';
+import { Loader2 } from 'lucide-react';
 import styles from './Button.module.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -25,7 +25,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button ref={ref} className={classNames} disabled={isLoading || props.disabled} {...props}>
         {isLoading && (
           <span className={styles.spinner}>
-            <FaSpinner />
+            <Loader2 size={16} aria-hidden="true" />
           </span>
         )}
         <span className={isLoading ? styles.hiddenText : ''}>{children}</span>

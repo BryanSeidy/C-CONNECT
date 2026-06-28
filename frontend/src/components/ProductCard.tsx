@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import styles from './ProductCard.module.css';
 import { getRegionLabel } from '@/lib/regions';
+import { MapPin, ShieldCheck, Star } from 'lucide-react';
 
 export const ProductCard = ({ product }: { product: Product }) => {
   const ratings = product.reviews?.map((r) => r.rating) || [];
@@ -72,7 +73,7 @@ export const ProductCard = ({ product }: { product: Product }) => {
                 fontSize: '0.85rem'
               }}
             >
-              🛡️
+              <ShieldCheck size={14} aria-hidden="true" />
             </span>
           )}
         </div>
@@ -80,14 +81,14 @@ export const ProductCard = ({ product }: { product: Product }) => {
         <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
            <span>{product.category}</span>
            <span style={{ opacity: 0.4 }}>·</span>
-           <span>📍 {getRegionLabel(product.country)}</span>
+           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={13} aria-hidden="true" /> {getRegionLabel(product.country)}</span>
         </div>
 
         {/* Moyenne des Avis */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', marginTop: '0.25rem' }}>
           {avgRating ? (
             <>
-              <span style={{ color: '#F59E0B' }}>★</span>
+              <Star size={14} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
               <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{avgRating}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({ratings.length} avis)</span>
             </>

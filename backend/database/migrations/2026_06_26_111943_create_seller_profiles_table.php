@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('seller_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('User')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('business_name');
             $table->text('biographie')->nullable();
             $table->string('region')->nullable();

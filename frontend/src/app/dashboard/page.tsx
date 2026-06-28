@@ -11,6 +11,7 @@ import { orderService } from '@/services/orders';
 import { Order } from '@/types';
 import { matchingService } from '@/services/matching';
 import { getRegionLabel } from '@/lib/regions';
+import { ClipboardList, Handshake, MapPin, ShieldCheck } from 'lucide-react';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'En attente',
@@ -84,7 +85,7 @@ export default function DashboardOverview() {
       {/* Salutation */}
       <div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary-color)', margin: 0 }}>
-          Bonjour, {user?.fullName || user?.email} 👋
+          Bonjour, {user?.fullName || user?.email}
         </h2>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
           Voici un aperçu de votre activité sur C-Connect.
@@ -141,8 +142,8 @@ export default function DashboardOverview() {
       {/* Section Recommandations de Proximité B2B (Matching Recommender) */}
       {user?.role === 'buyer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-            🤝 Recommandations de Proximité B2B (Cameroun)
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Handshake size={20} aria-hidden="true" /> Recommandations de Proximité B2B (Cameroun)
           </h3>
           {loadingRecs ? (
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>Recherche de partenaires proches...</p>
@@ -161,7 +162,7 @@ export default function DashboardOverview() {
                           Score Match : {score}%
                         </span>
                         <Badge variant="info">
-                          📍 {getRegionLabel(prod.country)}
+                          <MapPin size={12} aria-hidden="true" /> {getRegionLabel(prod.country)}
                         </Badge>
                       </div>
                       <CardTitle style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary-color)' }}>
@@ -171,7 +172,7 @@ export default function DashboardOverview() {
                     <CardContent style={{ padding: '0 1.25rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, justifyContent: 'space-between' }}>
                       <div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Par <strong>{vendorName}</strong> {prod.producer?.isVerified && '🛡️'}
+                          Par <strong>{vendorName}</strong> {prod.producer?.isVerified && <ShieldCheck size={14} aria-label="Vendeur vérifié" />}
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: '0.5rem 0 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {prod.description || 'Pas de description.'}
@@ -209,7 +210,7 @@ export default function DashboardOverview() {
             </div>
           ) : recentOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+              <ClipboardList size={34} aria-hidden="true" style={{ marginBottom: '0.5rem' }} />
               <p>Aucune commande pour le moment.</p>
               <Link href="/marketplace">
                 <Button variant="primary" size="sm" style={{ marginTop: '1rem' }}>

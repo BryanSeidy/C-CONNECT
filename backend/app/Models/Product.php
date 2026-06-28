@@ -10,7 +10,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $table = 'Product';
+    protected $table = 'products';
 
     protected $fillable = [
         'name', 'description', 'price', 'country', 'category',
@@ -19,6 +19,11 @@ class Product extends Model
 
 
     public function seller()
+    {
+        return $this->belongsTo(User::class, 'producerId');
+    }
+
+    public function producer()
     {
         return $this->belongsTo(User::class, 'producerId');
     }
