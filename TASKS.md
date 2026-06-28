@@ -17,8 +17,8 @@
 ## Priority 0 — Production blockers
 
 - [ ] Continue typed API response contracts across remaining dashboard, negotiations, orders, reviews, and matching modules.
-- [ ] Re-enable full ESLint enforcement in `next build` after resolving legacy lint debt.
 - [ ] Complete migration from localStorage bearer-token fallback to httpOnly Sanctum cookie sessions once backend cookie mode is enabled.
+- [ ] Re-enable full ESLint enforcement in `next build` after resolving legacy lint debt.
 - [ ] Add automated frontend tests for auth, marketplace filtering, protected dashboard routing, and order creation.
 - [ ] Add backend feature tests for auth, product CRUD, order lifecycle, escrow release, roles, and payment webhooks.
 

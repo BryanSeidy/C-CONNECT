@@ -21,8 +21,8 @@ class User extends Authenticatable
     protected $table = 'users';
 
     // The DB uses camelCase timestamps
-    const CREATED_AT = 'createdAt';
-    const UPDATED_AT = 'updatedAt';
+    // const CREATED_AT = 'createdAt';
+    // const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
         'name',
