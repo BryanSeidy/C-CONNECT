@@ -1,77 +1,163 @@
-import React from 'react';
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { ArrowRight, BadgeCheck, Gauge, HandCoins, Leaf, ShieldCheck, Signal } from 'lucide-react';
 import { Footer } from '@/components/Footer';
-import { FcLock, FcGlobe, FcBarChart } from 'react-icons/fc';
+import styles from './Home.module.css';
+
+const featuredProducts = [
+  {
+    name: 'Poivre Blanc de Penja',
+    region: 'Littoral, appellation Penja',
+    price: '18 500 XAF',
+    color: 'linear-gradient(135deg, #111827, #9ca3af)',
+  },
+  {
+    name: 'Sac en Cuir Artisanal de Maroua',
+    region: 'Extrême-Nord, atelier Maroua',
+    price: '42 000 XAF',
+    color: 'linear-gradient(135deg, #7c2d12, #f59e0b)',
+  },
+  {
+    name: 'Café Arabica du Muanenguba',
+    region: 'Sud-Ouest, Mont Muanenguba',
+    price: '12 900 XAF',
+    color: 'linear-gradient(135deg, #3f2416, #16a34a)',
+  },
+];
+
+const mechanics = [
+  {
+    title: 'Séquestre Transférable Mobile Money (Escrow)',
+    description: 'Les fonds sont sécurisés pendant la transaction, puis libérés au vendeur après confirmation afin de protéger chaque partie.',
+    Icon: ShieldCheck,
+  },
+  {
+    title: 'Indicateurs d’Impact Éthique & Féminin',
+    description: 'Les acheteurs identifient rapidement les producteurs locaux, les entreprises vérifiées et les initiatives à fort impact social.',
+    Icon: Leaf,
+  },
+  {
+    title: 'Optimisation Performance Low-Data (WebP/Caching)',
+    description: 'La marketplace reste rapide, légère et exploitable sur réseaux contraints grâce à une expérience pensée pour le terrain.',
+    Icon: Signal,
+  },
+];
 
 export default function HomePage() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 72px)' }}>
-      {/* Hero Section */}
-      <section style={{
-        padding: '6rem 2rem',
-        textAlign: 'center',
-        backgroundColor: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border-color)',
-        backgroundImage: 'linear-gradient(135deg, rgba(245, 247, 250, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%)',
-      }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <Badge>La Référence B2B au Cameroun</Badge>
-          <h1 style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--primary-color)', lineHeight: 1.1, margin: '1.5rem 0' }}>
-            Propulsez vos échanges <br /> dans les 10 régions
-          </h1>
-          <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-            Trouvez des producteurs certifiés, négociez en toute sécurité grâce à l'Escrow, et développez votre activité B2B nationale comme jamais auparavant.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <Link href="/register" style={{ textDecoration: 'none' }}>
-              <Button variant="primary" size="lg">Rejoindre le réseau</Button>
-            </Link>
-            <Link href="/marketplace" style={{ textDecoration: 'none' }}>
-              <Button variant="outline" size="lg">Explorer les offres</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Value Proposition */}
-      <section style={{ padding: '5rem 2rem', backgroundColor: 'var(--bg-app)', flex: 1 }}>
-        <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-            {/* Feature 1 */}
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', fontSize: '3rem', margin: '0 auto 1.5rem auto' }}><FcLock /></div>
-              <h3 style={{ fontSize: '1.25rem', color: 'var(--primary-color)', marginBottom: '1rem' }}>Paiement Séquestre (Escrow)</h3>
-              <p style={{ color: 'var(--text-muted)' }}>La sécurité au cœur de notre modèle. L'argent est bloqué par la plateforme jusqu'à la réception et confirmation de la marchandise.</p>
+    <div className={styles.page}>
+      <main>
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <span className={styles.eyebrow}>
+              <BadgeCheck size={16} aria-hidden="true" />
+              Infrastructure B2B Made in Cameroon
+            </span>
+            <h1 className={styles.title}>
+              Le commerce camerounais, <span className={styles.gradientText}>vérifié et fluide</span>.
+            </h1>
+            <p className={styles.subtitle}>
+              C-CONNECT relie acheteurs professionnels, producteurs certifiés et artisans premium dans une marketplace nationale conçue pour la confiance, la liquidité et la croissance locale.
+            </p>
+            <div className={styles.actions}>
+              <Link href="/marketplace" className={styles.primaryCta}>
+                Explorer la Marketplace
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <Link href="/register?role=seller" className={styles.secondaryCta}>
+                Devenir Vendeur
+              </Link>
             </div>
-            {/* Feature 2 */}
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', fontSize: '3rem', margin: '0 auto 1.5rem auto' }}><FcGlobe /></div>
-              <h3 style={{ fontSize: '1.25rem', color: 'var(--primary-color)', marginBottom: '1rem' }}>Matching Intelligent</h3>
-              <p style={{ color: 'var(--text-muted)' }}>Découvrez instantanément les fournisseurs les plus pertinents pour votre chaîne logistique via notre moteur de recommandation B2B.</p>
-            </div>
-            {/* Feature 3 */}
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', fontSize: '3rem', margin: '0 auto 1.5rem auto' }}><FcBarChart /></div>
-              <h3 style={{ fontSize: '1.25rem', color: 'var(--primary-color)', marginBottom: '1rem' }}>Dashboard Centralisé</h3>
-              <p style={{ color: 'var(--text-muted)' }}>Gérez vos commandes, ajoutez vos produits et consultez vos KPI financiers dans une interface claire et professionnelle.</p>
+            <div className={styles.trustStrip} aria-label="Indicateurs de plateforme">
+              <div className={styles.trustItem}>
+                <span className={styles.trustValue}>10</span>
+                <span className={styles.trustLabel}>régions commerciales couvertes</span>
+              </div>
+              <div className={styles.trustItem}>
+                <span className={styles.trustValue}>B2B</span>
+                <span className={styles.trustLabel}>transactions structurées et traçables</span>
+              </div>
+              <div className={styles.trustItem}>
+                <span className={styles.trustValue}>Low-data</span>
+                <span className={styles.trustLabel}>expérience rapide sur réseaux contraints</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
 
+          <aside className={styles.showcase} aria-label="Aperçu marketplace C-CONNECT">
+            <div className={styles.showcaseHeader}>
+              <span>Marketplace vérifiée</span>
+              <span className={styles.pulse} aria-hidden="true" />
+            </div>
+            <div className={styles.productGrid}>
+              {featuredProducts.map((product, index) => (
+                <article className={styles.productCard} key={product.name} style={{ animationDelay: `${index * 90}ms` }}>
+                  <div className={styles.productThumb} aria-hidden="true">
+                    <div className={styles.productThumbInner} style={{ '--item-color': product.color } as CSSProperties} />
+                  </div>
+                  <div>
+                    <h2 className={styles.productName}>{product.name}</h2>
+                    <p className={styles.productMeta}>{product.region}</p>
+                  </div>
+                  <strong className={styles.productPrice}>{product.price}</strong>
+                </article>
+              ))}
+            </div>
+            <div className={styles.skeletonRail} aria-hidden="true">
+              <span className={styles.skeleton} />
+              <span className={styles.skeleton} />
+              <span className={styles.skeleton} />
+            </div>
+          </aside>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Une plateforme pensée pour vendre, sécuriser et mesurer l’impact.</h2>
+            <p>
+              Chaque mécanique produit renforce la conversion, réduit le risque opérationnel et rend le commerce local plus lisible pour les acheteurs professionnels.
+            </p>
+          </div>
+          <div className={styles.mechanicsGrid}>
+            {mechanics.map(({ title, description, Icon }) => (
+              <article className={styles.mechanicCard} key={title}>
+                <span className={styles.iconBox}>
+                  <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
+                </span>
+                <h3>{title}</h3>
+                <p>{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Des opérations conçues pour la performance terrain.</h2>
+            <p>
+              C-CONNECT réunit catalogue, négociation, paiement sécurisé et suivi vendeur dans un parcours unique, rapide à adopter et prêt pour le passage à l’échelle.
+            </p>
+          </div>
+          <div className={styles.mechanicsGrid}>
+            <article className={styles.mechanicCard}>
+              <span className={styles.iconBox}><HandCoins size={22} aria-hidden="true" /></span>
+              <h3>Liquidité transactionnelle</h3>
+              <p>Des flux d’achat mieux encadrés, de la découverte au paiement, pour réduire les frictions entre régions.</p>
+            </article>
+            <article className={styles.mechanicCard}>
+              <span className={styles.iconBox}><Gauge size={22} aria-hidden="true" /></span>
+              <h3>Pilotage vendeur</h3>
+              <p>Les vendeurs suivent leurs offres, commandes et signaux de performance depuis un espace centralisé.</p>
+            </article>
+            <article className={styles.mechanicCard}>
+              <span className={styles.iconBox}><BadgeCheck size={22} aria-hidden="true" /></span>
+              <h3>Confiance vérifiable</h3>
+              <p>La mise en avant des profils vérifiés soutient une marketplace plus fiable et plus attractive.</p>
+            </article>
+          </div>
+        </section>
+      </main>
       <Footer />
     </div>
   );
 }
-
-// Inline Badge helper for Hero unit since it requires ui component
-const Badge = ({ children }: { children: React.ReactNode }) => (
-  <span style={{
-    display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '50px',
-    backgroundColor: 'rgba(212, 175, 55, 0.1)', color: 'var(--secondary-color)',
-    fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em'
-  }}>
-    {children}
-  </span>
-);

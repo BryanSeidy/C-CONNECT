@@ -18,13 +18,14 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
-    protected $table = 'User';
+    protected $table = 'users';
 
     // The DB uses camelCase timestamps
     const CREATED_AT = 'createdAt';
     const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
+        'name',
         'email',
         'password',
         'fullName',

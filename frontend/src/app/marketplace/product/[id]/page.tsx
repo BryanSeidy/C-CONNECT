@@ -13,6 +13,7 @@ import { reviewService } from '@/services/reviews';
 import { negotiationService } from '@/services/negotiations';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
+import { ShieldCheck, Star } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
@@ -180,7 +181,7 @@ export default function ProductDetailPage() {
   return (
     <div style={{ maxWidth: '1000px', margin: '3rem auto', padding: '0 2rem' }}>
       <Link href="/marketplace" style={{ display: 'inline-block', marginBottom: '1.5rem', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>
-        ← Retour au marketplace
+        Retour au marketplace
       </Link>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.2fr) 1fr', gap: '3rem', alignItems: 'start' }}>
@@ -253,7 +254,7 @@ export default function ProductDetailPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '0.25rem', color: '#F59E0B', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <span key={i}>{i < rev.rating ? '★' : '☆'}</span>
+                        <Star key={i} size={14} fill={i < rev.rating ? '#F59E0B' : 'none'} color="#F59E0B" aria-hidden="true" />
                       ))}
                     </div>
                     {rev.comment && <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: 1.5 }}>{rev.comment}</p>}
@@ -278,11 +279,11 @@ export default function ProductDetailPage() {
                       onChange={(e) => setReviewRating(Number(e.target.value))}
                       style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none' }}
                     >
-                      <option value={5}>⭐⭐⭐⭐⭐ (5/5)</option>
-                      <option value={4}>⭐⭐⭐⭐ (4/5)</option>
-                      <option value={3}>⭐⭐⭐ (3/5)</option>
-                      <option value={2}>⭐⭐ (2/5)</option>
-                      <option value={1}>⭐ (1/5)</option>
+                      <option value={5}>5 sur 5</option>
+                      <option value={4}>4 sur 5</option>
+                      <option value={3}>3 sur 5</option>
+                      <option value={2}>2 sur 5</option>
+                      <option value={1}>1 sur 5</option>
                     </select>
                   </div>
 
@@ -347,7 +348,7 @@ export default function ProductDetailPage() {
                       gap: '2px'
                     }}
                   >
-                    🛡️ Producteur Vérifié
+                    <ShieldCheck size={13} aria-hidden="true" /> Producteur Vérifié
                   </span>
                 )}
               </p>
@@ -363,7 +364,7 @@ export default function ProductDetailPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '0.25rem' }}>
                  {avgRating ? (
                    <>
-                     <span style={{ color: '#F59E0B' }}>★</span>
+                     <Star size={15} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
                      <strong>{avgRating}</strong>
                      <span style={{ color: 'var(--text-muted)' }}>({reviews.length} avis)</span>
                    </>

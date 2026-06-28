@@ -911,3 +911,10 @@ Every pixel must have a purpose.
 Every interaction must create value.
 
 Every screen must move the user closer to success.
+---
+
+# AUTHENTICATION UX STANDARD
+
+Authentication forms must provide immediate client-side validation, field-level error messages, safe success feedback after registration, accessible alert/status regions, disabled submit states while invalid or processing, and browser autocomplete hints.
+
+Redirect links used by authentication screens must preserve safe same-origin deep links so users can resume interrupted marketplace or dashboard journeys without exposing the product to open-redirect abuse.

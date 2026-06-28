@@ -6,8 +6,8 @@ $kernel->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-$columns = DB::select("SELECT column_name FROM information_schema.columns WHERE table_name = 'User'");
-echo "Columns in 'User' table:\n";
+$columns = DB::select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
+echo "Columns in 'users' table:\n";
 foreach ($columns as $column) {
     echo "- " . $column->column_name . "\n";
 }

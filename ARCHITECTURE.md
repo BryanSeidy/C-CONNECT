@@ -738,3 +738,8 @@ Every change should leave the project in a better state than before.
 The objective is not merely to complete tasks.
 
 The objective is to build software that deserves to run in production.
+---
+
+# ROUTING SECURITY STANDARD
+
+Any user-provided redirect destination must be normalized through a shared routing utility before navigation. Only same-origin relative paths are allowed; protocol-relative URLs, absolute external URLs, and backslash-containing values must fall back to a safe internal route.

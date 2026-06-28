@@ -1,34 +1,46 @@
+import { ApiEnvelope, PaginatedResult, Product } from '@/types';
 import { apiClient } from './api';
-import { PaginatedResult, Product } from '@/types';
+
+export interface ProductFilters {
+  country?: string;
+  category?: string;
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ProductMutationPayload {
+  name: string;
+  description: string;
+  price: number;
+  country: string;
+  category: string;
+  stock: number;
+  imageUrl?: string | null;
+}
 
 export const productService = {
-  getProducts: async (params?: {
-    country?: string;
-    category?: string;
-    q?: string;
-    page?: number;
-    pageSize?: number;
-  }) => {
-    return apiClient.get<PaginatedResult<Product>>('/products', { params });
+  getProducts: async (params?: ProductFilters): Promise<ApiEnvelope<PaginatedResult<Product>>> => {
+    return apiClient.get('/products', { params });
   },
 
-  getProductById: async (id: number | string) => {
+  getProductById: async (id: number | string): Promise<ApiEnvelope<Product>> => {
     return apiClient.get(`/products/${id}`);
   },
 
-  getMyProducts: async () => {
-    return apiClient.get<Product[]>('/products/me');
+  getMyProducts: async (): Promise<ApiEnvelope<Product[]>> => {
+    return apiClient.get('/products/me');
   },
 
-  createProduct: async (productData: any) => {
+  createProduct: async (productData: ProductMutationPayload): Promise<ApiEnvelope<Product>> => {
     return apiClient.post('/products', productData);
   },
 
-  updateProduct: async (id: number | string, updateData: any) => {
+  updateProduct: async (id: number | string, updateData: Partial<ProductMutationPayload>): Promise<ApiEnvelope<Product>> => {
     return apiClient.put(`/products/${id}`, updateData);
   },
 
-  deleteProduct: async (id: number | string) => {
+  deleteProduct: async (id: number | string): Promise<void> => {
     return apiClient.delete(`/products/${id}`);
-  }
+  },
 };
