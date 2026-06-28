@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { z } from 'zod';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
+import { useState } from 'react';
 
 type AuthRole = 'buyer' | 'seller';
 
@@ -24,28 +25,30 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Une erreur est survenue. Veuillez réessayer.';
 }
 
-function validateAuthForm(type: AuthFormProps['type'], email: string, password: string, fullName: string): FieldErrors {
-  const errors: FieldErrors = {};
-  const normalizedEmail = email.trim();
+const authSchema = z.object({
+  email: z.string().email('Adresse email invalide.'),
+  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères.'),
+  fullName: z.string().min(2, 'Nom complet requis.').optional()
+});
 
-  if (!normalizedEmail) {
-    errors.email = 'Adresse email requise.';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    errors.email = 'Adresse email invalide.';
-  }
-
-  if (!password) {
-    errors.password = 'Mot de passe requis.';
-  } else if (password.length < 6) {
-    errors.password = 'Le mot de passe doit contenir au moins 6 caractères.';
-  }
-
-  if (type === 'register' && fullName.trim().length < 2) {
-    errors.fullName = 'Nom complet requis.';
-  }
-
-  return errors;
+function getZodFieldErrors(errors: z.ZodError<any>, type: AuthFormProps['type']): FieldErrors {
+  const fieldErrors: FieldErrors = {};
+  errors.errors.forEach((e) => {
+    const path = e.path[0] as keyof typeof fieldErrors;
+    if (path) {
+      // For register, ensure fullName is required
+      if (type === 'register' && path === 'fullName' && !e.message) {
+        fieldErrors.fullName = 'Nom complet requis.';
+      } else {
+        fieldErrors[path] = e.message;
+      }
+    }
+  });
+  return fieldErrors;
 }
+
+
+
 
 export const AuthForm = ({ type, title, subtitle, submitText, onSubmit, alternateHref, successMessage, initialRole = 'buyer' }: AuthFormProps) => {
   const [email, setEmail] = useState('');
@@ -71,10 +74,11 @@ export const AuthForm = ({ type, title, subtitle, submitText, onSubmit, alternat
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
-          const validationErrors = validateAuthForm(type, email, password, fullName);
-          setFieldErrors(validationErrors);
-
-          if (Object.keys(validationErrors).length > 0) return;
+          const result = authSchema.safeParse({ email: email.trim(), password, fullName: type === 'register' ? fullName : undefined });
+          if (!result.success) {
+            setFieldErrors(getZodFieldErrors(result.error, type));
+            return;
+          }
 
           setLoading(true);
           try {

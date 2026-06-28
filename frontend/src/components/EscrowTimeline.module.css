@@ -1,0 +1,80 @@
+.timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin: 2rem 0;
+}
+
+.timeline > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+}
+
+.icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-muted);
+}
+
+.label {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.connector {
+  position: absolute;
+  top: 0.9rem;
+  left: 50%;
+  height: 2px;
+  width: 100%;
+  background: var(--color-muted);
+  z-index: -1;
+}
+
+.completed .icon {
+  color: var(--color-success);
+}
+
+.completed .label {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.current .icon {
+  color: var(--color-primary);
+}
+
+.current .label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pending .icon {
+  color: var(--color-muted);
+}
+
+.pending .label {
+  color: var(--color-muted);
+}
+
+.lockIcon {
+  position: relative;
+}
+
+.lockIcon::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: 25%;
+  width: 50%;
+  height: 30%;
+  border: 2px solid currentColor;
+  border-bottom: none;
+  border-radius: 50% 50% 0 0;
+}
