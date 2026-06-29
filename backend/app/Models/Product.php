@@ -50,6 +50,7 @@ class Product extends Model
         'prix',
         'stock',
         'region',
+        'image_url',
         'image_principale',
         'statut',
     ];

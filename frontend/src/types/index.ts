@@ -6,7 +6,7 @@
 export type UserRole = 'buyer' | 'seller' | 'admin';
 
 export interface User {
-  id: number;
+  id: number | string;
   email: string;
   name?: string | null;
   fullName?: string | null;
@@ -19,8 +19,8 @@ export interface User {
 }
 
 export interface SellerProfile {
-  id: number;
-  userId: number;
+  id: number | string;
+  userId: number | string;
   businessName?: string | null;
   businessSector?: string | null;
   businessRegion?: string | null;
@@ -33,8 +33,8 @@ export interface SellerProfile {
 }
 
 export interface GamificationStat {
-  id: number;
-  userId: number;
+  id: number | string;
+  userId: number | string;
   points: number;
   level: number;
   ordersCompleted: number;
@@ -44,17 +44,17 @@ export interface GamificationStat {
 }
 
 export interface Review {
-  id: number;
+  id: number | string;
   rating: number;
   comment?: string | null;
-  productId: number;
-  buyerId: number;
+  productId: number | string;
+  buyerId: number | string;
   buyer?: Pick<User, 'id' | 'fullName' | 'companyName'>;
   createdAt?: string;
 }
 
 export interface Product {
-  id: number;
+  id: number | string;
   name: string;
   description?: string | null;
   imageUrl?: string | null;
@@ -63,7 +63,7 @@ export interface Product {
   category: string;
   stock: number;
   isActive: boolean;
-  producerId: number;
+  producerId: number | string;
   producer?: Pick<User, 'id' | 'fullName' | 'companyName' | 'country' | 'isVerified'>;
   reviews?: Review[];
   createdAt?: string;
@@ -79,10 +79,10 @@ export type EscrowStatus =
   | 'disputed';
 
 export interface Order {
-  id: number;
-  buyerId: number;
-  sellerId: number;
-  productId?: number | null;
+  id: number | string;
+  buyerId: number | string;
+  sellerId: number | string;
+  productId?: number | string | null;
   quantity: number;
   amount: number;
   escrowStatus: EscrowStatus;
@@ -157,4 +157,68 @@ export interface RawOrder {
   seller?: Pick<User, 'id' | 'fullName' | 'companyName'> | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface RawUser {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string | null;
+  role: UserRole;
+  email_verified_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RawSellerProfile {
+  id: number;
+  user_id: number;
+  business_name: string;
+  slug: string;
+  biographie?: string | null;
+  region: string;
+  ville?: string | null;
+  adresse?: string | null;
+  telephone_boutique?: string | null;
+  logo?: string | null;
+  banniere?: string | null;
+  is_female_owned: boolean;
+  is_local_producer: boolean;
+  is_cooperative: boolean;
+  quality_score: string | number;
+  total_sales: number;
+  total_products: number;
+  verification_status: 'unverified' | 'pending' | 'verified' | 'rejected';
+  verified_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  user?: RawUser;
+}
+
+export interface RawProduct {
+  id: number;
+  seller_id: number;
+  category_id?: number | null;
+  nom: string;
+  slug: string;
+  description?: string | null;
+  prix: string | number;
+  stock: number;
+  region: string;
+  image_url?: string | null;
+  statut: 'active' | 'pending' | 'disabled' | 'flagged';
+  quality_rating: string | number;
+  reviews_count: number;
+  sales_count: number;
+  created_at?: string;
+  updated_at?: string;
+  seller?: RawSellerProfile;
+  category?: {
+    id: number;
+    nom: string;
+    slug: string;
+    description?: string | null;
+    icone?: string | null;
+  };
 }

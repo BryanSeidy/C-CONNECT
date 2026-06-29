@@ -23,11 +23,18 @@ export type AuthResponse = ApiEnvelope<AuthPayload>;
 export type ProfileResponse = ApiEnvelope<{ user: User }>;
 
 export const authService = {
+  getCsrfCookie: async (): Promise<void> => {
+    const baseURL = apiClient.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000';
+    return apiClient.get('/sanctum/csrf-cookie', { baseURL });
+  },
+
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    await authService.getCsrfCookie();
     return apiClient.post('/auth/login', credentials);
   },
 
   register: async (userData: RegisterPayload): Promise<AuthResponse> => {
+    await authService.getCsrfCookie();
     return apiClient.post('/auth/register', {
       name: userData.fullName,
       email: userData.email,

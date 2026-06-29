@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -31,7 +32,23 @@ class AuthController extends Controller
             'role' => $validated['role'] ?? 'buyer',
         ]);
 
-        return response()->json(['message' => 'Registration successful.', 'data' => ['user' => $user, 'token' => $user->createToken('cconnect_auth_token')->plainTextToken]], 201);
+        if ($user->role === 'seller') {
+            $user->sellerProfile()->create([
+                'business_name' => $user->fullName ?? $user->name ?? 'Coopérative locale',
+                'region' => 'Centre',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => 'Registration successful.',
+            'data' => [
+                'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
+                'token' => $user->createToken('cconnect_auth_token')->plainTextToken
+            ]
+        ], 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -41,17 +58,27 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials.'], 401);
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
+            $user = Auth::user();
+            return response()->json([
+                'message' => 'Login successful.',
+                'data' => [
+                    'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
+                    'token' => $user->createToken('cconnect_auth_token')->plainTextToken
+                ]
+            ]);
         }
 
-        return response()->json(['message' => 'Login successful.', 'data' => ['user' => $user, 'token' => $user->createToken('cconnect_auth_token')->plainTextToken]]);
+        return response()->json(['message' => 'Invalid credentials.'], 401);
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()?->currentAccessToken()?->delete();
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Logout successful.']);
     }
