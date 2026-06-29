@@ -14,14 +14,14 @@ export default function DashboardProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<number | string | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await productService.getMyProducts();
-      setProducts(res?.data || []);
+      const res = await productService.getMyProducts();
+      setProducts(res.data || []);
     } catch (err: any) {
       setError(err?.message || 'Impossible de charger le catalogue');
       setProducts([]);
@@ -34,7 +34,7 @@ export default function DashboardProducts() {
     loadProducts();
   }, [loadProducts]);
 
-  const removeProduct = async (id: number) => {
+  const removeProduct = async (id: number | string) => {
     setProcessingId(id);
     try {
       await productService.deleteProduct(id);

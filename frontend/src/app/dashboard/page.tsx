@@ -8,37 +8,45 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
-import { Order } from '@/types';
+import { Order, Product } from '@/types';
 import { matchingService } from '@/services/matching';
 import { getRegionLabel } from '@/lib/regions';
-import { ClipboardList, Handshake, MapPin, ShieldCheck } from 'lucide-react';
+import { ClipboardList, Handshake, MapPin, ShieldCheck, Plus, Wallet } from 'lucide-react';
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'En attente',
-  CONFIRMED: 'Confirmé',
-  CANCELLED: 'Annulé',
-  COMPLETED: 'Terminé',
+interface RecommendedProduct extends Product {
+  score?: number;
+}
+
+const ESCROW_STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  escrow_locked: 'Bloqué (Séquestre)',
+  shipped: 'Expédié',
+  received: 'Reçu',
+  released: 'Fonds Disponibles',
+  disputed: 'Litige',
 };
 
-const STATUS_VARIANTS: Record<string, 'warning' | 'success' | 'error' | 'info'> = {
-  PENDING: 'warning',
-  CONFIRMED: 'success',
-  CANCELLED: 'error',
-  COMPLETED: 'info',
+const ESCROW_STATUS_VARIANTS: Record<string, 'warning' | 'info' | 'success' | 'error'> = {
+  pending: 'warning',
+  escrow_locked: 'info',
+  shipped: 'info',
+  received: 'success',
+  released: 'success',
+  disputed: 'error',
 };
 
 export default function DashboardOverview() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<RecommendedProduct[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res: any = await orderService.getOrders();
-        setOrders(res?.data || []);
+        const res = await orderService.getOrders();
+        setOrders(res.data || []);
       } catch {
         setOrders([]);
       } finally {
@@ -55,11 +63,11 @@ export default function DashboardOverview() {
         return;
       }
       try {
-        const res: any = await matchingService.getRecommendations({
+        const res = await matchingService.getRecommendations({
           country: user.country,
           limit: 3
         });
-        setRecommendations(res?.data?.products || []);
+        setRecommendations(res.data.products || []);
       } catch {
         setRecommendations([]);
       } finally {
@@ -71,76 +79,167 @@ export default function DashboardOverview() {
     }
   }, [user]);
 
+  // Blocked Escrow Funds: Paid by buyer but not yet released to seller
+  const blockedFunds = orders
+    .filter(o => ['escrow_locked', 'shipped', 'received'].includes(o.escrowStatus))
+    .reduce((sum, o) => sum + o.amount, 0);
 
+  // Available Cleared Funds: Released to seller
+  const availableFunds = orders
+    .filter(o => o.escrowStatus === 'released')
+    .reduce((sum, o) => sum + o.amount, 0);
+
+  // Total sales revenue: Completed transactions
   const totalRevenue = orders
-    .filter(o => o.status === 'COMPLETED' || o.status === 'CONFIRMED')
-    .reduce((sum, o) => sum + o.total, 0);
+    .filter(o => o.escrowStatus === 'released')
+    .reduce((sum, o) => sum + o.amount, 0);
 
-  const activeOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
-  const pendingOrders = orders.filter(o => o.status === 'PENDING');
+  const activeOrders = orders.filter(o => ['pending', 'escrow_locked', 'shipped', 'received'].includes(o.escrowStatus));
+  const pendingOrders = orders.filter(o => o.escrowStatus === 'pending');
   const recentOrders = orders.slice(0, 5);
+
+  const isSeller = user?.role === 'seller';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Salutation */}
+      {/* Greetings */}
       <div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary-color)', margin: 0 }}>
-          Bonjour, {user?.fullName || user?.email}
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary-color)', margin: 0, letterSpacing: '-0.02em' }}>
+          {isSeller ? 'Espace Vendeur Coopératif' : 'Espace Client B2B'} — {user?.fullName || user?.email}
         </h2>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Voici un aperçu de votre activité sur C-Connect.
+          {isSeller 
+            ? 'Gérez vos stocks, suivez vos versements sécurisés et ajoutez vos récoltes.'
+            : 'Explorez le catalogue national et gérez vos commandes en cours.'}
         </p>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        <Card>
-          <CardHeader>
-            <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Chiffre d'affaires</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
-              {loading ? '...' : `${totalRevenue.toLocaleString('fr-FR')} FCFA`}
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Commandes confirmées + terminées
-            </div>
-          </CardContent>
-        </Card>
+      {isSeller ? (
+        /* ================= SELLER COOPERATIVE OVERHAUL ================= */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
+          {/* Action Card 1: Add Product */}
+          <Link href="/dashboard/products/add" style={{ textDecoration: 'none' }}>
+            <Card style={{ 
+              height: '100%', 
+              cursor: 'pointer', 
+              transition: 'transform 0.2s, box-shadow 0.2s', 
+              border: '2px dashed var(--border-color)' 
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+            }}
+            >
+              <CardContent style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1.25rem', textAlign: 'center' }}>
+                <div style={{ padding: '1rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(10, 46, 54, 0.05)', color: 'var(--primary-color)' }}>
+                  <Plus size={40} aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary-color)', margin: '0 0 0.5rem 0' }}>
+                    Ajouter un Produit
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                    Mettez en vente vos récoltes, produits transformés ou artisanat sur le marché.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
-        <Card>
-          <CardHeader>
-            <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Commandes Actives</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
-              {loading ? '...' : activeOrders.length}
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              {pendingOrders.length} en attente de confirmation
-            </div>
-          </CardContent>
-        </Card>
+          {/* Action Card 2: Wallet & Escrow Ledger */}
+          <Card>
+            <CardContent style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(34, 197, 94, 0.08)', color: '#16a34a' }}>
+                  <Wallet size={28} aria-hidden="true" />
+                </div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
+                  Mes Ventes et Mon Argent
+                </h3>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Total Commandes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
-              {loading ? '...' : orders.length}
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              <Link href="/dashboard/orders" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}>
-                Voir toutes →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Available Funds */}
+                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    Fonds Disponibles (Libérés)
+                  </span>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#16a34a', marginTop: '0.25rem' }}>
+                    {loading ? '...' : `${availableFunds.toLocaleString('fr-FR')} FCFA`}
+                  </div>
+                </div>
+
+                {/* Blocked Escrow Funds */}
+                <div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    Fonds Bloqués en Séquestre
+                  </span>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ca8a04', marginTop: '0.25rem' }}>
+                    {loading ? '...' : `${blockedFunds.toLocaleString('fr-FR')} FCFA`}
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: '0.5rem 0 0 0', lineHeight: 1.4 }}>
+                    Sécurisés dans le séquestre. Libérés dès réception de la marchandise par l'acheteur.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* ================= BUYER KPI CARDS ================= */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Chiffre d'affaires</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
+                {loading ? '...' : `${totalRevenue.toLocaleString('fr-FR')} FCFA`}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                Commandes terminées
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Commandes Actives</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
+                {loading ? '...' : activeOrders.length}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                {pendingOrders.length} en attente de validation
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Total Commandes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)' }}>
+                {loading ? '...' : orders.length}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                <Link href="/dashboard/orders" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}>
+                  Voir toutes →
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Section Recommandations de Proximité B2B (Matching Recommender) */}
-      {user?.role === 'buyer' && (
+      {!isSeller && user?.country && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Handshake size={20} aria-hidden="true" /> Recommandations de Proximité B2B (Cameroun)
@@ -198,7 +297,9 @@ export default function DashboardOverview() {
       {/* Recent Orders Table */}
       <Card>
         <CardHeader style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <CardTitle>Commandes Récentes</CardTitle>
+          <CardTitle>
+            {isSeller ? 'Commandes Clients Récentes' : 'Mes Commandes Récentes'}
+          </CardTitle>
           <Link href="/dashboard/orders">
             <Button variant="outline" size="sm">Voir tout</Button>
           </Link>
@@ -212,11 +313,13 @@ export default function DashboardOverview() {
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
               <ClipboardList size={34} aria-hidden="true" style={{ marginBottom: '0.5rem' }} />
               <p>Aucune commande pour le moment.</p>
-              <Link href="/marketplace">
-                <Button variant="primary" size="sm" style={{ marginTop: '1rem' }}>
-                  Explorer la marketplace
-                </Button>
-              </Link>
+              {!isSeller && (
+                <Link href="/marketplace">
+                  <Button variant="primary" size="sm" style={{ marginTop: '1rem' }}>
+                    Explorer la marketplace
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <Table>
@@ -232,16 +335,18 @@ export default function DashboardOverview() {
               <TableBody>
                 {recentOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell style={{ fontWeight: 600 }}>#{order.id.toString().padStart(4, '0')}</TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>#{order.id.toString().substring(0, 8)}</TableCell>
                     <TableCell>
                       <div style={{ fontWeight: 500 }}>{order.product?.name || '—'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{order.product?.country}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <MapPin size={12} aria-hidden="true" /> {getRegionLabel(order.product?.country || '')}
+                      </div>
                     </TableCell>
                     <TableCell>{order.quantity}</TableCell>
-                    <TableCell style={{ fontWeight: 600 }}>{order.total.toLocaleString('fr-FR')} FCFA</TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>{order.amount.toLocaleString('fr-FR')} FCFA</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANTS[order.status] || 'info'}>
-                        {STATUS_LABELS[order.status] || order.status}
+                      <Badge variant={ESCROW_STATUS_VARIANTS[order.escrowStatus] || 'info'}>
+                        {ESCROW_STATUS_LABELS[order.escrowStatus] || order.escrowStatus}
                       </Badge>
                     </TableCell>
                   </TableRow>

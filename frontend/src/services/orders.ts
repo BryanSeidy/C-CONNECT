@@ -45,7 +45,7 @@ export const orderService = {
     return { ...res, data: normalizeOrder(res.data) };
   },
 
-  createOrder: async (orderData: { productId: number; quantity: number }): Promise<ApiEnvelope<Order>> => {
+  createOrder: async (orderData: { productId: number | string; quantity: number }): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
       product_id: orderData.productId,
       quantity:   orderData.quantity,

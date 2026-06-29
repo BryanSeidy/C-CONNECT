@@ -55,4 +55,8 @@ export const authService = {
   }): Promise<ProfileResponse> => {
     return apiClient.put('/auth/profile', userData);
   },
+
+  logout: async (): Promise<void> => {
+    return apiClient.post('/logout');
+  },
 };

@@ -14,14 +14,14 @@ export default function DashboardOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<number | string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await orderService.getOrders();
-      setOrders(res?.data || []);
+      const res = await orderService.getOrders();
+      setOrders(res.data || []);
     } catch (err: any) {
       setError(err?.message || 'Impossible de charger les commandes');
       setOrders([]);
@@ -34,7 +34,7 @@ export default function DashboardOrders() {
     fetchOrders();
   }, [fetchOrders]);
 
-  const updateStatus = async (id: number, escrowStatus: Order['escrowStatus']) => {
+  const updateStatus = async (id: number | string, escrowStatus: Order['escrowStatus']) => {
     setProcessingId(id);
     try {
       await orderService.updateEscrowStatus(id, escrowStatus);

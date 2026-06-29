@@ -97,8 +97,9 @@ export const ProductCard = ({ product }: { product: Product }) => {
           )}
         </div>
 
-        <div style={{ margin: '0.25rem 0', fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-main)' }}>
-          {product.price.toLocaleString()} FCFA
+        <div style={{ margin: '0.5rem 0 0.25rem 0', fontWeight: 800, fontSize: '1.75rem', color: 'var(--primary-color)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+          <span>{product.price.toLocaleString('fr-FR')}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>FCFA</span>
         </div>
 
         <Link 

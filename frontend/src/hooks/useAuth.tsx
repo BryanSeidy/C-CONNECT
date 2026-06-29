@@ -115,7 +115,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = useCallback(async (email: string, password: string, fullName: string, role: string) => {
     try {
-      await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
+      const response = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
+      const authUser = response.data.user;
+      const authToken = response.data.token ?? response.data.access_token;
+
+      if (!authUser) {
+        throw new Error('Réponse d\'inscription invalide — données utilisateur manquantes.');
+      }
+
+      if (authToken) {
+        setMemoryToken(authToken);
+      }
+
+      const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
+      setUser(normalizedUser);
+      sessionService.save(authToken ?? '', normalizedUser);
     } catch (error: unknown) {
       const message = extractServerError(error);
       throw new Error(message ?? 'Inscription échouée. Veuillez réessayer.');
@@ -136,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      // await authService.logout();
+      await authService.logout();
     } catch {
       // Proceed with client-side logout even if server call fails
     } finally {
