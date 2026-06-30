@@ -43,6 +43,8 @@ next-env.d.ts
 
 # pesonnal
 /scripts
+docs/DESCRIPTION DU PROJET1.md
+b2b-repositioning.bundle
 AGENTS.md
 CLAUDE.md
 ARCHITECTURE.md
@@ -50,4 +52,3 @@ DESIGN_SYSTEM.md
 DEVELOPMENT.md
 HUMAN_CENTERED_UX.md
 PRODUCT.md
-docs/DESCRIPTION DU PROJET1.md

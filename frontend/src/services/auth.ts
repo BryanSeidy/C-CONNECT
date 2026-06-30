@@ -30,12 +30,12 @@ export const authService = {
 
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/auth/login', credentials);
+    return apiClient.post('/login', credentials);
   },
 
   register: async (userData: RegisterPayload): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/auth/register', {
+    return apiClient.post('/register', {
       name: userData.fullName,
       email: userData.email,
       password: userData.password,

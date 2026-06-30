@@ -1,0 +1,98 @@
+.tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding-bottom: 1.1rem;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+.marker {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.05rem;
+  border: 1.5px solid var(--border-color);
+  background: #fff;
+  color: #fff;
+  z-index: 1;
+}
+
+.step[data-state='done'] .marker {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.step[data-state='active'] .marker {
+  border-color: var(--secondary-color);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.22);
+}
+
+.step[data-state='active'] .marker::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--secondary-color);
+}
+
+.connector {
+  position: absolute;
+  left: 8.5px;
+  top: 18px;
+  width: 1.5px;
+  height: calc(100% - 16px);
+  background: var(--border-color);
+}
+
+.step[data-state='done'] .connector {
+  background: var(--primary-color);
+  opacity: 0.35;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-main);
+  padding-top: 0.05rem;
+}
+
+.step[data-state='pending'] .label {
+  color: var(--text-muted);
+}
+
+.compact .step {
+  padding-bottom: 0.85rem;
+}
+
+.compact .marker {
+  width: 15px;
+  height: 15px;
+}
+
+.compact .connector {
+  left: 7px;
+  top: 15px;
+}
+
+.compact .label {
+  font-size: 0.75rem;
+}
