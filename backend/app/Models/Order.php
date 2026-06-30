@@ -84,24 +84,68 @@ class Order extends Model
         return $query->where('buyer_id', $buyerId);
     }
 
-    // ==================== MÉTIER ESCROW ====================
+    public function dispute(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Dispute::class);
+    }
+
+    // ==================== MÉTIER ESCROW B2B ====================
 
     public function lockEscrow(): void
     {
-        $this->update(['statut' => 'escrow_locked']);
+        $this->update(['escrow_status' => 'escrow_locked']);
     }
 
-    public function releaseEscrow(): void
+    public function markEnPreparation(): void
+    {
+        $this->update(['escrow_status' => 'en_preparation', 'en_preparation_le' => now()]);
+    }
+
+    public function markExpedie(): void
+    {
+        $this->update(['escrow_status' => 'expedie', 'shipped_at' => now()]);
+    }
+
+    public function markEnTransit(): void
+    {
+        $this->update(['escrow_status' => 'en_transit', 'en_transit_le' => now()]);
+    }
+
+    public function markLivre(): void
+    {
+        $this->update(['escrow_status' => 'livre', 'delivered_at' => now()]);
+    }
+
+    public function markComplete(): void
     {
         $this->update([
-            'statut' => 'released',
-            'released_at' => now(),
+            'escrow_status' => 'complete',
+            'complete_le' => now(),
         ]);
     }
 
     public function markAsDisputed(): void
     {
-        $this->update(['statut' => 'disputed']);
+        $this->update(['escrow_status' => 'dispute', 'dispute_le' => now()]);
+    }
+
+    public function cancel(): void
+    {
+        $this->update(['escrow_status' => 'annule', 'cancelled_at' => now()]);
+    }
+
+    /**
+     * Automatically compute commission and seller payout on total amount.
+     */
+    public static function computeFinancials(float $montantTotal, float $tauxCommission = 0.10): array
+    {
+        $commission = round($montantTotal * $tauxCommission, 2);
+
+        return [
+            'montant_total' => $montantTotal,
+            'commission_plateforme' => $commission,
+            'montant_vendeur' => round($montantTotal - $commission, 2),
+        ];
     }
 
     // ==================== HELPERS ====================

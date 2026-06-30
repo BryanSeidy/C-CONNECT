@@ -91,6 +91,8 @@ class ProductController extends Controller
             'country'     => ['required', 'string', 'max:100'],
             'category'    => ['required', 'string', 'max:100'],
             'imageUrl'    => ['nullable', 'url', 'max:2048'],
+            'unite'       => ['nullable', 'string', 'in:kg,tonnes,litres,sacs,caisses,unites'],
+            'stockMinimum' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $user = $request->user();
@@ -129,9 +131,12 @@ class ProductController extends Controller
             'description' => $validated['description'],
             'prix' => $validated['price'],
             'stock' => $validated['stock'],
+            'stock_minimum' => $validated['stockMinimum'] ?? 5,
+            'unite' => $validated['unite'] ?? 'kg',
             'region' => $validated['country'],
             'image_url' => $validated['imageUrl'] ?? null,
             'statut' => 'active',
+            'disponible' => true,
         ]);
 
         return response()->json([

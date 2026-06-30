@@ -37,6 +37,7 @@ class User extends Authenticatable
         'nom',
         'prenom',
         'telephone',
+        'company_id',
     ];
 
     protected $hidden = [
@@ -70,6 +71,11 @@ class User extends Authenticatable
     public function sellerProfile(): HasOne
     {
         return $this->hasOne(SellerProfile::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function orders(): HasMany
