@@ -18,21 +18,27 @@ interface RecommendedProduct extends Product {
 }
 
 const ESCROW_STATUS_LABELS: Record<string, string> = {
-  pending: 'En attente',
+  pending: 'En attente de paiement',
   escrow_locked: 'Bloqué (Séquestre)',
-  shipped: 'Expédié',
-  received: 'Reçu',
-  released: 'Fonds Disponibles',
-  disputed: 'Litige',
+  en_preparation: 'En préparation',
+  expedie: 'Expédié',
+  en_transit: 'En transit',
+  livre: 'Livré',
+  complete: 'Fonds Disponibles',
+  annule: 'Annulée',
+  dispute: 'Litige',
 };
 
 const ESCROW_STATUS_VARIANTS: Record<string, 'warning' | 'info' | 'success' | 'error'> = {
   pending: 'warning',
   escrow_locked: 'info',
-  shipped: 'info',
-  received: 'success',
-  released: 'success',
-  disputed: 'error',
+  en_preparation: 'info',
+  expedie: 'info',
+  en_transit: 'info',
+  livre: 'success',
+  complete: 'success',
+  annule: 'error',
+  dispute: 'error',
 };
 
 export default function DashboardOverview() {
@@ -81,20 +87,22 @@ export default function DashboardOverview() {
 
   // Blocked Escrow Funds: Paid by buyer but not yet released to seller
   const blockedFunds = orders
-    .filter(o => ['escrow_locked', 'shipped', 'received'].includes(o.escrowStatus))
-    .reduce((sum, o) => sum + o.amount, 0);
+    .filter(o => ['escrow_locked', 'en_preparation', 'expedie', 'en_transit', 'livre'].includes(o.escrowStatus))
+    .reduce((sum, o) => sum + o.montantTotal, 0);
 
   // Available Cleared Funds: Released to seller
   const availableFunds = orders
-    .filter(o => o.escrowStatus === 'released')
-    .reduce((sum, o) => sum + o.amount, 0);
+    .filter(o => o.escrowStatus === 'complete')
+    .reduce((sum, o) => sum + o.montantVendeur, 0);
 
   // Total sales revenue: Completed transactions
   const totalRevenue = orders
-    .filter(o => o.escrowStatus === 'released')
-    .reduce((sum, o) => sum + o.amount, 0);
+    .filter(o => o.escrowStatus === 'complete')
+    .reduce((sum, o) => sum + o.montantTotal, 0);
 
-  const activeOrders = orders.filter(o => ['pending', 'escrow_locked', 'shipped', 'received'].includes(o.escrowStatus));
+  const activeOrders = orders.filter(o =>
+    ['pending', 'escrow_locked', 'en_preparation', 'expedie', 'en_transit', 'livre'].includes(o.escrowStatus)
+  );
   const pendingOrders = orders.filter(o => o.escrowStatus === 'pending');
   const recentOrders = orders.slice(0, 5);
 
@@ -333,24 +341,31 @@ export default function DashboardOverview() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell style={{ fontWeight: 600 }}>#{order.id.toString().substring(0, 8)}</TableCell>
-                    <TableCell>
-                      <div style={{ fontWeight: 500 }}>{order.product?.name || '—'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <MapPin size={12} aria-hidden="true" /> {getRegionLabel(order.product?.country || '')}
-                      </div>
-                    </TableCell>
-                    <TableCell>{order.quantity}</TableCell>
-                    <TableCell style={{ fontWeight: 600 }}>{order.amount.toLocaleString('fr-FR')} FCFA</TableCell>
-                    <TableCell>
-                      <Badge variant={ESCROW_STATUS_VARIANTS[order.escrowStatus] || 'info'}>
-                        {ESCROW_STATUS_LABELS[order.escrowStatus] || order.escrowStatus}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {recentOrders.map((order) => {
+                  const firstItem = order.items?.[0];
+                  const extraCount = (order.items?.length ?? 0) - 1;
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell style={{ fontWeight: 600 }}>#{order.id.toString().substring(0, 8)}</TableCell>
+                      <TableCell>
+                        <div style={{ fontWeight: 500 }}>
+                          {firstItem?.product?.name || 'Produit'}
+                          {extraCount > 0 ? ` +${extraCount} autre(s)` : ''}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <MapPin size={12} aria-hidden="true" /> {getRegionLabel(firstItem?.product?.country || '')}
+                        </div>
+                      </TableCell>
+                      <TableCell>{firstItem?.quantity ?? '—'}</TableCell>
+                      <TableCell style={{ fontWeight: 600 }}>{order.montantTotal.toLocaleString('fr-FR')} FCFA</TableCell>
+                      <TableCell>
+                        <Badge variant={ESCROW_STATUS_VARIANTS[order.escrowStatus] || 'info'}>
+                          {ESCROW_STATUS_LABELS[order.escrowStatus] || order.escrowStatus}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

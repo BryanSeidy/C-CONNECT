@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, Truck, UserRound, HandCoins } from 'lucide-react';
+import { Home, Package, Truck, UserRound, HandCoins, ClipboardList, CalendarClock, ShieldAlert, Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Sidebar.module.css';
 
@@ -14,7 +14,11 @@ export const Sidebar = () => {
     { href: '/dashboard', label: 'Vue Générale', Icon: Home },
     { href: '/dashboard/products', label: 'Mes Produits', Icon: Package },
     { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+    { href: '/dashboard/rfqs', label: 'Demandes de Devis', Icon: ClipboardList },
+    { href: '/dashboard/recurring', label: 'Commandes Récurrentes', Icon: CalendarClock },
     { href: '/dashboard/negotiations', label: 'Négociations & Devis', Icon: HandCoins },
+    { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
+    { href: '/dashboard/company', label: 'Profil Entreprise', Icon: Building2 },
   ] as const;
 
 

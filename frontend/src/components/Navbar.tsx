@@ -17,6 +17,7 @@ export const Navbar = () => {
         <div className={styles.navLinks}>
           <Link href="/" className={styles.link}>Accueil</Link>
           <Link href="/marketplace" className={styles.link}>Marketplace</Link>
+          <Link href="/#comment-ca-marche" className={styles.link}>Fonctionnement</Link>
           <Link href="/about" className={styles.link}>À Propos</Link>
           {user ? (
             <>

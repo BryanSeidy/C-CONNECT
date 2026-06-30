@@ -33,6 +33,7 @@ export const Footer = () => {
         </div>
         
         <div className={styles.bottom}>
+          <p className={styles.trustLine}>Paiements sécurisés en séquestre · Entreprises vérifiées · Fabriqué au Cameroun</p>
           <p>&copy; {new Date().getFullYear()} C-Connect. Projet de Licence Technologique B2B.</p>
         </div>
       </div>

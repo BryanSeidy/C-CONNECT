@@ -48,11 +48,17 @@ class Product extends Model
         'slug',
         'description',
         'prix',
+        'prix_minimum_commande',
+        'quantite_minimum',
         'stock',
+        'stock_reserve',
+        'stock_minimum',
+        'unite',
         'region',
         'image_url',
         'image_principale',
         'statut',
+        'disponible',
     ];
 
     protected $casts = [
@@ -215,10 +221,36 @@ class Product extends Model
     }
 
     /**
-     * Note en pourcentage pour barre de progression.
+     * Vérifie si le produit est disponible (stock net > stock minimum).
      */
-    public function getRatingPercentAttribute(): float
+    public function getIsAvailableAttribute(): bool
     {
-        return ($this->quality_rating / 5) * 100;
+        return ($this->stock - ($this->stock_reserve ?? 0)) > ($this->stock_minimum ?? 0);
+    }
+
+    /**
+     * Stock net disponible (stock - réservé).
+     */
+    public function getStockDisponibleAttribute(): int
+    {
+        return max(0, $this->stock - ($this->stock_reserve ?? 0));
+    }
+
+    /**
+     * Réserver du stock pour une commande.
+     */
+    public function reserverStock(int $quantite): void
+    {
+        $this->increment('stock_reserve', $quantite);
+        $this->update(['disponible' => $this->getIsAvailableAttribute()]);
+    }
+
+    /**
+     * Libérer du stock réservé (annulation ou livraison confirmée).
+     */
+    public function libererStock(int $quantite): void
+    {
+        $this->decrement('stock_reserve', min($quantite, $this->stock_reserve ?? 0));
+        $this->update(['disponible' => $this->getIsAvailableAttribute()]);
     }
 }
