@@ -1,84 +1,102 @@
-@@ -19,43 20,83 @@ export interface AuthPayload {
+diff a/frontend/src/services/auth.ts b/frontend/src/services/auth.ts	(rejected hunks)
+@@ -4,6 +4,7 @@ import { apiClient } from './api';
+ export interface LoginCredentials {
+   email: string;
+   password: string;
++  remember?: boolean;
+ }
+ 
+ export interface RegisterPayload {
+@@ -19,43 +20,83 @@ export interface AuthPayload {
    access_token?: string;
  }
  
-export type AuthResponse   = ApiEnvelope<AuthPayload>;
+-export type AuthResponse = ApiEnvelope<AuthPayload>;
++export type AuthResponse   = ApiEnvelope<AuthPayload>;
  export type ProfileResponse = ApiEnvelope<{ user: User }>;
  
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Dérive l'URL racine du backend depuis la baseURL de l'axios client.
- * Si NEXT_PUBLIC_API_URL = 'http://localhost:8000/api', retourne
- * 'http://localhost:8000' (sans /api).
- */
-function getBackendRoot(): string {
-  const base = apiClient.defaults.baseURL ?? 'http://localhost:8000/api';
-  return base.replace(/\/api\/?$/, '');
-}
-
-// ---------------------------------------------------------------------------
-// Auth Service
-// ---------------------------------------------------------------------------
-
++// ---------------------------------------------------------------------------
++// Helpers
++// ---------------------------------------------------------------------------
++
++/**
++ * Dérive l'URL racine du backend depuis la baseURL de l'axios client.
++ * Si NEXT_PUBLIC_API_URL = 'http://localhost:8000/api', retourne
++ * 'http://localhost:8000' (sans /api).
++ */
++function getBackendRoot(): string {
++  const base = apiClient.defaults.baseURL ?? 'http://localhost:8000/api';
++  return base.replace(/\/api\/?$/, '');
++}
++
++// ---------------------------------------------------------------------------
++// Auth Service
++// ---------------------------------------------------------------------------
++
  export const authService = {
-  /**
-   * Récupère le cookie CSRF de Sanctum.
-   * Doit être appelé avant login et register sur le domaine backend,
-   * PAS sur /api — d'où le baseURL override.
-   */
++  /**
++   * Récupère le cookie CSRF de Sanctum.
++   * Doit être appelé avant login et register sur le domaine backend,
++   * PAS sur /api — d'où le baseURL override.
++   */
    getCsrfCookie: async (): Promise<void> => {
-    await apiClient.get('/sanctum/csrf-cookie', {
-      baseURL: getBackendRoot(),
-    });
+-    const baseURL = apiClient.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000';
+-    return apiClient.get('/sanctum/csrf-cookie', { baseURL });
++    await apiClient.get('/sanctum/csrf-cookie', {
++      baseURL: getBackendRoot(),
++    });
    },
  
-  /**
-   * POST /api/auth/login — route réelle dans routes/api.php
-   */
++  /**
++   * POST /api/login — route réelle dans routes/api.php
++   */
    login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
      await authService.getCsrfCookie();
-    return apiClient.post('/auth/login', credentials);
+-    return apiClient.post('/auth/login', credentials);
++    return apiClient.post('/login', credentials);
    },
  
-  /**
-   * POST /api/auth/register — route réelle dans routes/api.php
-   * Le backend attend : name, email, password, password_confirmation, role
-   */
++  /**
++   * POST /api/register — route réelle dans routes/api.php
++   * Le backend attend : name, email, password, password_confirmation, role
++   */
    register: async (userData: RegisterPayload): Promise<AuthResponse> => {
      await authService.getCsrfCookie();
-    return apiClient.post('/auth/register', {
+-    return apiClient.post('/auth/register', {
++    return apiClient.post('/register', {
        name: userData.fullName,
        email: userData.email,
        password: userData.password,
-      password_confirmation: userData.password,   // requis par Password::confirmed()
-      role: userData.role ?? 'buyer',
+-      password_confirmation: userData.password,
+-      role: userData.role,
++      password_confirmation: userData.password,   // requis par Password::confirmed()
++      role: userData.role ?? 'buyer',
      });
    },
  
-  /**
-   * GET /api/me — retourne l'utilisateur authentifié
-   */
++  /**
++   * GET /api/me — retourne l'utilisateur authentifié
++   */
    getProfile: async (): Promise<ProfileResponse> => {
-    return apiClient.get('/me');
+-    return apiClient.get('/auth/profile');
++    return apiClient.get('/me');
    },
  
-  /**
-   * PUT /api/me — mise à jour du profil utilisateur
-   */
++  /**
++   * PUT /api/me — mise à jour du profil utilisateur
++   */
    updateProfile: async (userData: {
      fullName?: string;
      companyName?: string;
      country?: string;
    }): Promise<ProfileResponse> => {
-    return apiClient.put('/me', userData);
+-    return apiClient.put('/auth/profile', userData);
++    return apiClient.put('/me', userData);
    },
  
-  /**
-   * POST /api/logout
-   */
++  /**
++   * POST /api/logout
++   */
    logout: async (): Promise<void> => {
      return apiClient.post('/logout');
    },

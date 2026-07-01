@@ -32,7 +32,6 @@ function LoginContent() {
       }
       onSubmit={async (email, password) => {
         await login(email, password);
-        // router.push préserve le contexte React et évite un rechargement complet
         router.push(redirect);
       }}
     />

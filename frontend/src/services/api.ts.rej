@@ -1,42 +1,45 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+ 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
-
+ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
+ 
 /** Routes qui ne nécessitent pas de token Bearer */
 const PUBLIC_PATTERNS = [
-  /^\/products(?:\/[^/]+)?$/,
-  /^\/categories(?:\/[^/]+)?$/,
-  /^\/companies(?:\/[^/]+)?$/,
-  /^\/rfqs(?:\/[^/]+)?$/,
+   /^\/products(?:\/[^/]+)?$/,
+   /^\/categories(?:\/[^/]+)?$/,
   /^\/auth\/login$/,
   /^\/auth\/register$/,
+  /^\/companies(?:\/[^/]+)?$/,
+  /^\/rfqs(?:\/[^/]+)?$/,
+   /^\/login$/,
+   /^\/register$/,
   /^\/sanctum\/csrf-cookie$/,
-  /^\/webhooks\//,
-];
-
+   /^\/webhooks\//,
+ ];
+ 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function getPath(url?: string): string {
-  if (!url) return '';
-  try {
-    const base = new URL(API_BASE_URL);
+   if (!url) return '';
+   try {
+     const base = new URL(API_BASE_URL);
     return new URL(url, API_BASE_URL).pathname.replace(base.pathname.replace(/\/$/, ''), '') || '/';
-  } catch {
-    return url.split('?')[0] ?? '';
-  }
-}
-
+   } catch {
+     return url.split('?')[0] ?? '';
+   }
+ }
+ 
 function isPublic(url?: string): boolean {
   const path = getPath(url);
   return PUBLIC_PATTERNS.some((p) => p.test(path));
-}
-
+ }
+ 
 /**
  * Lit le cookie XSRF-TOKEN posé par Laravel et le retourne.
  * Nécessaire pour que l'en-tête X-XSRF-TOKEN soit envoyé sur
@@ -44,10 +47,10 @@ function isPublic(url?: string): boolean {
  */
 function readXsrfCookie(): string | null {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;])/);
   return match ? decodeURIComponent(match[1]) : null;
 }
-
+ 
 // ---------------------------------------------------------------------------
 // Token en mémoire (session uniquement — jamais en localStorage)
 // ---------------------------------------------------------------------------
@@ -56,29 +59,29 @@ let _memoryToken: string | null = null;
 
 export function setMemoryToken(token: string | null): void {
   _memoryToken = token;
-}
-
+ }
+ 
 // ---------------------------------------------------------------------------
 // Instance Axios
 // ---------------------------------------------------------------------------
-
-export const apiClient = axios.create({
+ 
+ export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,            // transmet cookies et XSRF-TOKEN cross-origin
   withXSRFToken: true,              // axios 1.6+ : lit XSRF-TOKEN cookie automatiquement
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
-  },
-  timeout: 30_000,
-});
-
+   headers: {
+    'Content-Type':    'application/json',
+    'Accept':          'application/json',
+     'X-Requested-With': 'XMLHttpRequest',
+   },
+   timeout: 30_000,
+ });
+ 
 // ---------------------------------------------------------------------------
 // Intercepteur de requête
 // ---------------------------------------------------------------------------
-
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+ 
+ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // Attacher le token Bearer si disponible (double mécanisme : cookie + token)
   if (typeof window !== 'undefined' && !isPublic(config.url) && _memoryToken) {
     config.headers.Authorization = `Bearer ${_memoryToken}`;
@@ -89,11 +92,11 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const xsrf = readXsrfCookie();
   if (xsrf && config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
     config.headers['X-XSRF-TOKEN'] = xsrf;
-  }
+   }
 
-  return config;
-});
-
+   return config;
+ });
+ 
 // ---------------------------------------------------------------------------
 // Intercepteur de réponse
 // ---------------------------------------------------------------------------
@@ -126,8 +129,8 @@ async function refreshCsrfAndRetry(failedConfig: InternalAxiosRequestConfig) {
   }
 }
 
-apiClient.interceptors.response.use(
-  (response) => response.data,
+ apiClient.interceptors.response.use(
+   (response) => response.data,
 
   async (error: AxiosError) => {
     const status = error.response?.status;
@@ -139,15 +142,15 @@ apiClient.interceptors.response.use(
       return refreshCsrfAndRetry(config);
     }
 
-    // 401 = session expirée — rediriger vers /auth/login (sauf si déjà sur une page auth)
+    // 401 = session expirée — rediriger vers /login (sauf si déjà sur une page auth)
     if (status === 401 && typeof window !== 'undefined') {
-      const isAuthPage = ['/login', '/auth/register'].includes(window.location.pathname);
+      const isAuthPage = ['/login', '/register'].includes(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
-        localStorage.removeItem('cconnect_user_cache');
+         localStorage.removeItem('cconnect_user_cache');
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      }
-    }
+       }
+     }
 
-    return Promise.reject(error);
-  }
-);
+     return Promise.reject(error);
+   }
+ );

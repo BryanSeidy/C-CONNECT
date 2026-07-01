@@ -1,39 +1,65 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Navbar.module.css';
 
+const NAV_LINKS = [
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/#comment-ca-marche', label: 'Fonctionnement' },
+  { href: '/about', label: 'À propos' },
+];
+
 export const Navbar = () => {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith('/dashboard');
+
+  // Sur les pages dashboard, la navbar est masquée (le layout dashboard a sa propre topbar)
+  if (isDashboard) return null;
 
   return (
-    <nav className={`glass-panel ${styles.navbar}`}>
+    <header className={styles.navbar}>
       <div className={styles.container}>
-        <Link href="/" className={styles.brand}>
-          <div className={styles.logoMark}>C</div>
+        {/* Brand */}
+        <Link href="/" className={styles.brand} aria-label="C-Connect — Accueil">
+          <div className={styles.logoMark} aria-hidden="true">C</div>
           <span className={styles.brandName}>C-Connect</span>
         </Link>
-        <div className={styles.navLinks}>
-          <Link href="/" className={styles.link}>Accueil</Link>
-          <Link href="/marketplace" className={styles.link}>Marketplace</Link>
-          <Link href="/#comment-ca-marche" className={styles.link}>Fonctionnement</Link>
-          <Link href="/about" className={styles.link}>À Propos</Link>
+
+        {/* Nav links */}
+        <nav className={styles.navLinks} aria-label="Navigation principale">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`${styles.link} ${pathname === href ? styles.active : ''}`}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Auth */}
+        <div className={styles.authGroup}>
           {user ? (
             <>
-              <Link href="/dashboard" className={styles.link}>Dashboard</Link>
-              <button className={`${styles.link} ${styles.danger}`} onClick={logout}>
+              <Link href="/dashboard" className={styles.dashBtn}>
+                Mon espace
+              </Link>
+              <button type="button" onClick={logout} className={styles.ghostBtn}>
                 Déconnexion
               </button>
             </>
           ) : (
-            <div className={styles.authGroup}>
-              <Link href="/login" className={styles.loginBtn}>Connexion</Link>
-              <Link href="/register" className={styles.registerBtn}>S'inscrire</Link>
-            </div>
+            <>
+              <Link href="/login" className={styles.ghostBtn}>Connexion</Link>
+              <Link href="/register" className={styles.primaryBtn}>S&apos;inscrire</Link>
+            </>
           )}
         </div>
       </div>
-    </nav>
+    </header>
   );
 };

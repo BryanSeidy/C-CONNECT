@@ -1,56 +1,62 @@
+'use client';
+
+import React from 'react';
+import { CheckCircle2, Circle, LucideIcon, Package, ShieldCheck, Truck } from 'lucide-react';
 import { EscrowStatus } from '@/types';
-import { CheckCircle2, Circle, Package, ShieldCheck, Truck } from 'lucide-react';
 import styles from './EscrowTimeline.module.css';
 
-/**
- * Visual timeline component for an order's escrow lifecycle.
- * Mirrors the Laravel B2B escrow_status enum:
- * pending → escrow_locked → en_preparation → expedie → en_transit → livre → complete.
- * 'annule' and 'dispute' are terminal/exception states shown separately.
- */
-const STEPS: { label: string; value: EscrowStatus; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { label: 'Séquestre verrouillé', value: 'escrow_locked', Icon: ShieldCheck },
-  { label: 'En préparation', value: 'en_preparation', Icon: Package },
-  { label: 'Expédié', value: 'expedie', Icon: Truck },
-  { label: 'Livré', value: 'livre', Icon: CheckCircle2 },
-  { label: 'Fonds libérés', value: 'complete', Icon: CheckCircle2 },
+type Step = {
+  value: EscrowStatus;
+  label: string;
+  Icon: LucideIcon;
+};
+
+const STEPS: Step[] = [
+  { value: 'escrow_locked', label: 'Séquestre', Icon: ShieldCheck },
+  { value: 'en_preparation', label: 'Préparation', Icon: Package },
+  { value: 'expedie', label: 'Expédié', Icon: Truck },
+  { value: 'livre', label: 'Livré', Icon: CheckCircle2 },
 ];
 
 const STATUS_ORDER: EscrowStatus[] = [
-  'pending',
-  'escrow_locked',
-  'en_preparation',
-  'expedie',
-  'en_transit',
-  'livre',
-  'complete',
+  'pending', 'escrow_locked', 'en_preparation',
+  'expedie', 'en_transit', 'livre', 'complete',
 ];
 
 export const EscrowTimeline = ({ escrowStatus }: { escrowStatus: EscrowStatus }) => {
   if (escrowStatus === 'annule') {
-    return <div className={styles.exceptionBadge} data-tone="cancelled">Commande annulée</div>;
+    return <span className={`${styles.pill} ${styles.cancelled}`}>Annulé</span>;
   }
-
   if (escrowStatus === 'dispute') {
-    return <div className={styles.exceptionBadge} data-tone="dispute">Litige en cours — fonds bloqués</div>;
+    return <span className={`${styles.pill} ${styles.dispute}`}>Litige — fonds bloqués</span>;
   }
 
   const currentIndex = STATUS_ORDER.indexOf(escrowStatus);
 
   return (
-    <div className={styles.timeline} role="list" aria-label="Statut d'entiercement">
-      {STEPS.map((step, idx) => {
+    <div className={styles.track} role="list" aria-label="Progression de la commande">
+      {STEPS.map((step, i) => {
         const stepIndex = STATUS_ORDER.indexOf(step.value);
-        const isCompleted = stepIndex < currentIndex;
-        const isCurrent = stepIndex === currentIndex;
-        const stepClass = isCompleted ? styles.completed : isCurrent ? styles.current : styles.pending;
-        const Icon = isCompleted || isCurrent ? step.Icon : Circle;
+        const done = stepIndex < currentIndex;
+        const current = step.value === escrowStatus ||
+          (escrowStatus === 'en_transit' && step.value === 'expedie') ||
+          (escrowStatus === 'complete' && step.value === 'livre');
+
+        const Icon = done || current ? step.Icon : Circle;
+        const cls = done ? styles.done : current ? styles.current : styles.pending;
+
         return (
-          <div key={step.value} className={stepClass} role="listitem" aria-current={isCurrent ? 'step' : undefined}>
-            <Icon className={styles.icon} aria-hidden="true" />
-            <span className={styles.label}>{step.label}</span>
-            {idx < STEPS.length - 1 && <div className={styles.connector} aria-hidden="true" />}
-          </div>
+          <React.Fragment key={step.value}>
+            <div className={`${styles.step} ${cls}`} role="listitem">
+              <div className={styles.dot}>
+                <Icon size={12} aria-hidden="true" />
+              </div>
+              <span className={styles.stepLabel}>{step.label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`${styles.line} ${done ? styles.lineDone : ''}`} aria-hidden="true" />
+            )}
+          </React.Fragment>
         );
       })}
     </div>

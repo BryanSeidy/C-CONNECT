@@ -2,111 +2,188 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import {
+  AlertTriangle, Package, Pencil, Plus, Trash2,
+  TrendingDown, TrendingUp,
+} from 'lucide-react';
 import { productService } from '@/services/products';
 import { Product } from '@/types';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { KpiCard } from '@/components/ui/KpiCard';
 import { getRegionLabel } from '@/lib/regions';
+import styles from './Products.module.css';
 
 export default function DashboardProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<number | string | null>(null);
+  const [products,     setProducts]     = useState<Product[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | number | null>(null);
 
-  const loadProducts = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await productService.getMyProducts();
-      setProducts(res.data || []);
+      setProducts(res.data ?? []);
     } catch (err: any) {
-      setError(err?.message || 'Impossible de charger le catalogue');
-      setProducts([]);
+      setError(err?.response?.data?.message ?? 'Impossible de charger le catalogue.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  useEffect(() => { load(); }, [load]);
 
-  const removeProduct = async (id: number | string) => {
+  const removeProduct = async (id: string | number) => {
+    if (!confirm('Supprimer ce produit du catalogue ?')) return;
     setProcessingId(id);
     try {
       await productService.deleteProduct(id);
-      await loadProducts();
+      await load();
     } catch (err: any) {
-      setError(err?.message || 'Suppression impossible');
+      setError(err?.response?.data?.message ?? 'Suppression impossible.');
     } finally {
       setProcessingId(null);
     }
   };
 
+  const active   = products.filter(p => p.isActive);
+  const lowStock = products.filter(p => p.stock <= 5 && p.isActive);
+  const outStock = products.filter(p => p.stock === 0);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-          Gestion de mon Catalogue
-        </h2>
+    <div className={styles.page}>
+      {/* KPIs */}
+      <div className={styles.kpiRow}>
+        <KpiCard label="Produits actifs"    value={active.length}   icon={<Package size={20}/>}      variant="success" loading={loading} />
+        <KpiCard label="Stock bas (≤ 5)"    value={lowStock.length} icon={<TrendingDown size={20}/>} variant="warning" loading={loading} sub="À réapprovisionner" />
+        <KpiCard label="En rupture"         value={outStock.length} icon={<AlertTriangle size={20}/>} variant={outStock.length > 0 ? 'warning' : 'muted'} loading={loading} />
+        <KpiCard label="Total catalogue"    value={products.length} icon={<TrendingUp size={20}/>}   variant="default" loading={loading} />
+      </div>
+
+      {/* Header actions */}
+      <div className={styles.header}>
+        <h2 className={styles.sectionTitle}>Mon catalogue</h2>
         <Link href="/dashboard/products/add">
-          <Button variant="primary">+ Ajouter un Produit</Button>
+          <Button variant="primary" size="md">
+            <Plus size={16} aria-hidden="true" /> Ajouter un produit
+          </Button>
         </Link>
       </div>
 
-      <Card>
-        <CardContent style={{ padding: '1.5rem' }}>
-          {error && <p style={{ color: 'var(--error)' }}>{error}</p>}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produit</TableHead>
-                <TableHead>Région</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Prix (FCFA)</TableHead>
-                <TableHead>Stock disponible</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!loading && products.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7}>Aucun produit dans votre catalogue.</TableCell>
-                </TableRow>
-              )}
-              {products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell style={{ fontWeight: 600 }}>{product.name}</TableCell>
-                  <TableCell>{getRegionLabel(product.country)}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.price.toLocaleString('fr-FR')}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>
-                    <Badge variant={product.isActive ? 'success' : 'error'}>
-                      {product.isActive ? 'Actif' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      style={{ color: 'var(--error)', padding: '4px 8px' }}
-                      isLoading={processingId === product.id}
-                      onClick={() => removeProduct(product.id)}
-                    >
-                      Retirer
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {error && <div className={styles.errorBanner}><AlertTriangle size={16}/> {error}</div>}
+
+      {/* Low stock alert */}
+      {lowStock.length > 0 && (
+        <div className={styles.alertBanner}>
+          <AlertTriangle size={16} aria-hidden="true" />
+          <strong>{lowStock.length} produit(s)</strong> avec un stock bas — pensez à réapprovisionner avant d&apos;accepter de nouvelles commandes.
+        </div>
+      )}
+
+      {/* Products table */}
+      <div className={styles.tableWrap}>
+        <div className={styles.thead}>
+          <span>Produit</span>
+          <span>Catégorie</span>
+          <span>Région</span>
+          <span className={styles.right}>Prix / unité</span>
+          <span className={styles.right}>Stock</span>
+          <span>Statut</span>
+          <span>Actions</span>
+        </div>
+
+        {loading ? (
+          <div className={styles.emptyState}>Chargement…</div>
+        ) : products.length === 0 ? (
+          <div className={styles.emptyState}>
+            <Package size={36} aria-hidden="true" />
+            <p>Vous n&apos;avez pas encore de produit.</p>
+            <Link href="/dashboard/products/add">
+              <Button variant="primary" size="sm">Ajouter mon premier produit</Button>
+            </Link>
+          </div>
+        ) : products.map(product => {
+          const stockStatus = product.stock === 0
+            ? 'error'
+            : product.stock <= 5 ? 'warning' : 'success';
+          const stockLabel = product.stock === 0
+            ? 'Rupture'
+            : product.stock <= 5 ? `${product.stock} restants` : `${product.stock}`;
+
+          return (
+            <div key={product.id} className={styles.trow}>
+              {/* Produit */}
+              <div className={styles.productCell}>
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className={styles.productImg}
+                  />
+                ) : (
+                  <div className={styles.productImgPlaceholder} aria-hidden="true">
+                    <Package size={16} />
+                  </div>
+                )}
+                <div>
+                  <span className={styles.productName}>{product.name}</span>
+                  {product.description && (
+                    <span className={styles.productDesc}>
+                      {product.description.substring(0, 55)}{product.description.length > 55 ? '…' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Catégorie */}
+              <span className={styles.cell}>{product.category}</span>
+
+              {/* Région */}
+              <span className={styles.cell}>{getRegionLabel(product.country)}</span>
+
+              {/* Prix */}
+              <span className={`${styles.cell} ${styles.right} ${styles.price}`}>
+                {product.price.toLocaleString('fr-FR')} XAF
+              </span>
+
+              {/* Stock */}
+              <div className={`${styles.cell} ${styles.right}`}>
+                <Badge variant={stockStatus}>{stockLabel}</Badge>
+              </div>
+
+              {/* Statut */}
+              <span className={styles.cell}>
+                <Badge variant={product.isActive ? 'success' : 'default'}>
+                  {product.isActive ? 'Actif' : 'Inactif'}
+                </Badge>
+              </span>
+
+              {/* Actions */}
+              <div className={styles.actions}>
+                <Link
+                  href={`/dashboard/products/${product.id}/edit`}
+                  className={styles.actionBtn}
+                  title="Modifier"
+                >
+                  <Pencil size={15} aria-hidden="true" />
+                </Link>
+                <button
+                  type="button"
+                  className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                  title="Supprimer"
+                  disabled={processingId === product.id}
+                  onClick={() => removeProduct(product.id)}
+                  aria-label={`Supprimer ${product.name}`}
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

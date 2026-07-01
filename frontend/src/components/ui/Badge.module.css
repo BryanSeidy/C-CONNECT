@@ -1,36 +1,24 @@
+/* C-Connect — Badge Component */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  gap: 0.3rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  border: 1px solid transparent;
   line-height: 1;
 }
 
-.badge-default {
-  background-color: #E2E8F0;
-  color: #475569;
-}
-
-.badge-success {
-  background-color: rgba(46, 125, 50, 0.1);
-  color: var(--success);
-}
-
-.badge-warning {
-  background-color: rgba(245, 124, 0, 0.1);
-  color: var(--warning);
-}
-
-.badge-error {
-  background-color: rgba(211, 47, 47, 0.1);
-  color: var(--error);
-}
-
-.badge-info {
-  background-color: rgba(2, 136, 209, 0.1);
-  color: var(--info);
-}
+.success  { background: var(--success-bg);  color: var(--success);  border-color: rgba(30,122,77,0.2); }
+.warning  { background: var(--warning-bg);  color: var(--warning);  border-color: rgba(180,83,9,0.2); }
+.error    { background: var(--error-bg);    color: var(--error);    border-color: rgba(192,57,43,0.2); }
+.info     { background: var(--info-bg);     color: var(--info);     border-color: rgba(29,111,164,0.2); }
+.default  { background: var(--c-green-50);  color: var(--text-muted); border-color: var(--border-subtle); }
+.gold     { background: var(--c-gold-100);  color: #7A4E00; border-color: rgba(217,164,65,0.3); }
+.verified { background: var(--c-green-100); color: var(--c-green-800); border-color: rgba(19,53,46,0.2); }

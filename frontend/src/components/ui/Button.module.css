@@ -1,118 +1,102 @@
+/* C-Connect — Button Component */
+
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-primary);
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  transition: all 0.25s ease;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border: none;
   cursor: pointer;
-  border: 1px solid transparent;
-  outline: none;
-  position: relative;
-  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.01em;
+  -webkit-appearance: none;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* ── Sizes ── */
+.sm  { font-size: 0.8125rem; padding: 0.45rem 0.85rem; min-height: 34px; border-radius: 8px; }
+.md  { font-size: 0.9rem;    padding: 0.65rem 1.25rem; min-height: 42px; }
+.lg  { font-size: 1rem;      padding: 0.85rem 1.75rem; min-height: 50px; }
+
+/* ── Variants ── */
+.primary {
+  background: var(--c-green-800);
+  color: var(--c-white);
+  box-shadow: 0 2px 6px rgba(19,53,46,0.2);
+}
+.primary:hover:not(:disabled) {
+  background: var(--c-green-700);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(19,53,46,0.25);
+}
+.primary:active:not(:disabled) { transform: translateY(0); }
+
+.secondary {
+  background: var(--c-white);
+  color: var(--c-green-800);
+  border: 1.5px solid var(--c-green-800);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--c-green-50);
+  transform: translateY(-1px);
 }
 
-.btn:active {
-  transform: scale(0.98);
+.outline {
+  background: transparent;
+  color: var(--c-green-800);
+  border: 1.5px solid var(--border-color);
+}
+.outline:hover:not(:disabled) {
+  background: var(--c-green-50);
+  border-color: var(--c-green-600);
 }
 
-/* Variants */
-.btn-primary {
-  background-color: var(--primary-color);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(10, 46, 54, 0.2);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-light);
-  box-shadow: 0 6px 20px rgba(10, 46, 54, 0.3);
-}
-
-.btn-secondary {
-  background-color: var(--secondary-color);
-  color: #1A1A1A;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.btn-outline {
-  background-color: transparent;
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background-color: var(--primary-color);
-  color: #fff;
-}
-
-.btn-ghost {
-  background-color: transparent;
+.ghost {
+  background: transparent;
   color: var(--text-main);
+  border: 1.5px solid transparent;
+}
+.ghost:hover:not(:disabled) { background: var(--c-green-50); }
+
+.danger {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1.5px solid rgba(192,57,43,0.2);
+}
+.danger:hover:not(:disabled) {
+  background: var(--error);
+  color: white;
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background-color: rgba(10,46,54,0.05);
+.gold {
+  background: var(--c-gold-500);
+  color: var(--c-green-900);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(217,164,65,0.25);
+}
+.gold:hover:not(:disabled) {
+  background: var(--c-gold-400);
+  transform: translateY(-1px);
 }
 
-.btn-danger {
-  background-color: var(--error);
-  color: #fff;
+/* ── States ── */
+.btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.btn-danger:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-/* Sizes */
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 0.875rem;
-}
-
-.btn-md {
-  padding: 10px 20px;
-  font-size: 1rem;
-}
-
-.btn-lg {
-  padding: 14px 28px;
-  font-size: 1.125rem;
-}
-
-.btn-full {
-  width: 100%;
-}
-
-/* Loading */
-.btn-loading {
-  cursor: wait;
-}
-
-.hiddenText {
-  opacity: 0;
-}
+.btn.loading { cursor: wait; opacity: 0.75; }
 
 .spinner {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  animation: spin 1s linear infinite;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
+.fullWidth { width: 100%; }
