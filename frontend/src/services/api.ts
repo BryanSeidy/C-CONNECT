@@ -1,86 +1,153 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
 
-// Routes that never require an auth token
-const PUBLIC_ENDPOINT_PATTERNS = [
+/** Routes qui ne nécessitent pas de token Bearer */
+const PUBLIC_PATTERNS = [
   /^\/products(?:\/[^/]+)?$/,
   /^\/categories(?:\/[^/]+)?$/,
-  /^\/auth\/login$/,
-  /^\/auth\/register$/,
+  /^\/companies(?:\/[^/]+)?$/,
+  /^\/rfqs(?:\/[^/]+)?$/,
   /^\/login$/,
   /^\/register$/,
+  /^\/sanctum\/csrf-cookie$/,
   /^\/webhooks\//,
 ];
 
-function getRequestPath(url?: string): string {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getPath(url?: string): string {
   if (!url) return '';
   try {
     const base = new URL(API_BASE_URL);
-    return new URL(url, API_BASE_URL).pathname.replace(base.pathname, '') || '/';
+    return new URL(url, API_BASE_URL).pathname.replace(base.pathname.replace(/\/$/, ''), '') || '/';
   } catch {
     return url.split('?')[0] ?? '';
   }
 }
 
-function isPublicEndpoint(url?: string): boolean {
-  const path = getRequestPath(url);
-  return PUBLIC_ENDPOINT_PATTERNS.some((pattern) => pattern.test(path));
+function isPublic(url?: string): boolean {
+  const path = getPath(url);
+  return PUBLIC_PATTERNS.some((p) => p.test(path));
 }
 
-function shouldRedirectToLogin(error: AxiosError): boolean {
-  const isUnauthorized = error.response?.status === 401;
-  const isBrowser      = typeof window !== 'undefined';
-  const isAuthRoute    = isBrowser && ['/login', '/register'].includes(window.location.pathname);
-
-  return Boolean(isUnauthorized && isBrowser && !isAuthRoute && !isPublicEndpoint(error.config?.url));
+/**
+ * Lit le cookie XSRF-TOKEN posé par Laravel et le retourne.
+ * Nécessaire pour que l'en-tête X-XSRF-TOKEN soit envoyé sur
+ * les requêtes mutantes (POST/PUT/PATCH/DELETE).
+ */
+function readXsrfCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-// ============================================================================
-// Axios instance — cookie-first, credentials always included
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Token en mémoire (session uniquement — jamais en localStorage)
+// ---------------------------------------------------------------------------
 
-export const apiClient = axios.create({
-  baseURL:         API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept':       'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
-  },
-  timeout: 30_000,
-});
-
-// Request interceptor: attach bearer token from memory if present
-// The token is held in the closure below; set by the auth hook after login.
 let _memoryToken: string | null = null;
 
 export function setMemoryToken(token: string | null): void {
   _memoryToken = token;
 }
 
+// ---------------------------------------------------------------------------
+// Instance Axios
+// ---------------------------------------------------------------------------
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,            // transmet cookies et XSRF-TOKEN cross-origin
+  withXSRFToken: true,              // axios 1.6+ : lit XSRF-TOKEN cookie automatiquement
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  },
+  timeout: 30_000,
+});
+
+// ---------------------------------------------------------------------------
+// Intercepteur de requête
+// ---------------------------------------------------------------------------
+
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== 'undefined' && !isPublicEndpoint(config.url)) {
-    if (_memoryToken) {
-      config.headers.Authorization = `Bearer ${_memoryToken}`;
-    }
+  // Attacher le token Bearer si disponible (double mécanisme : cookie + token)
+  if (typeof window !== 'undefined' && !isPublic(config.url) && _memoryToken) {
+    config.headers.Authorization = `Bearer ${_memoryToken}`;
   }
+
+  // Injecter manuellement le X-XSRF-TOKEN pour les navigateurs/contextes
+  // où axios withXSRFToken ne le fait pas (ex: certaines configs SSR)
+  const xsrf = readXsrfCookie();
+  if (xsrf && config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    config.headers['X-XSRF-TOKEN'] = xsrf;
+  }
+
   return config;
 });
 
-// Response interceptor: handle auth failures globally
+// ---------------------------------------------------------------------------
+// Intercepteur de réponse
+// ---------------------------------------------------------------------------
+
+let _csrfRefreshing = false;
+let _csrfQueue: Array<(token: string) => void> = [];
+
+async function refreshCsrfAndRetry(failedConfig: InternalAxiosRequestConfig) {
+  const backendRoot = API_BASE_URL.replace(/\/api\/?$/, '');
+
+  if (_csrfRefreshing) {
+    return new Promise<unknown>((resolve) => {
+      _csrfQueue.push(() => resolve(apiClient(failedConfig)));
+    });
+  }
+
+  _csrfRefreshing = true;
+
+  try {
+    await apiClient.get('/sanctum/csrf-cookie', { baseURL: backendRoot });
+    const xsrf = readXsrfCookie();
+    if (xsrf) {
+      failedConfig.headers['X-XSRF-TOKEN'] = xsrf;
+    }
+    _csrfQueue.forEach((cb) => cb(xsrf ?? ''));
+    _csrfQueue = [];
+    return apiClient(failedConfig);
+  } finally {
+    _csrfRefreshing = false;
+  }
+}
+
 apiClient.interceptors.response.use(
   (response) => response.data,
-  (error: AxiosError) => {
-    if (shouldRedirectToLogin(error)) {
-      // Clear user cache and redirect; cookie invalidation happens server-side
-      if (typeof window !== 'undefined') {
+
+  async (error: AxiosError) => {
+    const status = error.response?.status;
+    const config = error.config;
+
+    // 419 = CSRF token expired/missing — récupérer un nouveau cookie et réessayer
+    if (status === 419 && config && !(config as any)._csrfRetried) {
+      (config as any)._csrfRetried = true;
+      return refreshCsrfAndRetry(config);
+    }
+
+    // 401 = session expirée — rediriger vers /auth/login (sauf si déjà sur une page auth)
+    if (status === 401 && typeof window !== 'undefined') {
+      const isAuthPage = ['/login', '/auth/register'].includes(window.location.pathname);
+      if (!isAuthPage && !isPublic(config?.url)) {
         localStorage.removeItem('cconnect_user_cache');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }
+
     return Promise.reject(error);
   }
 );

@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
                 'prenom' => $v['prenom'],
                 'email' => $v['email'],
                 'telephone' => $v['telephone'],
-                'password' => Hash::make('Password@123!'),
+                'password' => Hash::make('password'), //Password@123!
                 'role' => 'seller',
                 'email_verified_at' => now(),
             ]);
