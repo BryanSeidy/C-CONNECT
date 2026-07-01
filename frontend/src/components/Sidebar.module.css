@@ -4,16 +4,70 @@
 
 .sidebar {
   width: 256px;
-  height: calc(100vh - 64px);
+  height: 100vh;
   position: fixed;
-  top: 64px;
+  top: 0;
   left: 0;
-  z-index: 40;
+  z-index: 50;
   background: var(--c-green-800);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* ── Brand header ── */
+.brandHeader {
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 0 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+}
+
+.brandLogo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--c-white);
+  letter-spacing: -0.02em;
+}
+
+.closeBtn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.closeBtn:hover { background: rgba(255,255,255,0.08); color: var(--c-white); }
+
+/* ── Mobile backdrop ── */
+.backdrop {
+  display: none;
 }
 
 .nav {
@@ -161,9 +215,20 @@
 /* ── Mobile responsive ── */
 @media (max-width: 768px) {
   .sidebar {
-    width: 0;
-    overflow: hidden;
-    transition: width 0.25s ease;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg, 0 20px 40px rgba(0,0,0,0.25));
   }
-  .sidebar.open { width: 256px; }
+  .sidebarOpen { transform: translateX(0); }
+
+  .closeBtn { display: flex; }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgba(0,0,0,0.4);
+  }
 }

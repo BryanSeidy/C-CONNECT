@@ -29,7 +29,27 @@
 - [x] **Bug fix (found during this work):** `OrderController` referenced non-existent columns (`isActive`, `producerId`, `amount`, `transaction_reference`) that didn't match the real `products`/`orders` schema — order creation was broken. Rewritten against the real schema with inventory reservation.
 - [x] **Bug fix:** `EscrowTimeline.module.css` referenced undefined CSS variables (`--color-muted`, `--color-success`...) — rewritten against real design tokens and extended for the new 9-state lifecycle.
 
-## Priority 0 — Production blockers
+## Completed — Brand Integration (2026-07-01)
+
+- [x] Integrated the official C-Connect logo (icon + wordmark) across the app: public navbar, dashboard sidebar, auth pages, footer, favicon, PWA manifest icons, and social sharing (OpenGraph/Twitter) image.
+- [x] Generated a full asset pipeline from the single source PNG: transparent square icon crop, dark-green and white monochrome silhouettes, favicon.ico (16/32/48), apple-touch-icon, PWA icons (192/512), a maskable icon with safe-area padding, and a branded 1200×630 OG image — all under `frontend/public/brand/`.
+- [x] **Bug fix (found during this work):** dashboard `Sidebar` was `position: fixed; top: 64px` assuming a global navbar that no longer renders on `/dashboard` routes (the navbar returns `null` there) — this left a blank 64px void above the sidebar and a 4px misalignment against the 60px topbar. Fixed by giving the sidebar its own 60px brand header and anchoring it to `top: 0`.
+- [x] **Bug fix (found during this work):** on mobile (≤768px) the dashboard sidebar collapsed to `width: 0` with no way to reopen it, and the public navbar's nav links (`Marketplace`, `Fonctionnement`, `À propos`) simply disappeared with no hamburger fallback — mobile users had no way to reach primary navigation. Given the brand's stated phone-first, unstable-connectivity target users, this is a functional gap, not cosmetic — added a working slide-in drawer with backdrop for the sidebar, and a hamburger dropdown panel for the public navbar.
+- [x] Fixed `manifest.ts`: `theme_color` (`#15803d`) didn't match the documented brand primary (`#13352E`), and `icons: []` meant the PWA had no installable icon at all.
+- [x] Added a global `prefers-reduced-motion` rule (`globals.css`) — none existed anywhere in the app despite the brand guidelines requiring accessible motion.
+- [x] Removed six stray `.rej` patch-reject files left in the repo from earlier failed patch applications (dead clutter, not wired into the app).
+
+### Open question for design sign-off
+
+The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `#F4EF47`) do **not** match `Brand_Identity_Guidelines.md`, which specifies a green/gold/ivory palette with no blue and no yellow. I did not recolor the mark (guidelines explicitly forbid arbitrary recoloring), and I did not spread the new colors into UI chrome — buttons, backgrounds, and product surfaces stay on the existing dark-green/gold system, with the multicolor mark used only as the icon itself (the same pattern Slack/Firefox/Asana use: a colorful icon on an otherwise neutral product). This needs an explicit decision: update `Brand_Identity_Guidelines.md` to formally adopt blue/yellow as part of the palette, or treat this PNG as a placeholder pending a palette-conformant redraw.
+
+## Priority 1 — Remaining brand touchpoints (lower urgency, no user-facing UI exists yet)
+
+- [ ] Loading screen / route-transition state — no dedicated loading UI exists yet to brand (Next.js default only).
+- [ ] Empty states — few exist yet; brand the icon/illustration once each module's empty state is built.
+- [ ] Transactional email templates and PDF export headers (Purchase Order / Invoice / Delivery Note) — currently plain browser-printable HTML with no visual branding pass.
+
+
 
 - [ ] **Critical:** `services/auth.ts` calls `/auth/login`, `/auth/register`, `/auth/profile` — these routes don't exist in `routes/api.php` (real routes are `/login`, `/register`, `/me`). Login/register/profile-update are likely broken end-to-end. Needs a full audit of `AuthController` + `useAuth.tsx` + `auth.ts` together, not a quick patch — flagging rather than guessing at the wiring blind.
 - [ ] Run `php artisan migrate` against a real Postgres instance and verify the B2B migrations (companies, rfqs, rfq_bids, recurring_orders, disputes, inventory, order lifecycle enum rename) apply cleanly — could not run migrations in the sandbox (no DB, no Composer/Packagist network access).

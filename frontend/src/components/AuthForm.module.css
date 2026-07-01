@@ -30,19 +30,18 @@
   margin-bottom: 2rem;
 }
 
+.logoLink {
+  display: inline-flex;
+  margin: 0 auto 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.logoLink:hover { transform: scale(1.04); }
+
 .logo {
   width: 48px;
   height: 48px;
-  background: var(--primary-color);
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.4rem;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.25rem;
-  letter-spacing: -0.03em;
+  object-fit: contain;
 }
 
 .title {

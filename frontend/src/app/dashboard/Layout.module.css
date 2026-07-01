@@ -38,6 +38,23 @@
   font-weight: 500;
 }
 
+.menuBtn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: 0.25rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.menuBtn:hover { background: var(--c-green-50); color: var(--primary-color); }
+
 .breadcrumb strong {
   color: var(--primary-color);
   font-weight: 700;
@@ -120,4 +137,5 @@
   .mainWrapper { margin-left: 0; }
   .content { padding: 1.25rem; }
   .topbar { padding: 0 1.25rem; }
+  .menuBtn { display: flex; }
 }

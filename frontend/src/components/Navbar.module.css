@@ -32,16 +32,13 @@
 .logoMark {
   width: 34px;
   height: 34px;
-  background: var(--c-green-800);
-  color: var(--c-white);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: -0.03em;
+  flex-shrink: 0;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.brand:hover .logoMark {
+  transform: scale(1.04);
 }
 
 .brandName {
@@ -125,8 +122,85 @@
 }
 .dashBtn:hover { background: var(--c-green-100); }
 
+/* ── Mobile toggle ── */
+.mobileToggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--c-green-800);
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mobileToggle:hover { background: var(--c-green-50); }
+
+/* ── Mobile drawer panel ── */
+.mobilePanel {
+  display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .navLinks { display: none; }
+  .authGroup { display: none; }
+  .mobileToggle { display: flex; }
   .container { padding: 0 1.25rem; gap: 1rem; }
+
+  .mobilePanel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 1.25rem 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--c-white);
+    animation: navFadeIn 0.15s ease;
+  }
+
+  .mobileLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobileLink {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.75rem 0.5rem;
+    border-radius: var(--radius-xs);
+  }
+
+  .mobileLink.active { color: var(--primary-color); background: var(--c-green-50); }
+
+  .mobileAuth {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .mobileAuth .ghostBtn,
+  .mobileAuth .primaryBtn,
+  .mobileAuth .dashBtn {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 1rem;
+  }
+}
+
+@keyframes navFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobilePanel { animation: none; }
 }

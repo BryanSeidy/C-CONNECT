@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import styles from './Footer.module.css';
 
@@ -7,7 +8,16 @@ export const Footer = () => {
       <div className={styles.container}>
         <div className={styles.grid}>
           <div className={styles.brandCol}>
-            <h3 className={styles.brandTitle}>C-Connect</h3>
+            <div className={styles.brandMark}>
+              <Image
+                src="/brand/icon-white.png"
+                alt=""
+                width={32}
+                height={32}
+                className={styles.brandLogo}
+              />
+              <h3 className={styles.brandTitle}>C-Connect</h3>
+            </div>
             <p className={styles.brandDesc}>
               La plateforme B2B de confiance propulsant les échanges agricoles et industriels entre les 10 régions du Cameroun.
             </p>

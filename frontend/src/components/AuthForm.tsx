@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, EyeOff, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -111,7 +112,15 @@ export const AuthForm = ({
 
         {/* En-tête */}
         <div className={styles.header}>
-          <div className={styles.logo}>C</div>
+          <Link href="/" className={styles.logoLink} aria-label="C-Connect — Accueil">
+            <Image
+              src="/brand/icon-color.png"
+              alt=""
+              width={48}
+              height={48}
+              className={styles.logo}
+            />
+          </Link>
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>{subtitle}</p>
         </div>

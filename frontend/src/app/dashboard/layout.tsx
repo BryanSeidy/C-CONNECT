@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Layout.module.css';
@@ -33,15 +33,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user } = useAuth();
   const pathname = usePathname();
   const pageLabel = PAGE_LABELS[pathname] ?? 'Dashboard';
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className={styles.shell}>
-      <Sidebar />
+      <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className={styles.mainWrapper}>
         {/* Top bar */}
         <header className={styles.topbar}>
           <div className={styles.breadcrumb}>
+            <button
+              type="button"
+              className={styles.menuBtn}
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Ouvrir le menu"
+            >
+              <Menu size={20} aria-hidden="true" />
+            </button>
             <span>C-Connect</span>
             <span aria-hidden="true">›</span>
             <strong>{pageLabel}</strong>
