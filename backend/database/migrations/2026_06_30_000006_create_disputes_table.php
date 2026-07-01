@@ -51,7 +51,7 @@ return new class extends Migration
             $table->index('statut');
         });
 
-        DB::statement("COMMENT ON TABLE disputes IS 'Litiges clients et résolution d\'escrow — C-Connect'");
+        DB::statement("COMMENT ON TABLE disputes IS 'Litiges clients et résolution d''escrow — C-Connect'");
     }
 
     public function down(): void

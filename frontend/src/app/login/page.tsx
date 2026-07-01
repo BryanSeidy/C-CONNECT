@@ -1,32 +1,48 @@
 'use client';
-import { AuthForm } from '@/components/AuthForm';
+
 import { useAuth } from '@/hooks/useAuth';
-import { useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { AuthForm } from '@/components/AuthForm';
 import { getSafeRedirect } from '@/lib/routing';
 
-export default function LoginPage() {
+function LoginContent() {
   const { login } = useAuth();
-  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const redirect = getSafeRedirect(params?.get('redirect') ?? null);
-  const alternateHref = useMemo(() => (
-    redirect === '/dashboard' ? '/register' : `/register?redirect=${encodeURIComponent(redirect)}`
-  ), [redirect]);
-  const successMessage = params?.get('registered') === 'true'
-    ? 'Compte créé avec succès. Connectez-vous pour continuer.'
-    : undefined;
+  const router = useRouter();
+  const params = useSearchParams();
+  const redirect = getSafeRedirect(params.get('redirect'));
+  const registered = params.get('registered') === 'true';
+
+  const alternateHref =
+    redirect === '/dashboard'
+      ? '/auth/register'
+      : `/auth/register?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <AuthForm
       type="login"
       title="Bon retour !"
-      subtitle="Connectez-vous pour accéder à votre espace."
-      submitText="Se Connecter"
+      subtitle="Connectez-vous pour accéder à votre espace C-Connect."
+      submitText="Se connecter"
       alternateHref={alternateHref}
-      successMessage={successMessage}
+      successMessage={
+        registered
+          ? 'Compte créé avec succès. Connectez-vous pour continuer.'
+          : undefined
+      }
       onSubmit={async (email, password) => {
         await login(email, password);
-        window.location.href = redirect;
+        // router.push préserve le contexte React et évite un rechargement complet
+        router.push(redirect);
       }}
     />
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -6,7 +6,8 @@ $kernel->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-function run_sql($sql) {
+function run_sql($sql)
+{
     try {
         DB::statement($sql);
         echo "SUCCESS: " . substr($sql, 0, 50) . "...\n";
@@ -43,7 +44,7 @@ run_sql("CREATE TABLE IF NOT EXISTS seller_profiles (
 )");
 
 // 3. Gamification Records
-run_sql("CREATE TABLE IF NOT EXISTS gamification_records (
+run_sql("CREATE TABLE IF NOT EXISTS gamification_stats (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES \"User\"(id) ON DELETE CASCADE,
     points INTEGER DEFAULT 0,

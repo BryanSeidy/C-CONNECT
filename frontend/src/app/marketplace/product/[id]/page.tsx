@@ -82,7 +82,7 @@ export default function ProductDetailPage() {
         if (!active) return;
         setReviews(res?.data || []);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => {
       active = false;
@@ -183,15 +183,15 @@ export default function ProductDetailPage() {
       <Link href="/marketplace" style={{ display: 'inline-block', marginBottom: '1.5rem', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>
         Retour au marketplace
       </Link>
-      
+
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.2fr) 1fr', gap: '3rem', alignItems: 'start' }}>
-        
+
         {/* Left Side: Image placeholder and details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ 
-            width: '100%', 
-            aspectRatio: '1/1', 
-            backgroundColor: '#E2E8F0', 
+          <div style={{
+            width: '100%',
+            aspectRatio: '1/1',
+            backgroundColor: '#E2E8F0',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             alignItems: 'center',
@@ -202,10 +202,10 @@ export default function ProductDetailPage() {
           }}>
             {product.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img 
-                src={product.imageUrl} 
-                alt={product.name} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
               <div style={{
@@ -224,7 +224,7 @@ export default function ProductDetailPage() {
               </div>
             )}
           </div>
-          
+
           <div>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Description</h2>
             <p style={{ color: 'var(--text-main)', lineHeight: '1.8' }}>
@@ -270,12 +270,12 @@ export default function ProductDetailPage() {
                   Laisser une évaluation
                 </h3>
                 {reviewError && <p style={{ color: 'var(--error)', fontSize: '0.875rem' }}>{reviewError}</p>}
-                
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div>
                     <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>Note</label>
-                    <select 
-                      value={reviewRating} 
+                    <select
+                      value={reviewRating}
                       onChange={(e) => setReviewRating(Number(e.target.value))}
                       style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none' }}
                     >
@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
 
                   <div>
                     <label htmlFor="comment" style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>Commentaire</label>
-                    <textarea 
+                    <textarea
                       id="comment"
                       rows={3}
                       value={reviewComment}
@@ -299,9 +299,9 @@ export default function ProductDetailPage() {
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    variant="primary" 
+                  <Button
+                    type="submit"
+                    variant="primary"
                     isLoading={isSubmittingReview}
                   >
                     Soumettre l'avis
@@ -331,16 +331,16 @@ export default function ProductDetailPage() {
                 <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-main)', lineHeight: 1.1 }}>{product.name}</h1>
               </div>
               <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
-                <span>Vendu par</span> 
+                <span>Vendu par</span>
                 <span style={{ fontWeight: 600, color: 'var(--primary-light)' }}>{vendor}</span>
                 {isVerified && (
-                  <span 
-                    title="Producteur vérifié par C-Connect" 
-                    style={{ 
-                      backgroundColor: 'rgba(56, 151, 240, 0.1)', 
-                      color: '#3897f0', 
-                      fontSize: '0.75rem', 
-                      padding: '2px 6px', 
+                  <span
+                    title="Producteur vérifié par C-Connect"
+                    style={{
+                      backgroundColor: 'rgba(56, 151, 240, 0.1)',
+                      color: '#3897f0',
+                      fontSize: '0.75rem',
+                      padding: '2px 6px',
                       borderRadius: '4px',
                       fontWeight: 600,
                       display: 'inline-flex',
@@ -362,15 +362,15 @@ export default function ProductDetailPage() {
 
               {/* Moyenne Avis */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '0.25rem' }}>
-                 {avgRating ? (
-                   <>
-                     <Star size={15} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
-                     <strong>{avgRating}</strong>
-                     <span style={{ color: 'var(--text-muted)' }}>({reviews.length} avis)</span>
-                   </>
-                 ) : (
-                   <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun avis client</span>
-                 )}
+                {avgRating ? (
+                  <>
+                    <Star size={15} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
+                    <strong>{avgRating}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>({reviews.length} avis)</span>
+                  </>
+                ) : (
+                  <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun avis client</span>
+                )}
               </div>
             </div>
 
@@ -379,10 +379,10 @@ export default function ProductDetailPage() {
             </div>
 
             <div style={{ background: '#F5F7FA', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
-               <p style={{ margin: 0, fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Stock disponible:</span>
-                  <span style={{ color: 'var(--success)' }}>{product.stock} Unités</span>
-               </p>
+              <p style={{ margin: 0, fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
+                <span>Stock disponible:</span>
+                <span style={{ color: 'var(--success)' }}>{product.stock} Unités</span>
+              </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -437,7 +437,7 @@ export default function ProductDetailPage() {
                 </Button>
               )}
             </div>
-            
+
             <p style={{ fontSize: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', margin: 0 }}>
               Paiement sécurisé via C-Connect Escrow
             </p>
@@ -481,7 +481,7 @@ export default function ProductDetailPage() {
               <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
                 🤝 Offre de Négociation / Devis
               </h3>
-              <button 
+              <button
                 onClick={() => setIsNegModalOpen(false)}
                 style={{
                   background: 'none',
@@ -510,7 +510,7 @@ export default function ProductDetailPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label htmlFor="neg-quantity" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.9rem' }}>Quantité</label>
-                  <input 
+                  <input
                     id="neg-quantity"
                     type="number"
                     min={1}
@@ -524,7 +524,7 @@ export default function ProductDetailPage() {
 
                 <div>
                   <label htmlFor="neg-price" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.9rem' }}>Prix proposé (FCFA/U)</label>
-                  <input 
+                  <input
                     id="neg-price"
                     type="number"
                     min={1}
@@ -537,7 +537,7 @@ export default function ProductDetailPage() {
 
               <div>
                 <label htmlFor="neg-message" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.9rem' }}>Message pour le vendeur</label>
-                <textarea 
+                <textarea
                   id="neg-message"
                   rows={3}
                   value={negMessage}
@@ -563,15 +563,15 @@ export default function ProductDetailPage() {
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsNegModalOpen(false)}
                   disabled={isSubmittingNeg}
                 >
                   Annuler
                 </Button>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={handleNegSubmit}
                   isLoading={isSubmittingNeg}
                 >

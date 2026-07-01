@@ -45,6 +45,7 @@ next-env.d.ts
 /scripts
 docs/DESCRIPTION DU PROJET1.md
 b2b-repositioning.bundle
+fix-auth-cors-session.patch
 AGENTS.md
 CLAUDE.md
 ARCHITECTURE.md

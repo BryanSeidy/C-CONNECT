@@ -7,7 +7,8 @@ $kernel->bootstrap();
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-function log_msg($msg) {
+function log_msg($msg)
+{
     echo "[" . date('H:i:s') . "] $msg\n";
 }
 
@@ -57,9 +58,9 @@ try {
     }
 
     // 4. Gamification Records
-    if (!Schema::hasTable('gamification_records')) {
-        log_msg("Creating gamification_records table...");
-        Schema::create('gamification_records', function (Blueprint $table) {
+    if (!Schema::hasTable('gamification_stats')) {
+        log_msg("Creating gamification_stats table...");
+        Schema::create('gamification_stats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('points')->default(0);
@@ -73,7 +74,6 @@ try {
     }
 
     log_msg("Alignment completed successfully.");
-
 } catch (\Exception $e) {
     log_msg("ERROR during alignment: " . $e->getMessage());
 }

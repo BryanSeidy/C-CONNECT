@@ -50,7 +50,7 @@ function normalizeProfile(response: ProfileResponse): User | null {
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser]         = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await authService.login({ email, password });
       const authToken = response.data.token ?? response.data.access_token;
-      const authUser  = response.data.user;
+      const authUser = response.data.user;
 
       if (!authUser) {
         throw new Error('Réponse de connexion invalide — données utilisateur manquantes.');
@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setMemoryToken(null);
       setUser(null);
       sessionService.clear();
-      router.push('/login');
+      router.push('/auth/login');
     }
   }, [router]);
 

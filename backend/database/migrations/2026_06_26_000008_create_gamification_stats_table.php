@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('gamification_records', function (Blueprint $table) {
+        Schema::create('gamification_stats', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->uuid('user_id')->unique();
@@ -43,11 +43,11 @@ return new class extends Migration
             $table->index('points');
         });
 
-        DB::statement("COMMENT ON TABLE gamification_records IS 'Scores, badges et niveaux - Système de gamification C-Connect'");
+        DB::statement("COMMENT ON TABLE gamification_stats IS 'Scores, badges et niveaux - Système de gamification C-Connect'");
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('gamification_records');
+        Schema::dropIfExists('gamification_stats');
     }
 };
