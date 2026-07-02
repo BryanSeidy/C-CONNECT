@@ -67,7 +67,7 @@ export function normalizeProducts(raws: RawProduct[]): Product[] {
 
 export const productService = {
   getProducts: async (params?: ProductFilters): Promise<ApiEnvelope<PaginatedResult<Product>>> => {
-    const res = await apiClient.get<unknown, ApiEnvelope<PaginatedResult<RawProduct>>>('/products', { params });
+    const res = await apiClient.get<unknown, ApiEnvelope<PaginatedResult<RawProduct>>>('/catalogue/products', { params });
     return {
       ...res,
       data: {
@@ -78,7 +78,7 @@ export const productService = {
   },
 
   getProductById: async (id: number | string): Promise<ApiEnvelope<Product>> => {
-    const res = await apiClient.get<unknown, ApiEnvelope<RawProduct>>(`/products/${id}`);
+    const res = await apiClient.get<unknown, ApiEnvelope<RawProduct>>(`/catalogue/products/${id}`);
     return {
       ...res,
       data: normalizeProduct(res.data),
