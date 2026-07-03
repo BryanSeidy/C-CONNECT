@@ -36,9 +36,13 @@ return [
         'Authorization',
         'X-Requested-With',
         'X-XSRF-TOKEN',
+        'X-Database-Mode',
+        'x-database-mode',
     ],
 
-    'exposed_headers' => [],
+    'exposed_headers' => [
+        'X-Database-Mode'
+    ],
 
     'max_age' => 0,
 

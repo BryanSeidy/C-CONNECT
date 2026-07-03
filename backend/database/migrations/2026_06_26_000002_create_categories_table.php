@@ -10,7 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
             $table->string('nom');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
@@ -22,7 +24,7 @@ return new class extends Migration
             $table->index('is_active');
         });
 
-        DB::statement("COMMENT ON TABLE categories IS 'Catégories de produits Made in Cameroon'");
+        // DB::statement("COMMENT ON TABLE categories IS 'Catégories de produits Made in Cameroon'");
     }
 
     public function down(): void

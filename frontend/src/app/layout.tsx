@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Navbar } from '@/components/Navbar';
 import { Providers } from './providers';
+import OfflineBanner from '@/components/OfflineBanner';
 
 const SITE_URL = 'https://c-connect.com';
 const DESCRIPTION = 'Marketplace B2B nationale pour le Cameroun — producteurs, PME, coopératives et acheteurs professionnels connectés en confiance.';
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <Navbar />
+          <OfflineBanner />
           <main>{children}</main>
         </Providers>
       </body>

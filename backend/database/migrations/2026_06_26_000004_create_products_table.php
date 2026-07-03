@@ -10,17 +10,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('seller_id');
-            $table->foreign('seller_id')
-                ->references('id')
-                ->on('seller_profiles')
-                ->onDelete('cascade');
-            $table->uuid('category_id')->nullable();
-            $table->foreign('category_id')
-                ->references('id')
-                ->on('categories')
-                ->onDelete('set null');
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
+
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
+                ->cascadeOnDelete();
+
+            $table->foreignId('category_id')
+                ->constrained('categories')
+                ->cascadeOnDelete();
+
             $table->string('nom');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
@@ -39,10 +40,10 @@ return new class extends Migration
             $table->index('seller_id');
             $table->index(['statut', 'quality_rating']);
             $table->index(['statut', 'sales_count']);
-            $table->fullText(['nom', 'description']);
+            // $table->fullText(['nom', 'description']);
         });
-        
-        DB::statement("COMMENT ON TABLE products IS 'Catalogue des produits Made in Cameroon - C-Connect'");
+
+        // DB::statement("COMMENT ON TABLE products IS 'Catalogue des produits Made in Cameroon - C-Connect'");
     }
 
     public function down(): void

@@ -10,24 +10,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('reviews', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('buyer_id');
-            $table->foreign('buyer_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade');
+            $table->foreignId('buyer_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
 
-            $table->uuid('product_id');
-            $table->foreign('product_id')
-                ->references('id')
-                ->on('products')
-                ->onDelete('cascade');
+            $table->foreignId('product_id')
+                ->constrained('products')
+                ->cascadeOnDelete();
 
-            $table->uuid('order_id')->nullable();
-            $table->foreign('order_id')
-                ->references('id')
-                ->on('orders')
+            $table->foreignId('order_id')
+                ->constrained('orders')
                 ->onDelete('set null');
 
             $table->integer('note'); // 1 à 5
@@ -41,8 +37,8 @@ return new class extends Migration
             $table->index('note');
         });
 
-        DB::statement("COMMENT ON TABLE reviews IS 'Avis et notations des produits - C-Connect'");
-        DB::statement("ALTER TABLE reviews ADD CONSTRAINT check_note_range CHECK (note >= 1 AND note <= 5)");
+        // DB::statement("COMMENT ON TABLE reviews IS 'Avis et notations des produits - C-Connect'");
+        // DB::statement("ALTER TABLE reviews ADD CONSTRAINT check_note_range CHECK (note >= 1 AND note <= 5)");
     }
 
     public function down(): void

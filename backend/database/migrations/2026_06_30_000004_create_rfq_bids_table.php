@@ -12,13 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('rfq_bids', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('rfq_id');
-            $table->foreign('rfq_id')->references('id')->on('rfqs')->onDelete('cascade');
+            $table->foreignId('rfq_id')
+                ->constrained('rfqs')
+                ->cascadeOnDelete();
 
-            $table->uuid('seller_id');
-            $table->foreign('seller_id')->references('id')->on('seller_profiles')->onDelete('cascade');
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
+                ->cascadeOnDelete();
 
             // Offre du fournisseur
             $table->decimal('prix_unitaire_propose', 12, 2)->comment('Prix par unité en XAF');
@@ -40,7 +44,7 @@ return new class extends Migration
             $table->index('statut');
         });
 
-        DB::statement("COMMENT ON TABLE rfq_bids IS 'Offres des fournisseurs sur les RFQ — C-Connect'");
+        // DB::statement("COMMENT ON TABLE rfq_bids IS 'Offres des fournisseurs sur les RFQ — C-Connect'");
     }
 
     public function down(): void

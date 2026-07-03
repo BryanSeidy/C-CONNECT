@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('companies', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
+                ->cascadeOnDelete();
             // Identité légale
             $table->string('nom');
             $table->string('slug')->unique();
@@ -79,7 +83,7 @@ return new class extends Migration
             $table->index('trust_score');
         });
 
-        DB::statement("COMMENT ON TABLE companies IS 'Entités commerciales B2B — C-Connect'");
+        // DB::statement("COMMENT ON TABLE companies IS 'Entités commerciales B2B — C-Connect'");
     }
 
     public function down(): void

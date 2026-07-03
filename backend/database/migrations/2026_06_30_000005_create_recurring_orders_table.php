@@ -12,16 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recurring_orders', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('buyer_id');
-            $table->foreign('buyer_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('buyer_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
 
-            $table->uuid('seller_id');
-            $table->foreign('seller_id')->references('id')->on('seller_profiles')->onDelete('cascade');
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
+                ->cascadeOnDelete();
 
-            $table->uuid('product_id');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+            $table->foreignId('product_id')
+                ->constrained('products')
+                ->cascadeOnDelete();
 
             $table->decimal('quantite', 12, 2);
             $table->string('unite')->default('kg');
@@ -57,7 +62,7 @@ return new class extends Migration
             $table->index('prochaine_livraison');
         });
 
-        DB::statement("COMMENT ON TABLE recurring_orders IS 'Commandes récurrentes B2B planifiées — C-Connect'");
+        // DB::statement("COMMENT ON TABLE recurring_orders IS 'Commandes récurrentes B2B planifiées — C-Connect'");
     }
 
     public function down(): void

@@ -10,20 +10,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
             // Acheteur
-            $table->uuid('buyer_id');
-            $table->foreign('buyer_id')
-                ->references('id')
-                ->on('users')
+            $table->foreignId('buyer_id')
+                ->constrained('users')
                 ->onDelete('restrict');
 
             // Vendeur (pour le calcul de commission et les stats vendeur)
-            $table->uuid('seller_id');
-            $table->foreign('seller_id')
-                ->references('id')
-                ->on('seller_profiles')
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
                 ->onDelete('restrict');
 
             // Informations financières
@@ -76,7 +74,7 @@ return new class extends Migration
             $table->index('paid_at');
         });
 
-        DB::statement("COMMENT ON TABLE orders IS 'Commandes avec workflow Escrow - C-Connect'");
+        // DB::statement("COMMENT ON TABLE orders IS 'Commandes avec workflow Escrow - C-Connect'");
     }
 
     public function down(): void

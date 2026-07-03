@@ -10,20 +10,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
             // Lien vers la commande
-            $table->uuid('order_id');
-            $table->foreign('order_id')
-                ->references('id')
-                ->on('orders')
-                ->onDelete('cascade');
+            $table->foreignId('order_id')
+            ->constrained('orders')
+                ->cascadeOnDelete();
 
             // Lien vers le produit
-            $table->uuid('product_id');
-            $table->foreign('product_id')
-                ->references('id')
-                ->on('products')
+            $table->foreignId('product_id')
+                ->constrained('products')
                 ->onDelete('restrict'); // On ne supprime pas un produit déjà commandé
 
             // Détails de la ligne de commande
@@ -32,10 +30,8 @@ return new class extends Migration
             $table->decimal('sous_total', 12, 2);    // quantite * prix_unitaire
 
             // Informations du vendeur au moment de la commande
-            $table->uuid('seller_id');
-            $table->foreign('seller_id')
-                ->references('id')
-                ->on('seller_profiles')
+            $table->foreignId('seller_id')
+                ->constrained('seller_profiles')
                 ->onDelete('restrict');
 
             $table->timestamps();
@@ -47,7 +43,7 @@ return new class extends Migration
             $table->unique(['order_id', 'product_id']); // Un produit ne peut apparaître qu'une fois par commande
         });
 
-        DB::statement("COMMENT ON TABLE order_items IS 'Articles individuels de chaque commande - C-Connect'");
+        // DB::statement("COMMENT ON TABLE order_items IS 'Articles individuels de chaque commande - C-Connect'");
     }
 
     public function down(): void

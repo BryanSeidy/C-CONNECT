@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\EnsureUserIsSeller;
+use App\Http\Middleware\DatabaseConnectionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,10 +22,14 @@ return Application::configure(basePath: dirname(__DIR__))
          *   EncryptCookies → AddQueuedCookiesToResponse → StartSession
          *   → AuthenticateSession → ShareErrorsFromSession → VerifyCsrfToken
          *
-         * IMPORTANT : il doit être appelé AVANT tout alias, sans appel
+         * IMPORTANT : Appelé AVANT tout alias, sans appel
          * concurrent à appendToGroup('api', ...) pour éviter les doublons.
          */
         $middleware->statefulApi();
+
+        $middleware->api(prepend: [
+            DatabaseConnectionMiddleware::class,
+        ]);
 
         /*
          * Autoriser les requêtes OPTIONS (preflight CORS) sans CSRF check.

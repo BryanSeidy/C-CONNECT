@@ -10,12 +10,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('seller_profiles', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('user_id')->unique();
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade');
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
+
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
             $table->string('business_name');
             $table->string('slug')->unique();
@@ -54,7 +53,7 @@ return new class extends Migration
             $table->index('total_sales');
         });
 
-        DB::statement("COMMENT ON TABLE seller_profiles IS 'Profils vendeurs et producteurs de C-Connect'");
+        // DB::statement("COMMENT ON TABLE seller_profiles IS 'Profils vendeurs et producteurs de C-Connect'");
     }
 
     public function down(): void

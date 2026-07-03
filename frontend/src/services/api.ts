@@ -151,3 +151,25 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+apiClient.interceptors.response.use(
+  (response) => {
+    const dbMode = response.headers['x-database-mode'];
+
+    if (dbMode === 'offline') {
+      // Déclencher un événement global ou mettre à jour un store (Zustand/Redux)
+      window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
+    } else if (dbMode === 'online') {
+      window.dispatchEvent(new CustomEvent('database-offline', { detail: false }));
+    }
+
+    return response;
+  },
+  (error) => {
+    // En cas d'erreur réseau totale (Laravel lui-même est inaccessible)
+    if (!error.response) {
+      window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
+    }
+    return Promise.reject(error);
+  }
+);

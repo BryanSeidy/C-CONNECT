@@ -12,13 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('disputes', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('order_id');
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->foreignId('order_id')
+            ->constrained('orders')
+            ->cascadeOnDelete();
 
-            $table->uuid('initiateur_id')->comment('Utilisateur ayant ouvert le litige');
-            $table->foreign('initiateur_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('initiateur_id')
+            ->constrained('users')
+            ->cascadeOnDelete();
 
             $table->enum('raison', [
                 'marchandise_non_recue',
@@ -51,7 +55,7 @@ return new class extends Migration
             $table->index('statut');
         });
 
-        DB::statement("COMMENT ON TABLE disputes IS 'Litiges clients et résolution d''escrow — C-Connect'");
+        // DB::statement("COMMENT ON TABLE disputes IS 'Litiges clients et résolution d''escrow — C-Connect'");
     }
 
     public function down(): void

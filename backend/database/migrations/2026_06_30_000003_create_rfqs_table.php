@@ -12,13 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('rfqs', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('buyer_id');
-            $table->foreign('buyer_id')->references('id')->on('users')->onDelete('cascade');
+            // $table->uuid('buyer_id');
+            $table->foreignId('buyer_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
 
-            $table->uuid('category_id')->nullable();
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
+            // $table->uuid('category_id')->nullable();
+            $table->foreignId('category_id')
+                ->constrained('categories')
+                ->onDelete('set null');
 
             // Détails de la demande
             $table->string('titre');
@@ -51,7 +57,7 @@ return new class extends Migration
             $table->index('expire_le');
         });
 
-        DB::statement("COMMENT ON TABLE rfqs IS 'Demandes de Devis B2B (Request For Quotation) — C-Connect'");
+        // DB::statement("COMMENT ON TABLE rfqs IS 'Demandes de Devis B2B (Request For Quotation) — C-Connect'");
     }
 
     public function down(): void

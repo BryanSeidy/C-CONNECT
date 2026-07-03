@@ -10,13 +10,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('gamification_stats', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
+            $table->string('sync_ref')->unique();
+            $table->boolean('synced')->default(true);
 
-            $table->uuid('user_id')->unique();
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade');
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
 
             // Points et niveau
             $table->integer('points')->default(0);
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->index('points');
         });
 
-        DB::statement("COMMENT ON TABLE gamification_stats IS 'Scores, badges et niveaux - Système de gamification C-Connect'");
+        // DB::statement("COMMENT ON TABLE gamification_stats IS 'Scores, badges et niveaux - Système de gamification C-Connect'");
     }
 
     public function down(): void
