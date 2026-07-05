@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recurring_orders', function (Blueprint $table): void {
-            $table->id();
+            $table->bigIncrements('id');
             $table->string('sync_ref')->unique();
             $table->boolean('synced')->default(true);
 

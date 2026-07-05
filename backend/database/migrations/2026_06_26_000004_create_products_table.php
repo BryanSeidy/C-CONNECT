@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
-            $table->id();
+            $table->integerIncrements('id');
             $table->string('sync_ref')->unique();
             $table->boolean('synced')->default(true);
 
@@ -40,7 +40,9 @@ return new class extends Migration
             $table->index('seller_id');
             $table->index(['statut', 'quality_rating']);
             $table->index(['statut', 'sales_count']);
-            // $table->fullText(['nom', 'description']);
+            if(DB::getDriverName() !== 'sqlite') {
+                $table->fullText(['nom', 'description']);
+            }
         });
 
         // DB::statement("COMMENT ON TABLE products IS 'Catalogue des produits Made in Cameroon - C-Connect'");

@@ -39,17 +39,15 @@
 - [x] Added a global `prefers-reduced-motion` rule (`globals.css`) — none existed anywhere in the app despite the brand guidelines requiring accessible motion.
 - [x] Removed six stray `.rej` patch-reject files left in the repo from earlier failed patch applications (dead clutter, not wired into the app).
 
-### Open question for design sign-off
+### Design decision — resolved (2026-07-04)
 
-The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `#F4EF47`) do **not** match `Brand_Identity_Guidelines.md`, which specifies a green/gold/ivory palette with no blue and no yellow. I did not recolor the mark (guidelines explicitly forbid arbitrary recoloring), and I did not spread the new colors into UI chrome — buttons, backgrounds, and product surfaces stay on the existing dark-green/gold system, with the multicolor mark used only as the icon itself (the same pattern Slack/Firefox/Asana use: a colorful icon on an otherwise neutral product). This needs an explicit decision: update `Brand_Identity_Guidelines.md` to formally adopt blue/yellow as part of the palette, or treat this PNG as a placeholder pending a palette-conformant redraw.
+The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `#F4EF47`) did not match `Brand_Identity_Guidelines.md`. Resolved by recoloring the mark rather than amending the guidelines: the geometry is untouched (same four quadrant arcs + wedge, same shading/bevel), only hue was remapped via HSV so the original anti-aliasing and depth are preserved. Final: top-left/bottom-left arcs Secondary Green `#406A5A`, top-right/bottom-right arcs Primary Green `#13352E`, wedge and wordmark use Gold `#D9A441` and Primary Green respectively — the wedge recoloring actually restores the guidelines' own "golden connection node" spec, which the original PNG hadn't matched. No blue or yellow remain anywhere in the mark. Documented in `DESIGN_SYSTEM.md` → "Logo & Brand Mark System".
 
 ## Priority 1 — Remaining brand touchpoints (lower urgency, no user-facing UI exists yet)
 
 - [ ] Loading screen / route-transition state — no dedicated loading UI exists yet to brand (Next.js default only).
 - [ ] Empty states — few exist yet; brand the icon/illustration once each module's empty state is built.
 - [ ] Transactional email templates and PDF export headers (Purchase Order / Invoice / Delivery Note) — currently plain browser-printable HTML with no visual branding pass.
-
-
 
 - [ ] **Critical:** `services/auth.ts` calls `/auth/login`, `/auth/register`, `/auth/profile` — these routes don't exist in `routes/api.php` (real routes are `/login`, `/register`, `/me`). Login/register/profile-update are likely broken end-to-end. Needs a full audit of `AuthController` + `useAuth.tsx` + `auth.ts` together, not a quick patch — flagging rather than guessing at the wiring blind.
 - [ ] Run `php artisan migrate` against a real Postgres instance and verify the B2B migrations (companies, rfqs, rfq_bids, recurring_orders, disputes, inventory, order lifecycle enum rename) apply cleanly — could not run migrations in the sandbox (no DB, no Composer/Packagist network access).

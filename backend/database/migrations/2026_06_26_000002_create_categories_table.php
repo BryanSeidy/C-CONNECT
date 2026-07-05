@@ -10,9 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            $table->integerIncrements('id');
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
             $table->string('nom');
             $table->string('slug')->unique();
             $table->text('description')->nullable();

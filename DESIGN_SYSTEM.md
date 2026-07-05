@@ -235,6 +235,34 @@ Icons must remain visually consistent.
 
 ---
 
+# LOGO & BRAND MARK SYSTEM
+
+The mark is a broken circular "C" in four quadrant arcs plus one small wedge accent — this geometry is fixed and must never be redrawn or reinterpreted.
+
+Color assignment (finalized, resolved from the original delivered PNG which used off-palette blue/yellow):
+
+Top-left and bottom-left arcs — Secondary Green `#406A5A`
+
+Top-right and bottom-right arcs — Primary Green `#13352E`
+
+Small wedge — Gold `#D9A441`, the mark's only non-green accent
+
+Wordmark "C-CONNECT" — Primary Green `#13352E`
+
+This keeps the palette to exactly what `Brand_Identity_Guidelines.md` defines: two greens for identity and structure, one gold accent used exactly once. No blue, no yellow, anywhere in the product.
+
+Approved variants, generated from a single master and never redrawn by hand:
+
+`icon-color` — full two-tone-green + gold mark, for use on white/ivory backgrounds (navbar, auth pages, marketing)
+
+`icon-white` — solid white silhouette, for dark-green backgrounds (sidebar, footer, OG image)
+
+`icon-dark` — solid Primary Green silhouette, for favicon at very small sizes and monochrome contexts
+
+Never place the color mark on a background darker than Warm Ivory, and never place the white silhouette on a background lighter than Secondary Green — contrast must stay unambiguous at a glance.
+
+---
+
 # ABSOLUTE NO EMOJI POLICY
 
 Emojis are strictly forbidden.
@@ -919,7 +947,7 @@ Every pixel must have a purpose.
 
 Every interaction must create value.
 
-Every screen must move the user closer to success.
+Every screen must move the user closer to success
 ---
 
 # AUTHENTICATION UX STANDARD

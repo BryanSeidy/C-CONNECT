@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('seller_profiles', function (Blueprint $table) {
-            $table->id();
+            $table->integerIncrements('id');
             $table->string('sync_ref')->unique();
             $table->boolean('synced')->default(true);
 

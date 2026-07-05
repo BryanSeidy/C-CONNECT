@@ -319,6 +319,8 @@ The icon represents:
 - Circular economy
 - Cameroon
 
+**Note (2026-07-04):** the first delivered logo PNG rendered the four quadrant arcs in mint green/blue and the connection node in yellow — none of which appear in this document's palette. The asset has been corrected: the arcs now alternate Primary Green `#13352E` and Secondary Green `#406A5A`, and the connection node is Gold `#D9A441` as originally specified here. See `DESIGN_SYSTEM.md` → "Logo & Brand Mark System" for the finalized variant list.
+
 ---
 
 ## Logo Variations
