@@ -1,14 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Footer } from '@/components/Footer';
-import { 
-  MdSecurity, 
-  MdGpsFixed, 
-  MdPeople, 
-  MdFlashOn, 
-  MdWorkspacePremium, 
-  MdPublic 
-} from 'react-icons/md';
+import { ShieldCheck, Crosshair, Users, Zap, BadgeCheck, Globe2 } from 'lucide-react';
 
 export default function AboutPage() {
   return (
@@ -86,7 +79,7 @@ export default function AboutPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
               <div style={{ padding: '2.5rem', background: 'white', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                  <MdGpsFixed size={24} style={{ color: 'var(--secondary-color)' }} />
+                  <Crosshair size={24} style={{ color: 'var(--secondary-color)' }} />
                 </div>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Notre Mission</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
@@ -95,7 +88,7 @@ export default function AboutPage() {
               </div>
               <div style={{ padding: '2.5rem', background: 'white', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(10,46,54,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                  <MdPublic size={24} style={{ color: 'var(--primary-color)' }} />
+                  <Globe2 size={24} style={{ color: 'var(--primary-color)' }} />
                 </div>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Notre Vision</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
@@ -109,10 +102,10 @@ export default function AboutPage() {
               <h2 style={{ fontSize: '2rem', color: 'var(--primary-color)', marginBottom: '2.5rem', textAlign: 'center' }}>Nos Valeurs Fondamentales</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                 {[
-                  { icon: <MdSecurity size={24} />, title: 'Confiance', desc: 'Sécurité garantie via Escrow' },
-                  { icon: <MdFlashOn size={24} />, title: 'Agilité', desc: 'Transactions rapides et fluides' },
-                  { icon: <MdPeople size={24} />, title: 'Impact', desc: 'Soutien aux producteurs locaux' },
-                  { icon: <MdWorkspacePremium size={24} />, title: 'Excellence', desc: 'Service client et support technique' },
+                  { icon: <ShieldCheck size={24} />, title: 'Confiance', desc: 'Sécurité garantie via Escrow' },
+                  { icon: <Zap size={24} />, title: 'Agilité', desc: 'Transactions rapides et fluides' },
+                  { icon: <Users size={24} />, title: 'Impact', desc: 'Soutien aux producteurs locaux' },
+                  { icon: <BadgeCheck size={24} />, title: 'Excellence', desc: 'Service client et support technique' },
                 ].map((v, i) => (
                   <div key={i} style={{ textAlign: 'center', padding: '1.5rem' }}>
                     <div style={{ fontSize: '1.5rem', color: 'var(--secondary-color)', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>{v.icon}</div>
@@ -124,7 +117,7 @@ export default function AboutPage() {
             </div>
 
             <p style={{ fontStyle: 'italic', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
-              Coded with ❤️ by the C-CONNECT team.
+              Conçu et développé par l’équipe C-CONNECT.
             </p>
           </CardContent>
         </Card>

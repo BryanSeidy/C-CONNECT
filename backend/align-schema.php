@@ -15,9 +15,9 @@ try {
     log_msg("Starting Schema Alignment...");
 
     // 1. Align User Table
-    if (!Schema::hasColumn('User', 'telephone')) {
+    if (!Schema::hasColumn('users', 'telephone')) {
         log_msg("Adding columns to User table...");
-        Schema::table('User', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->string('telephone')->nullable();
             $table->string('nom')->nullable();
             $table->string('prenom')->nullable();
@@ -44,7 +44,7 @@ try {
         log_msg("Creating seller_profiles table...");
         Schema::create('seller_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('User')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('business_name');
             $table->text('biographie')->nullable();
             $table->string('region')->nullable();
@@ -61,7 +61,7 @@ try {
         log_msg("Creating gamification_records table...");
         Schema::create('gamification_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('User')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('points')->default(0);
             $table->integer('total_sales')->default(0);
             $table->decimal('quality_rating', 3, 2)->default(0.00);

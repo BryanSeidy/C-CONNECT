@@ -6,12 +6,17 @@ export const negotiationService = {
   },
 
   createNegotiation: async (negotiationData: {
-    productId: number;
+    productId: number | string;
     quantity: number;
     proposedPrice: number;
     message?: string;
   }) => {
-    return apiClient.post('/negotiations', negotiationData);
+    return apiClient.post('/negotiations', {
+      product_id: negotiationData.productId,
+      quantity: negotiationData.quantity,
+      proposed_price: negotiationData.proposedPrice,
+      message: negotiationData.message
+    });
   },
 
   updateNegotiationStatus: async (

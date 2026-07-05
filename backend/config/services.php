@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'cconnect_webhooks' => [
+        'secret' => env('CCONNECT_WEBHOOK_SECRET', 'local-cconnect-webhook-secret'),
+    ],
+
 ];

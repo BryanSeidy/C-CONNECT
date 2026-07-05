@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import styles from './ProductCard.module.css';
 import { getRegionLabel } from '@/lib/regions';
+import { MapPin, ShieldCheck, Star } from 'lucide-react';
 
 export const ProductCard = ({ product }: { product: Product }) => {
   const ratings = product.reviews?.map((r) => r.rating) || [];
@@ -72,7 +73,7 @@ export const ProductCard = ({ product }: { product: Product }) => {
                 fontSize: '0.85rem'
               }}
             >
-              🛡️
+              <ShieldCheck size={14} aria-hidden="true" />
             </span>
           )}
         </div>
@@ -80,14 +81,14 @@ export const ProductCard = ({ product }: { product: Product }) => {
         <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
            <span>{product.category}</span>
            <span style={{ opacity: 0.4 }}>·</span>
-           <span>📍 {getRegionLabel(product.country)}</span>
+           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={13} aria-hidden="true" /> {getRegionLabel(product.country)}</span>
         </div>
 
         {/* Moyenne des Avis */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', marginTop: '0.25rem' }}>
           {avgRating ? (
             <>
-              <span style={{ color: '#F59E0B' }}>★</span>
+              <Star size={14} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
               <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{avgRating}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({ratings.length} avis)</span>
             </>
@@ -96,8 +97,9 @@ export const ProductCard = ({ product }: { product: Product }) => {
           )}
         </div>
 
-        <div style={{ margin: '0.25rem 0', fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-main)' }}>
-          {product.price.toLocaleString()} FCFA
+        <div style={{ margin: '0.5rem 0 0.25rem 0', fontWeight: 800, fontSize: '1.75rem', color: 'var(--primary-color)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+          <span>{product.price.toLocaleString('fr-FR')}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>FCFA</span>
         </div>
 
         <Link 

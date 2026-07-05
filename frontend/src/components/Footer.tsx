@@ -12,7 +12,7 @@ export const Footer = () => {
               La plateforme B2B de confiance propulsant les échanges agricoles et industriels entre les 10 régions du Cameroun.
             </p>
           </div>
-          
+
           <div className={styles.linksCol}>
             <h4 className={styles.linksTitle}>Navigation</h4>
             <ul className={styles.list}>
@@ -31,8 +31,9 @@ export const Footer = () => {
             </ul>
           </div>
         </div>
-        
+
         <div className={styles.bottom}>
+          <p className={styles.trustLine}>Paiements sécurisés en séquestre · Entreprises vérifiées · Fabriqué au Cameroun</p>
           <p>&copy; {new Date().getFullYear()} C-Connect. Projet de Licence Technologique B2B.</p>
         </div>
       </div>

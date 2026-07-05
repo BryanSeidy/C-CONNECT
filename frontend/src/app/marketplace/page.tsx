@@ -10,6 +10,7 @@ import { PaginationMeta, Product } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from './Marketplace.module.css';
 import { REGION_OPTIONS } from '@/lib/regions';
+import { AlertTriangle, PackageSearch } from 'lucide-react';
 
 const CATEGORIES = ['Agroalimentaire', 'Transformation', 'Élevage', 'Pêche', 'Textile', 'Industrie'];
 const DEFAULT_META: PaginationMeta = { total: 0, page: 1, pageSize: 12, totalPages: 1 };
@@ -30,7 +31,7 @@ export default function MarketplacePage() {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await productService.getProducts({
+      const res = await productService.getProducts({
         country: country || undefined,
         category: category || undefined,
         q: debouncedSearch.trim() || undefined,
@@ -39,8 +40,8 @@ export default function MarketplacePage() {
       });
       setProducts(res?.data?.items || []);
       setMeta(res?.data?.meta || DEFAULT_META);
-    } catch (err: any) {
-      setError(err?.message || 'Impossible de charger les produits');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Impossible de charger les produits');
       setProducts([]);
       setMeta(DEFAULT_META);
     } finally {
@@ -124,7 +125,7 @@ export default function MarketplacePage() {
 
         {!loading && error && (
           <div className={styles.errorBox}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️</div>
+            <AlertTriangle size={32} color="#dc2626" aria-hidden="true" style={{ marginBottom: '1rem' }} />
             <p style={{ color: '#dc2626', marginBottom: '0.5rem' }}>{error}</p>
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               Vérifiez votre connexion ou réessayez dans quelques secondes.
@@ -137,7 +138,7 @@ export default function MarketplacePage() {
 
         {!loading && !error && products.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+            <PackageSearch size={44} aria-hidden="true" style={{ marginBottom: '1rem' }} />
             <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>Aucun produit trouvé</p>
             <p style={{ marginTop: '0.5rem' }}>Essayez de modifier vos filtres de recherche.</p>
           </div>

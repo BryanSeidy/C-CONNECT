@@ -7,7 +7,7 @@ $kernel->bootstrap();
 use Illuminate\Support\Facades\DB;
 
 try {
-    echo "Aligning 'User' table schema...\n";
+    echo "Aligning 'users' table schema...\n";
 
     // Add new columns first
     DB::statement("ALTER TABLE \"User\" ADD COLUMN IF NOT EXISTS prenom VARCHAR(255)");
@@ -24,7 +24,7 @@ try {
     // Actually, ALIGN-SCHEMA.PHP in previous turns might have partially run.
     
     // Check if 'nom' column exists, if not, rename 'fullName'
-    $columns = DB::select("SELECT column_name FROM information_schema.columns WHERE table_name = 'User' AND column_name = 'nom'");
+    $columns = DB::select("SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'nom'");
     if (empty($columns)) {
         DB::statement("ALTER TABLE \"User\" RENAME COLUMN \"fullName\" TO nom");
     }

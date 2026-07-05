@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { negotiationService } from '@/services/negotiations';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
+import { Handshake, MapPin, MessageSquare } from 'lucide-react';
 
 export default function DashboardNegotiations() {
   const { user } = useAuth();
@@ -111,7 +112,7 @@ export default function DashboardNegotiations() {
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Chargement...</div>
           ) : negotiations.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🤝</div>
+              <Handshake size={44} aria-hidden="true" style={{ marginBottom: '1rem' }} />
               <p style={{ margin: 0 }}>Aucune négociation ou demande de devis en cours.</p>
             </div>
           ) : (
@@ -146,7 +147,7 @@ export default function DashboardNegotiations() {
                         </TableCell>
                         <TableCell>
                           <div style={{ fontWeight: 500 }}>{otherParty?.companyName || otherParty?.fullName || '—'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📍 {getRegionLabel(otherParty?.country)}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12} aria-hidden="true" /> {getRegionLabel(otherParty?.country)}</div>
                         </TableCell>
                         <TableCell>{neg.quantity} unités</TableCell>
                         <TableCell>
@@ -232,7 +233,7 @@ export default function DashboardNegotiations() {
                       {neg.message && (
                         <TableRow style={{ backgroundColor: '#F8FAFC' }}>
                           <TableCell colSpan={8} style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 1.5rem' }}>
-                            💬 <strong>Message de {neg.buyerId === user?.id ? 'vous' : 'l\'acheteur'} :</strong> "{neg.message}"
+                            <MessageSquare size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} /> <strong>Message de {neg.buyerId === user?.id ? 'vous' : 'l\'acheteur'} :</strong> "{neg.message}"
                           </TableCell>
                         </TableRow>
                       )}
