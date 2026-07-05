@@ -1,0 +1,203 @@
+/* C-Connect — Dashboard Products */
+
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+/* ── Banners ── */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  background: var(--error-bg);
+  color: var(--error);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.alertBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  border: 1px solid rgba(180, 83, 9, 0.15);
+}
+
+/* ── Table ── */
+.tableWrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.thead {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr;
+  padding: 0.75rem 1.25rem;
+  background: var(--c-green-50);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.trow {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 0.8fr 0.8fr;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.12s;
+}
+
+.trow:last-child { border-bottom: none; }
+.trow:hover      { background: var(--c-green-50); }
+
+.cell {
+  font-size: 0.875rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+}
+
+.right { justify-content: flex-end; }
+
+.price {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+}
+
+/* ── Product cell ── */
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.productImg {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+}
+
+.productImgPlaceholder {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--c-green-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.productName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.productDesc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+/* ── Actions ── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.actionBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  background: var(--c-green-50);
+  color: var(--primary-color);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+}
+
+.actionBtn:hover { background: var(--c-green-100); }
+
+.deleteBtn { color: var(--text-muted); }
+.deleteBtn:hover { background: var(--error-bg); color: var(--error); border-color: rgba(192,57,43,0.2); }
+.deleteBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Empty state ── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.emptyState svg { opacity: 0.3; }
+.emptyState p { margin: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .kpiRow { grid-template-columns: repeat(2, 1fr); }
+  .thead, .trow { grid-template-columns: 2fr 1fr 1fr 1fr 0.8fr; }
+  .thead > span:nth-child(3),
+  .trow  > *:nth-child(3) { display: none; }
+}
+
+@media (max-width: 768px) {
+  .thead, .trow { grid-template-columns: 1fr 1fr 1fr; }
+  .thead > span:nth-child(2),
+  .thead > span:nth-child(5),
+  .trow  > *:nth-child(2),
+  .trow  > *:nth-child(5) { display: none; }
+}

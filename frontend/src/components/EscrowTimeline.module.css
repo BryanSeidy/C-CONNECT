@@ -1,93 +1,88 @@
-.timeline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  margin: 1.5rem 0;
-  gap: 0.5rem;
-}
+/* C-Connect — EscrowTimeline */
 
-.timeline > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  flex: 1;
-  min-width: 72px;
-}
-
-.icon {
+/* Horizontal compact track */
+.track {
+   display: flex;
+   align-items: center;
+  gap: 0;
+  width: 100%;
+  overflow: hidden;
+ }
+ 
+.step {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+ }
+ 
+.dot {
   width: 22px;
   height: 22px;
-  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-muted);
-}
-
-.label {
-  font-size: 0.75rem;
-  color: var(--text-main);
-  text-align: center;
-  line-height: 1.3;
-}
-
-.connector {
-  position: absolute;
-  top: 0.65rem;
-  left: 50%;
+  transition: all 0.2s;
+ }
+ 
+.stepLabel {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+ }
+ 
+/* ── Done ── */
+.done .dot {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+ }
+.done .stepLabel { color: var(--success); }
+ 
+/* ── Current ── */
+.current .dot {
+  background: var(--c-gold-100);
+  border-color: var(--c-gold-500);
+  color: var(--c-gold-500);
+  box-shadow: 0 0 0 3px rgba(217,164,65,0.18);
+ }
+.current .stepLabel {
+  color: #7A4E00;
+  font-weight: 700;
+ }
+ 
+/* ── Pending ── */
+.pending .dot { opacity: 0.45; }
+.pending .stepLabel { opacity: 0.45; }
+ 
+/* ── Connector line ── */
+.line {
+  flex: 1;
   height: 2px;
-  width: 100%;
   background: var(--border-color);
-  z-index: -1;
-}
-
-.completed .icon {
-  color: var(--success);
-}
-
-.completed .label {
-  color: var(--success);
-  font-weight: 600;
-}
-
-.completed .connector {
-  background: var(--success);
-  opacity: 0.4;
-}
-
-.current .icon {
-  color: var(--primary-color);
-}
-
-.current .label {
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.pending .icon {
-  color: var(--text-muted);
-  opacity: 0.5;
-}
-
-.pending .label {
-  color: var(--text-muted);
-}
-
-.exceptionBadge {
+  margin: 0 2px;
+  margin-bottom: 0.9rem; /* align with center of dot */
+ }
+ 
+.lineDone { background: var(--success); opacity: 0.4; }
+ 
+/* ── Exception pills ── */
+.pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 0.5rem 0.85rem;
-  border-radius: var(--radius-sm);
-}
-
-.exceptionBadge[data-tone='cancelled'] {
-  background: rgba(100, 116, 139, 0.1);
-  color: var(--text-muted);
-}
-
-.exceptionBadge[data-tone='dispute'] {
-  background: rgba(211, 47, 47, 0.08);
-  color: var(--error);
-}
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+ }
+ 
+.cancelled { background: var(--c-green-50); color: var(--text-muted); }
+.dispute   { background: var(--error-bg); color: var(--error); }

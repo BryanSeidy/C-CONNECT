@@ -1,21 +1,21 @@
 import React from 'react';
 import styles from './Badge.module.css';
 
+type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'gold' | 'verified';
+
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
+  variant?: BadgeVariant;
 }
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = 'default', children, ...props }, ref) => {
-    return (
-      <span
-        ref={ref}
-        className={`${styles.badge} ${styles[`badge-${variant}`]} ${className || ''}`}
-        {...props}
-      >
-        {children}
-      </span>
-    );
-  }
+  ({ className, variant = 'default', children, ...props }, ref) => (
+    <span
+      ref={ref}
+      className={`${styles.badge} ${styles[variant]} ${className ?? ''}`}
+      {...props}
+    >
+      {children}
+    </span>
+  )
 );
 Badge.displayName = 'Badge';

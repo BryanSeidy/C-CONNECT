@@ -1,9 +1,15 @@
 import { ApiEnvelope, User } from '@/types';
 import { apiClient } from './api';
 
+function getBackendRoot(): string {
+  const base = apiClient.defaults.baseURL ?? 'http://localhost:8000/api';
+  return base.replace(/\/api\/?$/, '');
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;
+  remember?: boolean;
 }
 
 export interface RegisterPayload {
@@ -23,29 +29,35 @@ export type AuthResponse = ApiEnvelope<AuthPayload>;
 export type ProfileResponse = ApiEnvelope<{ user: User }>;
 
 export const authService = {
+  // getCsrfCookie: async (): Promise<void> => {
+  //   const baseURL = apiClient.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000';
+  //   return apiClient.get('/sanctum/csrf-cookie', { baseURL });
+  // },
+
   getCsrfCookie: async (): Promise<void> => {
-    const baseURL = apiClient.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000';
-    return apiClient.get('/sanctum/csrf-cookie', { baseURL });
+    await apiClient.get('/sanctum/csrf-cookie', {
+      baseURL: getBackendRoot(),
+    });
   },
 
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/login', credentials);
+    return apiClient.post('/auth/login', credentials);
   },
 
   register: async (userData: RegisterPayload): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/register', {
+    return apiClient.post('/auth/register', {
       name: userData.fullName,
       email: userData.email,
       password: userData.password,
       password_confirmation: userData.password,
-      role: userData.role,
+      role: userData.role ?? 'buyer',
     });
   },
 
   getProfile: async (): Promise<ProfileResponse> => {
-    return apiClient.get('/auth/profile');
+    return apiClient.get('/me');
   },
 
   updateProfile: async (userData: {
@@ -53,7 +65,7 @@ export const authService = {
     companyName?: string;
     country?: string;
   }): Promise<ProfileResponse> => {
-    return apiClient.put('/auth/profile', userData);
+    return apiClient.put('/me', userData);
   },
 
   logout: async (): Promise<void> => {

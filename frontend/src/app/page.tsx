@@ -168,11 +168,11 @@ export default function HomePage() {
               et fabricants camerounais vérifiés — avec des fonds protégés en séquestre à chaque commande.
             </p>
             <div className={styles.actions}>
-              <Link href="/register?role=buyer" className={styles.primaryCta}>
+              <Link href="/auth/register?role=buyer" className={styles.primaryCta}>
                 Demander une démonstration
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <Link href="/register?role=seller" className={styles.secondaryCta}>
+              <Link href="/auth/register?role=seller" className={styles.secondaryCta}>
                 Devenir fournisseur vérifié
               </Link>
             </div>
@@ -409,7 +409,7 @@ export default function HomePage() {
             <Building2 size={22} aria-hidden="true" />
             <h3>Vous achetez pour votre entreprise</h3>
             <p>Sourcing vérifié, paiement protégé, facturation automatique.</p>
-            <Link href="/register?role=buyer" className={styles.finalCtaButton}>
+            <Link href="/auth/register?role=buyer" className={styles.finalCtaButton}>
               Demander une démonstration
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
@@ -418,7 +418,7 @@ export default function HomePage() {
             <Truck size={22} aria-hidden="true" />
             <h3>Vous produisez ou fabriquez au Cameroun</h3>
             <p>Accédez à des acheteurs professionnels et soyez payé sans risque.</p>
-            <Link href="/register?role=seller" className={styles.finalCtaButton} data-variant="light">
+            <Link href="/auth/register?role=seller" className={styles.finalCtaButton} data-variant="light">
               Rejoindre C-Connect
               <ArrowRight size={16} aria-hidden="true" />
             </Link>

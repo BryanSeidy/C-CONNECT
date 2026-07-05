@@ -1,0 +1,341 @@
+/* =============================================================================
+   AuthForm — Layout
+   ============================================================================= */
+
+.page {
+  display: flex;
+  min-height: calc(100vh - 72px);
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  background: var(--bg-app);
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 2.5rem 2.25rem 2rem;
+}
+
+/* =============================================================================
+   Header
+   ============================================================================= */
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.4rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0 0 0.4rem;
+  font-family: var(--font-heading);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* =============================================================================
+   Alerts
+   ============================================================================= */
+
+.alertSuccess,
+.alertError {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+  line-height: 1.45;
+}
+
+.alertSuccess {
+  background: rgba(46, 125, 50, 0.08);
+  border: 1px solid rgba(46, 125, 50, 0.3);
+  color: var(--success);
+}
+
+.alertError {
+  background: rgba(211, 47, 47, 0.07);
+  border: 1px solid rgba(211, 47, 47, 0.25);
+  color: var(--error);
+}
+
+/* =============================================================================
+   Form
+   ============================================================================= */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* =============================================================================
+   Input wrapper
+   ============================================================================= */
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 0.875rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 0.875rem 0.7rem 2.5rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  font-family: var(--font-primary);
+  font-size: 0.9375rem;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(10, 46, 54, 0.08);
+}
+
+.inputPadRight {
+  padding-right: 2.75rem;
+}
+
+/* Error state */
+.hasError .input {
+  border-color: var(--error);
+}
+
+.hasError .input:focus {
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
+.hasError .inputIcon {
+  color: var(--error);
+}
+
+.fieldError {
+  font-size: 0.78rem;
+  color: var(--error);
+  font-weight: 500;
+  margin-top: 0.1rem;
+}
+
+/* =============================================================================
+   Eye toggle
+   ============================================================================= */
+
+.eyeBtn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.eyeBtn:hover,
+.eyeBtn:focus-visible {
+  color: var(--primary-color);
+  outline: 2px solid var(--primary-light);
+  outline-offset: 1px;
+}
+
+/* =============================================================================
+   Role selector
+   ============================================================================= */
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.roleBtn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.roleBtn:hover {
+  border-color: var(--primary-light);
+}
+
+.roleBtnActive {
+  border-color: var(--primary-color);
+  background: rgba(10, 46, 54, 0.04);
+}
+
+.roleBtnTitle {
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--text-main);
+}
+
+.roleBtnSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* =============================================================================
+   Submit button
+   ============================================================================= */
+
+.submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  min-height: 48px;
+}
+
+.submit:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   Alt link
+   ============================================================================= */
+
+.altLink {
+  text-align: center;
+  margin: 1.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* =============================================================================
+   Responsive
+   ============================================================================= */
+
+@media (max-width: 480px) {
+  .card {
+    padding: 2rem 1.25rem 1.5rem;
+    border-radius: var(--radius-md);
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .page {
+    padding: 1rem;
+    background: var(--bg-card);
+    align-items: flex-start;
+  }
+
+  .roleGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+  .submit {
+    transition: none;
+  }
+}

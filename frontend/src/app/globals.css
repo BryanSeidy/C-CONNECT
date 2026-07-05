@@ -1,80 +1,126 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap');
 
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap'); */
+/* ============================================================================
+   C-Connect — Design System Tokens
+   Aligned with Brand Identity Guidelines v1.0
+   Primary: #13352E | Gold: #D9A441 | Ivory: #F2EFE6
+   Fonts: Poppins (UI) | DM Serif Display (editorial)
+   ============================================================================ */
 
 :root {
-  /* Brand Colors - Vibrant & Premium B2B */
-  --primary-color: #0A2E36; /* Deep Corporate Green/Teal */
-  --primary-light: #185E6A;
-  --secondary-color: #D4AF37; /* Trusting Gold accent */
-  --accent-color: #F05D23; /* Vibrant Orange for Call to Actions */
+  /* ── Brand Colors ── */
+  --c-green-900:  #0D2420;   /* deepest — sidebar dark mode */
+  --c-green-800:  #13352E;   /* Primary Green — dominant 60% */
+  --c-green-700:  #1B4A41;
+  --c-green-600:  #406A5A;   /* Secondary Green */
+  --c-green-500:  #5A8A74;
+  --c-green-100:  #EBF3EF;   /* tint — hover states */
+  --c-green-50:   #F5FAF7;   /* lightest tint */
 
-  /* Backgrounds & Surfaces */
-  --bg-app: #F5F7FA;
-  --bg-card: #FFFFFF;
-  --bg-glass: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(10, 46, 54, 0.08);
+  --c-gold-500:   #D9A441;   /* Gold accent — 5% use only */
+  --c-gold-400:   #E8B85A;
+  --c-gold-100:   #FBF3E2;   /* gold tint */
 
-  /* Status Colors */
-  --success: #2E7D32;
-  --warning: #F57C00;
-  --error: #D32F2F;
-  --info: #0288D1;
+  --c-ivory:      #F2EFE6;   /* Warm Ivory — backgrounds 10% */
+  --c-white:      #FFFFFF;
+  --c-dark:       #1A1A1A;   /* body text */
 
-  /* Typography */
-  --text-main: #1A1A1A;
-  --text-muted: #64748B;
-  --font-primary: 'Inter', sans-serif;
-  --font-heading: 'Outfit', sans-serif;
+  /* ── Semantic aliases (usés dans tous les composants) ── */
+  --primary-color:   var(--c-green-800);
+  --primary-light:   var(--c-green-600);
+  --primary-dark:    var(--c-green-900);
+  --secondary-color: var(--c-gold-500);
+  --accent-color:    var(--c-gold-500);
 
-  /* Shadows - Smooth & Premium */
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-  --shadow-md: 0 8px 24px rgba(10, 46, 54, 0.08);
-  --shadow-hover: 0 16px 32px rgba(10, 46, 54, 0.12);
+  /* ── Backgrounds ── */
+  --bg-app:        var(--c-ivory);
+  --bg-card:       var(--c-white);
+  --bg-sidebar:    var(--c-green-800);
+  --bg-sidebar-hover: var(--c-green-700);
+  --bg-sidebar-active: var(--c-green-600);
+  --border-color:  rgba(19, 53, 46, 0.1);
+  --border-subtle: rgba(19, 53, 46, 0.06);
 
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  /* ── Status ── */
+  --success:    #1E7A4D;
+  --success-bg: #E8F5EE;
+  --warning:    #B45309;
+  --warning-bg: #FEF3C7;
+  --error:      #C0392B;
+  --error-bg:   #FDECEA;
+  --info:       #1D6FA4;
+  --info-bg:    #E8F2FA;
+
+  /* ── Typography ── */
+  --text-main:    var(--c-dark);
+  --text-muted:   #556B65;
+  --text-inverse: var(--c-white);
+  --font-ui:      'Poppins', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+
+  /* ── Shadows ── */
+  --shadow-xs:    0 1px 3px rgba(19,53,46,0.06);
+  --shadow-sm:    0 2px 8px rgba(19,53,46,0.07);
+  --shadow-md:    0 6px 20px rgba(19,53,46,0.09);
+  --shadow-lg:    0 16px 40px rgba(19,53,46,0.13);
+  --shadow-hover: 0 12px 30px rgba(19,53,46,0.14);
+
+  /* ── Radii ── */
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  16px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-full: 999px;
+
+  /* Legacy aliases (backward compat) */
+  --shadow-hover: var(--shadow-hover);
+  --font-primary: var(--font-ui);
+  --font-heading: var(--font-display);
 }
 
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  font-family: var(--font-primary);
-  -webkit-font-smoothing: antialiased;
   margin: 0;
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 15px;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
+  font-family: var(--font-ui);
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--primary-color);
+  margin: 0;
+  line-height: 1.25;
 }
 
-/* Glassmorphism utility classes */
-.glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-md);
+/* Editorial headings — use class .display on hero/marketing */
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
-/* Modern Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+a { color: inherit; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(19,53,46,0.18); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(19,53,46,0.32); }
+
+/* ── Focus ring — accessible ── */
+:focus-visible {
+  outline: 2px solid var(--c-gold-500);
+  outline-offset: 2px;
 }
-::-webkit-scrollbar-track {
-  background: transparent; 
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1; 
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8; 
-}
+
+/* ── Selection ── */
+::selection { background: var(--c-green-100); }

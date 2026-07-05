@@ -67,6 +67,35 @@ class ProductController extends Controller
     }
 
     /**
+     * Récupère les produits du vendeur authentifié.
+     */
+    public function myProducts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $sellerProfile = $user->sellerProfile;
+
+        if (!$sellerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez avoir un profil vendeur.'
+            ], 403);
+        }
+
+        $products = Product::where('seller_id', $sellerProfile->id)
+            ->with(['category', 'seller.user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+            'message' => $products->isEmpty()
+                ? 'Aucun produit pour le moment.'
+                : 'Produits récupérés avec succès.'
+        ], 200);
+    }
+
+    /**
      * Display a single product — public.
      */
     public function show(Product $product): JsonResponse

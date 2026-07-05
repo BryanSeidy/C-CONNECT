@@ -1,29 +1,32 @@
 'use client';
 
-import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { AuthForm } from '@/components/AuthForm';
 import { getSafeRedirect } from '@/lib/routing';
-import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const { register } = useAuth();
   const router = useRouter();
-  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const redirect = getSafeRedirect(params?.get('redirect') ?? null);
-  const requestedRole = params?.get('role') === 'seller' ? 'seller' : 'buyer';
+  const params = useSearchParams();
+  const redirect = getSafeRedirect(params.get('redirect'));
+  const requestedRole = params.get('role') === 'seller' ? 'seller' : 'buyer';
+
   const loginUrl = redirect === '/dashboard'
     ? '/login?registered=true'
     : `/login?registered=true&redirect=${encodeURIComponent(redirect)}`;
-  const alternateHref = useMemo(() => (
-    redirect === '/dashboard' ? '/login' : `/login?redirect=${encodeURIComponent(redirect)}`
-  ), [redirect]);
+
+  const alternateHref =
+    redirect === '/dashboard'
+      ? '/login'
+      : `/login?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <AuthForm
       type="register"
       title="Rejoindre le réseau"
-      subtitle="Accélérez votre croissance sur le marché Camerounais."
+      subtitle="Connectez producteurs et acheteurs professionnels au Cameroun."
       submitText="Créer mon compte"
       alternateHref={alternateHref}
       initialRole={requestedRole}
@@ -32,5 +35,13 @@ export default function RegisterPage() {
         router.push(loginUrl);
       }}
     />
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterContent />
+    </Suspense>
   );
 }
