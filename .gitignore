@@ -42,12 +42,10 @@ yarn-error.log*
 next-env.d.ts
 
 # pesonnal
+*.patch
 /scripts
 docs/DESCRIPTION DU PROJET1.md
 b2b-repositioning.bundle
-fix-auth-cors-session.patch
-dashboards-brand-overhaul.patch
-c-connect-brand-integration.patch
 AGENTS.md
 CLAUDE.md
 ARCHITECTURE.md
