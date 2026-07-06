@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setMemoryToken(null);
       setUser(null);
       sessionService.clear();
-      router.push('/auth/login');
+      router.push('/login');
     }
   }, [router]);
 

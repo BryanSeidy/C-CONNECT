@@ -54,18 +54,36 @@ export interface Review {
   createdAt?: string;
 }
 
+export interface ProductProducer {
+  id: number | string;
+  fullName?: string | null;
+  companyName?: string | null;
+  country?: string | null;
+  isVerified?: boolean;
+  isFemaleOwned?: boolean;
+  isCooperative?: boolean;
+}
+
 export interface Product {
   id: number | string;
   name: string;
+  slug: string;
   description?: string | null;
   imageUrl?: string | null;
   price: number;
   country: string;
   category: string;
+  categoryId?: number | string | null;
   stock: number;
+  stockReserve?: number;
+  stockMinimum?: number;
+  unite?: string;
   isActive: boolean;
+  qualityRating?: number;
+  reviewsCount?: number;
+  salesCount?: number;
   producerId: number | string;
-  producer?: Pick<User, 'id' | 'fullName' | 'companyName' | 'country' | 'isVerified'>;
+  producer?: ProductProducer;
   reviews?: Review[];
   createdAt?: string;
   updatedAt?: string;
@@ -472,9 +490,14 @@ export interface RawProduct {
   description?: string | null;
   prix: string | number;
   stock: number;
+  stock_reserve?: number;
+  stock_minimum?: number;
+  unite?: string;
   region: string;
   image_url?: string | null;
+  image_principale?: string | null;
   statut: 'active' | 'pending' | 'disabled' | 'flagged';
+  disponible?: boolean;
   quality_rating: string | number;
   reviews_count: number;
   sales_count: number;

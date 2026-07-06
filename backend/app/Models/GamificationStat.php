@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GamificationStat extends Model
 {
-    protected $fillable = ['user_id', 'points', 'total_sales', 'quality_rating', 'badges_unlocked'];
+    protected $fillable = ['user_id', 'points', 'total_sales', 'quality_rating', 'badges_unlocked', 'volume_ventes'];
 
     protected function casts(): array
     {

@@ -197,8 +197,34 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // --- Routes réservées aux vendeurs ---
     Route::prefix('seller')->name('seller.')->middleware('seller')->group(function (): void {
         Route::get('/gamification', [GamificationController::class, 'show'])->name('gamification');
-        // Ajouter ici d'autres endpoints vendeur
     });
+
+    // --- Routes réservées aux administrateurs ---
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
+        Route::get('/stats', function () {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_orders'     => \App\Models\Order::count(),
+                    'total_companies'  => \App\Models\Company::where('statut_verification', 'verifie')->count(),
+                    'total_users'      => \App\Models\User::count(),
+                    'commission_total' => \App\Models\Order::where('escrow_status', 'complete')
+                        ->sum('commission_plateforme'),
+                    'disputes_open'    => \App\Models\Dispute::where('statut', 'ouvert')->count(),
+                ],
+            ]);
+        })->name('stats');
+
+        Route::get('/users', function () {
+            return response()->json([
+                'success' => true,
+                'data'    => \App\Models\User::with('gamificationStat')
+                    ->latest()
+                    ->paginate(20),
+            ]);
+        })->name('users');
+    });
+
 }); // Fin des routes protégées
 
 // }); // Fin du groupe v1

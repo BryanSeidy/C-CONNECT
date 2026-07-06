@@ -11,5 +11,9 @@ class ProductReviewed
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public readonly int $reviewerId, public readonly int $sellerId, public readonly int $rating) {}
+    public function __construct(
+        public readonly string $reviewerId,
+        public readonly string $sellerId,
+        public readonly int    $rating,
+    ) {}
 }

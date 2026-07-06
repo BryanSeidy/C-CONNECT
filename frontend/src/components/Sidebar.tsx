@@ -10,38 +10,39 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Sidebar.module.css';
+import { GamificationWidget } from '@/components/GamificationWidget';
 
 // ── Nav config par rôle ──────────────────────────────────────────────────────
 
 const BUYER_LINKS = [
-  { href: '/dashboard',            label: 'Vue générale',    Icon: Home },
-  { href: '/dashboard/rfqs',       label: 'Mes RFQs',        Icon: ClipboardList },
-  { href: '/dashboard/orders',     label: 'Commandes',       Icon: Truck },
-  { href: '/dashboard/recurring',  label: 'Récurrentes',     Icon: CalendarClock },
-  { href: '/dashboard/disputes',   label: 'Litiges',         Icon: ShieldAlert },
-  { href: '/dashboard/company',    label: 'Mon entreprise',  Icon: Building2 },
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
+  { href: '/dashboard/rfqs', label: 'Mes RFQs', Icon: ClipboardList },
+  { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+  { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
+  { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
+  { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
 ];
 
 const SELLER_LINKS = [
-  { href: '/dashboard',            label: 'Vue générale',    Icon: Home },
-  { href: '/dashboard/products',   label: 'Mes produits',    Icon: Package },
-  { href: '/dashboard/orders',     label: 'Commandes',       Icon: Truck },
-  { href: '/dashboard/rfqs',       label: 'Appels d\'offres', Icon: ClipboardList },
-  { href: '/dashboard/negotiations',label: 'Négociations',   Icon: HandCoins },
-  { href: '/dashboard/disputes',   label: 'Litiges',         Icon: ShieldAlert },
-  { href: '/dashboard/company',    label: 'Mon entreprise',  Icon: Building2 },
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
+  { href: '/dashboard/products', label: 'Mes produits', Icon: Package },
+  { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+  { href: '/dashboard/rfqs', label: 'Appels d\'offres', Icon: ClipboardList },
+  { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
+  { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
+  { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
 ];
 
 const ADMIN_LINKS = [
-  { href: '/dashboard',            label: 'Vue générale',    Icon: Home },
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
   { href: '/dashboard/admin/companies', label: 'Entreprises KYB', Icon: ShieldCheck },
-  { href: '/dashboard/admin/disputes',  label: 'Arbitrages',      Icon: ShieldAlert },
-  { href: '/dashboard/admin/stats',     label: 'Statistiques',    Icon: BarChart3 },
-  { href: '/dashboard/admin/users',     label: 'Utilisateurs',    Icon: UserCog },
+  { href: '/dashboard/admin/disputes', label: 'Arbitrages', Icon: ShieldAlert },
+  { href: '/dashboard/admin/stats', label: 'Statistiques', Icon: BarChart3 },
+  { href: '/dashboard/admin/users', label: 'Utilisateurs', Icon: UserCog },
 ];
 
 const BOTTOM_LINKS = [
-  { href: '/profile',              label: 'Paramètres',      Icon: Settings },
+  { href: '/profile', label: 'Paramètres', Icon: Settings },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ export const Sidebar = ({ open = false, onClose }: SidebarProps) => {
           <p className={styles.sectionLabel}>Menu</p>
           <ul className={styles.list}>
             {links.map(({ href, label, Icon }) => {
-              const exact  = href === '/dashboard';
+              const exact = href === '/dashboard';
               const active = exact ? pathname === href : pathname.startsWith(href);
               return (
                 <li key={href}>
@@ -120,7 +121,7 @@ export const Sidebar = ({ open = false, onClose }: SidebarProps) => {
                     <Icon size={17} className={styles.icon} aria-hidden="true" />
                     {label}
                     {user?.role === 'admin' && label === 'Arbitrages' && (
-                      <span className={styles.rolePill} style={{background:'rgba(192,57,43,0.2)',color:'#E57373'}}>!</span>
+                      <span className={styles.rolePill} style={{ background: 'rgba(192,57,43,0.2)', color: '#E57373' }}>!</span>
                     )}
                   </Link>
                 </li>
@@ -159,6 +160,13 @@ export const Sidebar = ({ open = false, onClose }: SidebarProps) => {
             </li>
           </ul>
         </nav>
+
+        {/* Gamification — visible uniquement pour les sellers */}
+        {user?.role === 'seller' && (
+          <div style={{ padding: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <GamificationWidget compact />
+          </div>
+        )}
 
         {/* User footer */}
         <footer className={styles.footer}>

@@ -13,7 +13,14 @@ class AwardPointsForReview
 
     public function handle(ProductReviewed $event): void
     {
-        $this->gamificationService->awardPoints($event->reviewerId, 10);
-        $this->gamificationService->awardPoints($event->sellerId, max(0, $event->rating) * 5);
+        // Acheteur : 10 points pour avoir laissé un avis
+        $this->gamificationService->awardPoints((string) $event->reviewerId, 10);
+
+        // Vendeur : note × 5 points + mise à jour du quality_rating
+        if ($event->sellerId) {
+            $ratingPoints = max(0, (int) round($event->rating * 5));
+            $this->gamificationService->awardPoints((string) $event->sellerId, $ratingPoints);
+            $this->gamificationService->updateQualityRating((string) $event->sellerId, (float) $event->rating);
+        }
     }
 }

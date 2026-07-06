@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsSeller;
+use App\Http\Middleware\DatabaseConnectionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,7 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
 
         $middleware->statefulApi();
+
+        $middleware->api(prepend: [
+            DatabaseConnectionMiddleware::class,
+        ]);
+
         $middleware->trustHosts(at: ['localhost', '127.0.0.1']);
+
         $middleware->alias([
             'seller' => EnsureUserIsSeller::class,
         'admin'  => EnsureUserIsAdmin::class,

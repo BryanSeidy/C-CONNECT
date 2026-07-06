@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 
-export const ExportCsvButton = ({ data }: { data: any[] }) => {
+export const ExportCsvButton = ({ data }: { data: Record<string, string | number>[] }) => {
   const exportToCsv = () => {
     // CSV Header matching the Dashboard Orders table
     const header = "Numero,Produit,Quantite,Prix_Total,Client,Statut\n";

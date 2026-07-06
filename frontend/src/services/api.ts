@@ -1,26 +1,23 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // ---------------------------------------------------------------------------
-// Constants
+// Config
 // ---------------------------------------------------------------------------
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/$/, '');
 
-/** Routes qui ne nécessitent pas de token Bearer */
-const PUBLIC_PATTERNS = [
-  /^\/products(?:\/[^/]+)?$/,
-  /^\/categories(?:\/[^/]+)?$/,
-  /^\/companies(?:\/[^/]+)?$/,
+/**
+ * Patterns de routes publiques (pas de token Bearer requis).
+ * Alignés sur routes/api.php — préfixes exacts du backend.
+ */
+const PUBLIC_PATTERNS: RegExp[] = [
+  /^\/catalogue\//,
   /^\/rfqs(?:\/[^/]+)?$/,
-  /^\/auth\/login$/,
   /^\/auth\/register$/,
+  /^\/auth\/login$/,
   /^\/sanctum\/csrf-cookie$/,
   /^\/webhooks\//,
 ];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getPath(url?: string): string {
   if (!url) return '';
@@ -37,19 +34,14 @@ function isPublic(url?: string): boolean {
   return PUBLIC_PATTERNS.some((p) => p.test(path));
 }
 
-/**
- * Lit le cookie XSRF-TOKEN posé par Laravel et le retourne.
- * Nécessaire pour que l'en-tête X-XSRF-TOKEN soit envoyé sur
- * les requêtes mutantes (POST/PUT/PATCH/DELETE).
- */
 function readXsrfCookie(): string | null {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 // ---------------------------------------------------------------------------
-// Token en mémoire (session uniquement — jamais en localStorage)
+// Memory token (session-only — jamais localStorage direct)
 // ---------------------------------------------------------------------------
 
 let _memoryToken: string | null = null;
@@ -58,36 +50,38 @@ export function setMemoryToken(token: string | null): void {
   _memoryToken = token;
 }
 
+export function getMemoryToken(): string | null {
+  return _memoryToken;
+}
+
 // ---------------------------------------------------------------------------
-// Instance Axios
+// Axios instance
 // ---------------------------------------------------------------------------
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,            // transmet cookies et XSRF-TOKEN cross-origin
-  withXSRFToken: true,              // axios 1.6+ : lit XSRF-TOKEN cookie automatiquement
+  withCredentials: true,
+  withXSRFToken: true,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
   timeout: 30_000,
 });
 
 // ---------------------------------------------------------------------------
-// Intercepteur de requête
+// Request interceptor
 // ---------------------------------------------------------------------------
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // Attacher le token Bearer si disponible (double mécanisme : cookie + token)
-  if (typeof window !== 'undefined' && !isPublic(config.url) && _memoryToken) {
+  if (typeof window !== 'undefined' && _memoryToken && !isPublic(config.url)) {
     config.headers.Authorization = `Bearer ${_memoryToken}`;
   }
 
-  // Injecter manuellement le X-XSRF-TOKEN pour les navigateurs/contextes
-  // où axios withXSRFToken ne le fait pas (ex: certaines configs SSR)
   const xsrf = readXsrfCookie();
-  if (xsrf && config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+  const method = config.method?.toLowerCase() ?? '';
+  if (xsrf && ['post', 'put', 'patch', 'delete'].includes(method)) {
     config.headers['X-XSRF-TOKEN'] = xsrf;
   }
 
@@ -95,61 +89,55 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 // ---------------------------------------------------------------------------
-// Intercepteur de réponse
+// Response interceptor — unwrap data, retry on 419
 // ---------------------------------------------------------------------------
 
-let _csrfRefreshing = false;
-let _csrfQueue: Array<(token: string) => void> = [];
+let _refreshing = false;
+let _queue: Array<() => void> = [];
 
-async function refreshCsrfAndRetry(failedConfig: InternalAxiosRequestConfig) {
-  const backendRoot = API_BASE_URL.replace(/\/api\/?$/, '');
+async function refreshCsrf(failedConfig: InternalAxiosRequestConfig): Promise<unknown> {
+  const root = API_BASE_URL.replace(/\/api\/?$/, '');
 
-  if (_csrfRefreshing) {
+  if (_refreshing) {
     return new Promise<unknown>((resolve) => {
-      _csrfQueue.push(() => resolve(apiClient(failedConfig)));
+      _queue.push(() => resolve(apiClient(failedConfig)));
     });
   }
 
-  _csrfRefreshing = true;
-
+  _refreshing = true;
   try {
-    await apiClient.get('/sanctum/csrf-cookie', { baseURL: backendRoot });
+    await apiClient.get('/sanctum/csrf-cookie', { baseURL: root });
     const xsrf = readXsrfCookie();
-    if (xsrf) {
-      failedConfig.headers['X-XSRF-TOKEN'] = xsrf;
-    }
-    _csrfQueue.forEach((cb) => cb(xsrf ?? ''));
-    _csrfQueue = [];
+    if (xsrf) failedConfig.headers['X-XSRF-TOKEN'] = xsrf;
+    _queue.forEach((cb) => cb());
+    _queue = [];
     return apiClient(failedConfig);
   } finally {
-    _csrfRefreshing = false;
+    _refreshing = false;
   }
 }
 
 apiClient.interceptors.response.use(
-  (response) => response.data,
+  (response: AxiosResponse) => response.data,
 
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const config = error.config;
+    const config = error.config as InternalAxiosRequestConfig & { _csrfRetried?: boolean };
 
-    // 419 = CSRF token expired/missing — récupérer un nouveau cookie et réessayer
-    if (status === 419 && config && !(config as any)._csrfRetried) {
-      (config as any)._csrfRetried = true;
-      return refreshCsrfAndRetry(config);
+    if (status === 419 && config && !config._csrfRetried) {
+      config._csrfRetried = true;
+      return refreshCsrf(config);
     }
 
-    // 401 = session expirée — rediriger vers /auth/login (sauf si déjà sur une page auth)
     if (status === 401 && typeof window !== 'undefined') {
-      const isAuthPage = ['/login', '/auth/register'].includes(window.location.pathname);
+      const isAuthPage = /^\/(login|register)/.test(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
-        localStorage.removeItem('cconnect_user_cache');
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 apiClient.interceptors.response.use(

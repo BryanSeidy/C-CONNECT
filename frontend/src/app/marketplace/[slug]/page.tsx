@@ -1,0 +1,363 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import {
+  ArrowLeft, Award, BadgeCheck, MapPin, Package,
+  ShieldCheck, Star, Truck, Users,
+} from 'lucide-react';
+import { productService } from '@/services/products';
+import { Product } from '@/types';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { getRegionLabel } from '@/lib/regions';
+import { useAuth } from '@/hooks/useAuth';
+import styles from './ProductDetail.module.css';
+
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+
+function ProductSkeleton() {
+  return (
+    <div className={styles.grid} aria-busy="true" aria-label="Chargement du produit">
+      <div className={styles.imageSkeleton} />
+      <div className={styles.infoCol}>
+        <div className={styles.skLine} style={{ width: '60%', height: 12 }} />
+        <div className={styles.skLine} style={{ width: '85%', height: 32, marginTop: 8 }} />
+        <div className={styles.skLine} style={{ width: '40%', height: 20, marginTop: 12 }} />
+        <div className={styles.skLine} style={{ width: '100%', height: 80, marginTop: 24 }} />
+        <div className={styles.skLine} style={{ width: '100%', height: 48, marginTop: 32 }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Trust badges ──────────────────────────────────────────────────────────────
+
+function TrustBadges({ product }: { product: Product }) {
+  const badges = [];
+
+  if (product.producer?.isVerified) {
+    badges.push({ Icon: BadgeCheck, label: 'Vendeur vérifié', variant: 'verified' as const });
+  }
+  if (product.producer?.isFemaleOwned) {
+    badges.push({ Icon: Award, label: 'Entreprise dirigée par une femme', variant: 'gold' as const });
+  }
+  if (product.producer?.isCooperative) {
+    badges.push({ Icon: Users, label: 'Coopérative locale', variant: 'success' as const });
+  }
+  if (product.country) {
+    badges.push({ Icon: MapPin, label: `Origine : ${getRegionLabel(product.country)}`, variant: 'default' as const });
+  }
+
+  if (badges.length === 0) return null;
+
+  return (
+    <div className={styles.trustRow}>
+      {badges.map(({ Icon, label, variant }) => (
+        <span key={label} className={`${styles.trustChip} ${styles[`trustChip_${variant}`]}`}>
+          <Icon size={13} aria-hidden="true" />
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ── Stock indicator ───────────────────────────────────────────────────────────
+
+function StockIndicator({ stock, minimum }: { stock: number; minimum?: number }) {
+  const min = minimum ?? 5;
+  if (stock === 0) return <Badge variant="error">Rupture de stock</Badge>;
+  if (stock <= min) return <Badge variant="warning">{stock} restant{stock > 1 ? 's' : ''} — stock bas</Badge>;
+  return <Badge variant="success">{stock} unités disponibles</Badge>;
+}
+
+// ── Rating stars ──────────────────────────────────────────────────────────────
+
+function RatingStars({ rating, count }: { rating: number; count: number }) {
+  return (
+    <div className={styles.ratingRow} aria-label={`Note : ${rating} sur 5`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <Star
+          key={i}
+          size={16}
+          aria-hidden="true"
+          className={i < Math.round(rating) ? styles.starFilled : styles.starEmpty}
+        />
+      ))}
+      <span className={styles.ratingText}>
+        {rating > 0 ? rating.toFixed(1) : 'Aucune note'} — {count} avis
+      </span>
+    </div>
+  );
+}
+
+// ── Order form ────────────────────────────────────────────────────────────────
+
+function OrderForm({ product }: { product: Product }) {
+  const { isAuthenticated, user } = useAuth();
+  const [qty, setQty] = useState(1);
+
+  const canOrder = isAuthenticated && user?.role === 'buyer' && product.stock > 0;
+
+  return (
+    <div className={styles.orderCard}>
+      <div className={styles.priceRow}>
+        <span className={styles.price}>{product.price.toLocaleString('fr-FR')} XAF</span>
+        <span className={styles.priceUnit}>/ {product.unite ?? 'unité'}</span>
+      </div>
+
+      <StockIndicator stock={product.stock} minimum={product.stockMinimum} />
+
+      {product.stockMinimum && product.stockMinimum > 0 && (
+        <p className={styles.minOrder}>Commande minimum : {product.stockMinimum} {product.unite ?? 'unités'}</p>
+      )}
+
+      <div className={styles.qtyRow}>
+        <label htmlFor="qty" className={styles.qtyLabel}>Quantité</label>
+        <div className={styles.qtyControl}>
+          <button
+            type="button"
+            className={styles.qtyBtn}
+            onClick={() => setQty(q => Math.max(product.stockMinimum ?? 1, q - 1))}
+            disabled={qty <= (product.stockMinimum ?? 1)}
+            aria-label="Diminuer la quantité"
+          >
+            -
+          </button>
+          <input
+            id="qty"
+            type="number"
+            className={styles.qtyInput}
+            value={qty}
+            min={product.stockMinimum ?? 1}
+            max={product.stock}
+            onChange={e => setQty(Math.min(product.stock, Math.max(product.stockMinimum ?? 1, parseInt(e.target.value) || 1)))}
+          />
+          <button
+            type="button"
+            className={styles.qtyBtn}
+            onClick={() => setQty(q => Math.min(product.stock, q + 1))}
+            disabled={qty >= product.stock}
+            aria-label="Augmenter la quantité"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.totalRow}>
+        <span>Total estimé</span>
+        <strong>{(product.price * qty).toLocaleString('fr-FR')} XAF</strong>
+      </div>
+
+      {canOrder ? (
+        <Link href={`/dashboard/orders?product=${product.id}&qty=${qty}`}>
+          <Button variant="primary" size="lg" style={{ width: '100%' }}>
+            <ShieldCheck size={16} aria-hidden="true" />
+            Commander avec paiement sécurisé
+          </Button>
+        </Link>
+      ) : !isAuthenticated ? (
+        <Link href={`/login?redirect=/marketplace/${product.slug}`}>
+          <Button variant="secondary" size="lg" style={{ width: '100%' }}>
+            Se connecter pour commander
+          </Button>
+        </Link>
+      ) : product.stock === 0 ? (
+        <Button variant="outline" size="lg" style={{ width: '100%' }} disabled>
+          Produit indisponible
+        </Button>
+      ) : null}
+
+      <p className={styles.escrowNote}>
+        <ShieldCheck size={13} aria-hidden="true" />
+        Paiement retenu en séquestre jusqu&apos;à confirmation de réception
+      </p>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function ProductDetailPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug ?? '';
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    let active = true;
+    setLoading(true);
+    setError(null);
+
+    productService.getProductById(slug)
+      .then(res => { if (active) setProduct(res.data); })
+      .catch(() => { if (active) setError('Produit introuvable ou non disponible.'); })
+      .finally(() => { if (active) setLoading(false); });
+
+    return () => { active = false; };
+  }, [slug]);
+
+  return (
+    <div className={styles.page}>
+      {/* Breadcrumb */}
+      <nav className={styles.breadcrumb} aria-label="Navigation">
+        <Link href="/marketplace" className={styles.backLink}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          Retour au catalogue
+        </Link>
+        {product && (
+          <>
+            <span className={styles.sep} aria-hidden="true">/</span>
+            <span>{product.category}</span>
+            <span className={styles.sep} aria-hidden="true">/</span>
+            <span className={styles.breadcrumbCurrent}>{product.name}</span>
+          </>
+        )}
+      </nav>
+
+      {loading && <ProductSkeleton />}
+
+      {error && (
+        <div className={styles.errorState}>
+          <Package size={36} aria-hidden="true" />
+          <p>{error}</p>
+          <Link href="/marketplace">
+            <Button variant="primary">Retour au catalogue</Button>
+          </Link>
+        </div>
+      )}
+
+      {product && !loading && (
+        <>
+          <div className={styles.grid}>
+            {/* Image */}
+            <div className={styles.imageCol}>
+              <div className={styles.imageWrap}>
+                {product.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className={styles.image}
+                  />
+                ) : (
+                  <div className={styles.imagePlaceholder} aria-hidden="true">
+                    <Package size={48} />
+                  </div>
+                )}
+              </div>
+
+              {/* Trust signals sous l'image */}
+              <div className={styles.trustPanel}>
+                <div className={styles.trustItem}>
+                  <ShieldCheck size={16} aria-hidden="true" />
+                  <div>
+                    <span className={styles.trustItemTitle}>Paiement sécurisé</span>
+                    <span className={styles.trustItemSub}>Séquestre C-Connect</span>
+                  </div>
+                </div>
+                <div className={styles.trustItem}>
+                  <Truck size={16} aria-hidden="true" />
+                  <div>
+                    <span className={styles.trustItemTitle}>Livraison confirmée</span>
+                    <span className={styles.trustItemSub}>Tracking intégré</span>
+                  </div>
+                </div>
+                <div className={styles.trustItem}>
+                  <BadgeCheck size={16} aria-hidden="true" />
+                  <div>
+                    <span className={styles.trustItemTitle}>Vendeur vérifié</span>
+                    <span className={styles.trustItemSub}>KYC validé</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className={styles.infoCol}>
+              <div className={styles.categoryTag}>{product.category}</div>
+
+              <h1 className={styles.productName}>{product.name}</h1>
+
+              <RatingStars
+                rating={product.qualityRating ?? 0}
+                count={product.reviewsCount ?? 0}
+              />
+
+              <TrustBadges product={product} />
+
+              {product.description && (
+                <p className={styles.description}>{product.description}</p>
+              )}
+
+              {/* Fiche technique */}
+              <div className={styles.specsGrid}>
+                <div className={styles.specItem}>
+                  <span className={styles.specLabel}>Région d&apos;origine</span>
+                  <span className={styles.specValue}>{getRegionLabel(product.country) || '—'}</span>
+                </div>
+                <div className={styles.specItem}>
+                  <span className={styles.specLabel}>Unité de vente</span>
+                  <span className={styles.specValue}>{product.unite ?? 'kg'}</span>
+                </div>
+                <div className={styles.specItem}>
+                  <span className={styles.specLabel}>Stock disponible</span>
+                  <span className={styles.specValue}>{product.stock} {product.unite ?? 'unités'}</span>
+                </div>
+                {product.stockMinimum != null && product.stockMinimum > 0 && (
+                  <div className={styles.specItem}>
+                    <span className={styles.specLabel}>Minimum de commande</span>
+                    <span className={styles.specValue}>{product.stockMinimum} {product.unite ?? 'unités'}</span>
+                  </div>
+                )}
+                <div className={styles.specItem}>
+                  <span className={styles.specLabel}>Ventes réalisées</span>
+                  <span className={styles.specValue}>{product.salesCount ?? 0}</span>
+                </div>
+                <div className={styles.specItem}>
+                  <span className={styles.specLabel}>Producteur</span>
+                  <span className={styles.specValue}>{product.producer?.companyName ?? product.producer?.fullName ?? '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Colonne commande */}
+            <div className={styles.sideCol}>
+              <OrderForm product={product} />
+            </div>
+          </div>
+
+          {/* Vendeur */}
+          <section className={styles.sellerSection}>
+            <h2 className={styles.sectionTitle}>Le producteur</h2>
+            <div className={styles.sellerCard}>
+              <div className={styles.sellerAvatar} aria-hidden="true">
+                {(product.producer?.companyName ?? product.producer?.fullName ?? 'P').charAt(0).toUpperCase()}
+              </div>
+              <div className={styles.sellerInfo}>
+                <strong>{product.producer?.companyName ?? product.producer?.fullName ?? 'Producteur local'}</strong>
+                <span>{getRegionLabel(product.producer?.country ?? product.country ?? '')}</span>
+                {product.producer?.isVerified && (
+                  <span className={styles.verifiedLine}>
+                    <BadgeCheck size={14} aria-hidden="true" />
+                    Entreprise vérifiée C-Connect
+                  </span>
+                )}
+              </div>
+              {product.producer?.isCooperative && (
+                <Badge variant="gold" style={{ alignSelf: 'flex-start' }}>Coopérative</Badge>
+              )}
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}

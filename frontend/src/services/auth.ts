@@ -1,10 +1,5 @@
 import { ApiEnvelope, User } from '@/types';
-import { apiClient } from './api';
-
-function getBackendRoot(): string {
-  const base = apiClient.defaults.baseURL ?? 'http://localhost:8000/api';
-  return base.replace(/\/api\/?$/, '');
-}
+import { apiClient, setMemoryToken } from './api';
 
 export interface LoginCredentials {
   email: string;
@@ -19,56 +14,61 @@ export interface RegisterPayload {
   role?: 'buyer' | 'seller';
 }
 
-export interface AuthPayload {
+export interface AuthData {
   user: User;
   token?: string;
   access_token?: string;
 }
 
-export type AuthResponse = ApiEnvelope<AuthPayload>;
+export type AuthResponse    = ApiEnvelope<AuthData>;
 export type ProfileResponse = ApiEnvelope<{ user: User }>;
 
-export const authService = {
-  // getCsrfCookie: async (): Promise<void> => {
-  //   const baseURL = apiClient.defaults.baseURL?.replace(/\/api$/, '') || 'http://localhost:8000';
-  //   return apiClient.get('/sanctum/csrf-cookie', { baseURL });
-  // },
+function backendRoot(): string {
+  return (apiClient.defaults.baseURL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '');
+}
 
+export const authService = {
+  /**
+   * Récupère le cookie CSRF — doit appeler le ROOT du backend, pas /api.
+   * Correspond à GET http://localhost:8000/sanctum/csrf-cookie
+   */
   getCsrfCookie: async (): Promise<void> => {
-    await apiClient.get('/sanctum/csrf-cookie', {
-      baseURL: getBackendRoot(),
-    });
+    await apiClient.get('/sanctum/csrf-cookie', { baseURL: backendRoot() });
   },
 
+  /** POST /api/auth/login */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/auth/login', credentials);
+    const res = await apiClient.post<unknown, AuthResponse>('/auth/login', credentials);
+    if (res?.data?.token) setMemoryToken(res.data.token);
+    return res;
   },
 
-  register: async (userData: RegisterPayload): Promise<AuthResponse> => {
+  /** POST /api/auth/register */
+  register: async (payload: RegisterPayload): Promise<AuthResponse> => {
     await authService.getCsrfCookie();
-    return apiClient.post('/auth/register', {
-      name: userData.fullName,
-      email: userData.email,
-      password: userData.password,
-      password_confirmation: userData.password,
-      role: userData.role ?? 'buyer',
+    return apiClient.post<unknown, AuthResponse>('/auth/register', {
+      name: payload.fullName ?? '',
+      email: payload.email,
+      password: payload.password,
+      password_confirmation: payload.password,
+      role: payload.role ?? 'buyer',
     });
   },
 
+  /** GET /api/auth/me */
   getProfile: async (): Promise<ProfileResponse> => {
-    return apiClient.get('/me');
+    return apiClient.get<unknown, ProfileResponse>('/auth/me');
   },
 
-  updateProfile: async (userData: {
-    fullName?: string;
-    companyName?: string;
-    country?: string;
-  }): Promise<ProfileResponse> => {
-    return apiClient.put('/me', userData);
+  /** PUT /api/auth/me */
+  updateProfile: async (data: { fullName?: string; companyName?: string; country?: string }): Promise<ProfileResponse> => {
+    return apiClient.put<unknown, ProfileResponse>('/auth/me', data);
   },
 
+  /** POST /api/auth/logout */
   logout: async (): Promise<void> => {
-    return apiClient.post('/logout');
+    await apiClient.post('/auth/logout');
+    setMemoryToken(null);
   },
 };
