@@ -98,6 +98,15 @@ class Company extends Model
         return $this->hasMany(SellerProfile::class);
     }
 
+    /**
+     * Route model binding: accept either the slug or the raw id in {company}.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? $this->where('id', $value)->firstOrFail();
+    }
+
     // ==================== SCOPES ====================
 
     public function scopeVerified($query)

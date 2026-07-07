@@ -70,9 +70,10 @@ function toPayload(data: Partial<CompanyPayload>) {
 }
 
 export const companyService = {
+  /** GET /api/catalogue/companies — public, no auth */
   getCompanies: async (filters: CompanyFilters = {}): Promise<ApiEnvelope<PaginatedResult<Company>>> => {
     const res = await apiClient.get<unknown, ApiEnvelope<{ items: RawCompany[]; meta: PaginatedResult<Company>['meta'] }>>(
-      '/companies',
+      '/catalogue/companies',
       { params: filters }
     );
     return {
@@ -84,8 +85,9 @@ export const companyService = {
     };
   },
 
+  /** GET /api/catalogue/companies/:idOrSlug — public, no auth */
   getCompanyBySlugOrId: async (idOrSlug: string): Promise<ApiEnvelope<Company>> => {
-    const res = await apiClient.get<unknown, ApiEnvelope<RawCompany>>(`/companies/${idOrSlug}`);
+    const res = await apiClient.get<unknown, ApiEnvelope<RawCompany>>(`/catalogue/companies/${idOrSlug}`);
     return { ...res, data: normalizeCompany(res.data) };
   },
 

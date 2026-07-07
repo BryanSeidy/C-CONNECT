@@ -70,6 +70,13 @@ class ProductController extends Controller
             $query->inStock();
         }
 
+        if ($request->filled('companyId')) {
+            $companyId = $request->input('companyId');
+            $query->whereHas('seller', function ($sq) use ($companyId): void {
+                $sq->where('company_id', $companyId);
+            });
+        }
+
         $pageSize  = min((int) $request->input('pageSize', 12), 50);
         $page      = max((int) $request->input('page', 1), 1);
         $paginated = $query->orderBy('created_at', 'desc')->paginate($pageSize, ['*'], 'page', $page);

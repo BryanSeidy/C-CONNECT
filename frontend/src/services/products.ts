@@ -11,6 +11,7 @@ export interface ProductFilters {
   cooperative?: boolean;
   womenLed?: boolean;
   availableOnly?: boolean;
+  companyId?: number | string;
 }
 
 export interface ProductMutationPayload {
