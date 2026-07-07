@@ -266,6 +266,8 @@ export interface Dispute {
   statut: DisputeStatus;
   notesResolution?: string | null;
   order?: Order | null;
+  initiateur?: { id: number | string; fullName?: string | null } | null;
+  resolvedBy?: { id: number | string; fullName?: string | null } | null;
   createdAt?: string;
 }
 
@@ -442,6 +444,8 @@ export interface RawDispute {
   statut: DisputeStatus;
   notes_resolution?: string | null;
   order?: RawOrder | null;
+  initiateur?: { id: number; fullName?: string | null } | null;
+  resolved_by?: { id: number; fullName?: string | null } | null;
   created_at?: string;
 }
 

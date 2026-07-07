@@ -2,16 +2,22 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { AuthForm } from '@/components/AuthForm';
 import { getSafeRedirect } from '@/lib/routing';
 
 function RegisterContent() {
-  const { register } = useAuth();
+  const { register, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const redirect = getSafeRedirect(params.get('redirect'));
   const requestedRole = params.get('role') === 'seller' ? 'seller' : 'buyer';
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace(redirect);
+    }
+  }, [isLoading, isAuthenticated, redirect, router]);
 
   const loginUrl = redirect === '/dashboard'
     ? '/login?registered=true'

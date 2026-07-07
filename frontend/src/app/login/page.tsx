@@ -2,18 +2,26 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { AuthForm } from '@/components/AuthForm';
 import { getSafeRedirect } from '@/lib/routing';
 
 function LoginContent() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const redirect = getSafeRedirect(params.get('redirect'));
   const registered = params.get('registered') === 'true';
   const emailVerification = params.get('email_verification');
+
+  // Si déjà connecté (ex: retour arrière navigateur), on renvoie directement
+  // au dashboard plutôt que de réafficher le formulaire.
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace(redirect);
+    }
+  }, [isLoading, isAuthenticated, redirect, router]);
 
   const alternateHref =
     redirect === '/dashboard'

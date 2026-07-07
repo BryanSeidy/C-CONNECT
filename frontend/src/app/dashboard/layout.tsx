@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Loader2, Menu, Search } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,10 +31,37 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const pageLabel = PAGE_LABELS[pathname] ?? 'Dashboard';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Garde d'authentification côté client — seule source de vérité fiable :
+  // le cookie de session Sanctum est httpOnly et ne prouve rien depuis
+  // l'edge (voir la suppression de middleware.ts). On attend la résolution
+  // de /auth/me (isLoading) avant de trancher, pour éviter un redirect
+  // prématuré au premier rendu.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isLoading, isAuthenticated, pathname, router]);
+
+  if (isLoading) {
+    return (
+      <div className={styles.authLoading}>
+        <Loader2 size={28} className={styles.authLoadingSpinner} aria-hidden="true" />
+        <p>Chargement de votre espace…</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Le useEffect ci-dessus déclenche déjà la redirection ; on n'affiche
+    // rien pour éviter un flash de contenu protégé.
+    return null;
+  }
 
   return (
     <div className={styles.shell}>
