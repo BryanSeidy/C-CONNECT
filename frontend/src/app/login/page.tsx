@@ -15,8 +15,8 @@ function LoginContent() {
 
   const alternateHref =
     redirect === '/dashboard'
-      ? '/auth/register'
-      : `/auth/register?redirect=${encodeURIComponent(redirect)}`;
+      ? '/register'
+      : `/register?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <AuthForm

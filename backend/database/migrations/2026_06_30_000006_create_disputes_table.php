@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('disputes', function (Blueprint $table): void {
             $table->increments('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
 
             $table->foreignId('order_id')
             ->constrained('orders')

@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->integerIncrements('id');
+            $table->bigIncrements('id');
             // $table->string('sync_ref')->unique(); // Reference unique globale
             // $table->boolean('synced')->default(true);
             $table->string('nom');

@@ -10,9 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
-            $table->integerIncrements('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            $table->bigIncrements('id');
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
 
             $table->foreignId('seller_id')
                 ->constrained('seller_profiles')

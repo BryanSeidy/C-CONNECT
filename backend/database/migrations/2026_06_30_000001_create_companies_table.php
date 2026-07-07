@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('companies', function (Blueprint $table): void {
             $table->bigIncrements('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
             $table->foreignId('seller_id')
                 ->constrained('seller_profiles')
                 ->cascadeOnDelete();

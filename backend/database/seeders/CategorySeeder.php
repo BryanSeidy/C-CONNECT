@@ -23,6 +23,7 @@ class CategorySeeder extends Seeder
 
         foreach ($categories as $index => $cat) {
             Category::create([
+                // 'sync_ref' => (string) Str::uuid(),
                 'nom' => $cat['nom'],
                 'slug' => Str::slug($cat['nom']),
                 'description' => $cat['description'],
