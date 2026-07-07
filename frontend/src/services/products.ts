@@ -8,6 +8,9 @@ export interface ProductFilters {
   page?: number;
   pageSize?: number;
   verified?: boolean;
+  cooperative?: boolean;
+  womenLed?: boolean;
+  availableOnly?: boolean;
 }
 
 export interface ProductMutationPayload {

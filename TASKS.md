@@ -49,7 +49,7 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 - [ ] Empty states — few exist yet; brand the icon/illustration once each module's empty state is built.
 - [ ] Transactional email templates and PDF export headers (Purchase Order / Invoice / Delivery Note) — currently plain browser-printable HTML with no visual branding pass.
 
-- [ ] **Critical:** `services/auth.ts` calls `/auth/login`, `/auth/register`, `/auth/profile` — these routes don't exist in `routes/api.php` (real routes are `/login`, `/register`, `/me`). Login/register/profile-update are likely broken end-to-end. Needs a full audit of `AuthController` + `useAuth.tsx` + `auth.ts` together, not a quick patch — flagging rather than guessing at the wiring blind.
+- [x] `services/auth.ts` / backend `/auth/*` routes verified in sync (both use the `auth` prefix: `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`) — resolved by commit `4814f36`, this note was stale.
 - [ ] Run `php artisan migrate` against a real Postgres instance and verify the B2B migrations (companies, rfqs, rfq_bids, recurring_orders, disputes, inventory, order lifecycle enum rename) apply cleanly — could not run migrations in the sandbox (no DB, no Composer/Packagist network access).
 - [ ] Continue typed API response contracts across remaining dashboard, negotiations, and reviews modules.
 - [ ] Complete migration from localStorage bearer-token fallback to httpOnly Sanctum cookie sessions once backend cookie mode is enabled.
@@ -59,7 +59,7 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 
 ## Priority 1 — MVP conversion and trust
 
-- [ ] Marketplace search filters for B2B criteria (region, verified business, women-led, cooperative, availability) — `CompanyFilters` already exists in `services/companies.ts`, just needs marketplace UI wiring.
+- [x] Marketplace search filters for B2B criteria (region, verified business, women-led, cooperative, availability) — `CompanyFilters` already exists in `services/companies.ts`; wired via `SellerProfile` scopes directly on `ProductController::index` (`verified`, `cooperative`, `womenLed`, `availableOnly` query params) and exposed as toggle chips on the marketplace page.
 - [ ] Professional company profile page (public-facing, by slug) showing catalog + badges + trust score — `companyService.getCompanyBySlugOrId` is ready, page not yet built.
 - [ ] Business dashboard overview cards for RFQ count, recurring order count, low-stock warnings, open disputes (currently only on dedicated pages).
 - [ ] Add password recovery and email verification flows.

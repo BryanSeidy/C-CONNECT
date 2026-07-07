@@ -47,6 +47,29 @@ class ProductController extends Controller
             });
         }
 
+        // --- Critères B2B (entreprise vendeuse) ---
+        $wantsVerified   = $request->boolean('verified');
+        $wantsCooperative = $request->boolean('cooperative');
+        $wantsWomenLed   = $request->boolean('womenLed');
+
+        if ($wantsVerified || $wantsCooperative || $wantsWomenLed) {
+            $query->whereHas('seller', function ($sq) use ($wantsVerified, $wantsCooperative, $wantsWomenLed): void {
+                if ($wantsVerified) {
+                    $sq->verified();
+                }
+                if ($wantsCooperative) {
+                    $sq->where('is_cooperative', true);
+                }
+                if ($wantsWomenLed) {
+                    $sq->femaleOwned();
+                }
+            });
+        }
+
+        if ($request->boolean('availableOnly')) {
+            $query->inStock();
+        }
+
         $pageSize  = min((int) $request->input('pageSize', 12), 50);
         $page      = max((int) $request->input('page', 1), 1);
         $paginated = $query->orderBy('created_at', 'desc')->paginate($pageSize, ['*'], 'page', $page);
