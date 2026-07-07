@@ -10,6 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
+frontend\.claude
 # testing
 /coverage
 
@@ -41,6 +42,14 @@ yarn-error.log*
 next-env.d.ts
 
 # pesonnal
+*.patch
+/scripts
+docs/DESCRIPTION DU PROJET1.md
+b2b-repositioning.bundle
 AGENTS.md
 CLAUDE.md
-/scripts
+ARCHITECTURE.md
+DESIGN_SYSTEM.md
+DEVELOPMENT.md
+HUMAN_CENTERED_UX.md
+PRODUCT.md

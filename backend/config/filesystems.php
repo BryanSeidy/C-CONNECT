@@ -47,6 +47,15 @@ return [
             'report' => false,
         ],
 
+        'cconnect_media' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/cconnect-media'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/cconnect-media',
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

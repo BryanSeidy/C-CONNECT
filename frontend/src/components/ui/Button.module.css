@@ -1,0 +1,102 @@
+/* C-Connect — Button Component */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.01em;
+  -webkit-appearance: none;
+}
+
+/* ── Sizes ── */
+.sm  { font-size: 0.8125rem; padding: 0.45rem 0.85rem; min-height: 34px; border-radius: 8px; }
+.md  { font-size: 0.9rem;    padding: 0.65rem 1.25rem; min-height: 42px; }
+.lg  { font-size: 1rem;      padding: 0.85rem 1.75rem; min-height: 50px; }
+
+/* ── Variants ── */
+.primary {
+  background: var(--c-green-800);
+  color: var(--c-white);
+  box-shadow: 0 2px 6px rgba(19,53,46,0.2);
+}
+.primary:hover:not(:disabled) {
+  background: var(--c-green-700);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(19,53,46,0.25);
+}
+.primary:active:not(:disabled) { transform: translateY(0); }
+
+.secondary {
+  background: var(--c-white);
+  color: var(--c-green-800);
+  border: 1.5px solid var(--c-green-800);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--c-green-50);
+  transform: translateY(-1px);
+}
+
+.outline {
+  background: transparent;
+  color: var(--c-green-800);
+  border: 1.5px solid var(--border-color);
+}
+.outline:hover:not(:disabled) {
+  background: var(--c-green-50);
+  border-color: var(--c-green-600);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-main);
+  border: 1.5px solid transparent;
+}
+.ghost:hover:not(:disabled) { background: var(--c-green-50); }
+
+.danger {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1.5px solid rgba(192,57,43,0.2);
+}
+.danger:hover:not(:disabled) {
+  background: var(--error);
+  color: white;
+}
+
+.gold {
+  background: var(--c-gold-500);
+  color: var(--c-green-900);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(217,164,65,0.25);
+}
+.gold:hover:not(:disabled) {
+  background: var(--c-gold-400);
+  transform: translateY(-1px);
+}
+
+/* ── States ── */
+.btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn.loading { cursor: wait; opacity: 0.75; }
+
+.spinner {
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fullWidth { width: 100%; }

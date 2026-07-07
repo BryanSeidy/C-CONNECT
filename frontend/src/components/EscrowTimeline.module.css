@@ -1,0 +1,88 @@
+/* C-Connect — EscrowTimeline */
+
+/* Horizontal compact track */
+.track {
+   display: flex;
+   align-items: center;
+  gap: 0;
+  width: 100%;
+  overflow: hidden;
+ }
+ 
+.step {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+ }
+ 
+.dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.2s;
+ }
+ 
+.stepLabel {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+ }
+ 
+/* ── Done ── */
+.done .dot {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+ }
+.done .stepLabel { color: var(--success); }
+ 
+/* ── Current ── */
+.current .dot {
+  background: var(--c-gold-100);
+  border-color: var(--c-gold-500);
+  color: var(--c-gold-500);
+  box-shadow: 0 0 0 3px rgba(217,164,65,0.18);
+ }
+.current .stepLabel {
+  color: #7A4E00;
+  font-weight: 700;
+ }
+ 
+/* ── Pending ── */
+.pending .dot { opacity: 0.45; }
+.pending .stepLabel { opacity: 0.45; }
+ 
+/* ── Connector line ── */
+.line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  margin: 0 2px;
+  margin-bottom: 0.9rem; /* align with center of dot */
+ }
+ 
+.lineDone { background: var(--success); opacity: 0.4; }
+ 
+/* ── Exception pills ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+ }
+ 
+.cancelled { background: var(--c-green-50); color: var(--text-muted); }
+.dispute   { background: var(--error-bg); color: var(--error); }
