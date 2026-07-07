@@ -14,6 +14,8 @@
 - [x] Replace interface emoji markers with Lucide React SVG icons.
 - [x] Launch a premium SaaS homepage focused on Made in Cameroon commerce outcomes.
 
+- [x] Removed `frontend/src/app/marketplace/idk` — an unreferenced, unfinished duplicate of `marketplace/product/[id]`, dead clutter left in the tree (same pattern as the earlier `.rej` files).
+
 ## Completed — B2B Repositioning (2026-06-30)
 
 - [x] `Company` entity (RCCM, NIU, type, region, badges, trust score) linked to `users` and `seller_profiles`.
@@ -60,11 +62,11 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 ## Priority 1 — MVP conversion and trust
 
 - [x] Marketplace search filters for B2B criteria (region, verified business, women-led, cooperative, availability) — `CompanyFilters` already exists in `services/companies.ts`; wired via `SellerProfile` scopes directly on `ProductController::index` (`verified`, `cooperative`, `womenLed`, `availableOnly` query params) and exposed as toggle chips on the marketplace page.
-- [ ] Professional company profile page (public-facing, by slug) showing catalog + badges + trust score — `companyService.getCompanyBySlugOrId` is ready, page not yet built.
-- [ ] Business dashboard overview cards for RFQ count, recurring order count, low-stock warnings, open disputes (currently only on dedicated pages).
+- [x] Professional company profile page (public-facing, by slug) showing catalog + badges + trust score — new route `/entreprises/[slug]`. Found and fixed along the way: `companyService.getCompanies`/`getCompanyBySlugOrId` called `/companies`, which only has write routes; real public read routes are `/catalogue/companies` — company listing and the seller dashboard's own profile fetch were both silently broken (404). Also added slug-or-id route model binding on `Company` since the frontend method is `BySlugOrId` but binding only supported `id`.
+- [x] Business dashboard overview cards for RFQ count, recurring order count, low-stock warnings, open disputes — added open-disputes KPI (buyer + seller) and low-stock KPI + panel (seller), reusing existing `disputeService`/`productService.getMyProducts`.
 - [ ] Add password recovery and email verification flows.
 - [ ] Add seller onboarding completion states and verified business trust signals.
-- [ ] Add marketplace SEO metadata and product structured data.
+- [x] Add marketplace SEO metadata and product structured data — static metadata for `/marketplace`, dynamic `generateMetadata` + JSON-LD (`Product` schema on product pages, `Organization` schema on company profile pages) via server-side layouts, since the pages themselves are client components.
 
 ## Priority 2 — Operational readiness
 

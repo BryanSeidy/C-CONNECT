@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CalendarClock, ClipboardList, FileText, Package, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
+import { ArrowRight, AlertTriangle, CalendarClock, ClipboardList, FileText, Package, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
 import { rfqService } from '@/services/rfqs';
 import { recurringOrderService } from '@/services/recurring';
-import { Order, Rfq, RecurringOrder } from '@/types';
+import { disputeService } from '@/services/disputes';
+import { productService } from '@/services/products';
+import { Order, Rfq, RecurringOrder, Dispute, Product } from '@/types';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Badge } from '@/components/ui/Badge';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
@@ -29,10 +31,11 @@ function fmt(n: number) { return n.toLocaleString('fr-FR'); }
 
 // ── Buyer Dashboard ──────────────────────────────────────────────────────────
 
-function BuyerDashboard({ orders, rfqs, recurring, loading }: {
+function BuyerDashboard({ orders, rfqs, recurring, disputes, loading }: {
   orders: Order[];
   rfqs: Rfq[];
   recurring: RecurringOrder[];
+  disputes: Dispute[];
   loading: boolean;
 }) {
   const active = orders.filter(o => !['complete', 'annule', 'dispute'].includes(o.escrowStatus));
@@ -44,6 +47,7 @@ function BuyerDashboard({ orders, rfqs, recurring, loading }: {
     .reduce((s, o) => s + o.montantTotal, 0);
   const openRfqs = rfqs.filter(r => r.statut === 'active').length;
   const activeRecurring = recurring.filter(r => r.statut === 'active').length;
+  const openDisputes = disputes.filter(d => d.statut === 'ouvert').length;
 
   return (
     <div className={styles.page}>
@@ -53,6 +57,7 @@ function BuyerDashboard({ orders, rfqs, recurring, loading }: {
         <KpiCard label="En séquestre" value={`${fmt(inEscrow)} XAF`} icon={<ShieldCheck size={20} />} variant="gold" loading={loading} sub="Fonds protégés en cours" />
         <KpiCard label="Commandes actives" value={active.length} icon={<Truck size={20} />} variant="success" loading={loading} sub={`sur ${orders.length} total`} />
         <KpiCard label="RFQs ouvertes" value={openRfqs} icon={<ClipboardList size={20} />} variant="default" loading={loading} sub={`${rfqs.length} publiées`} />
+        <KpiCard label="Litiges ouverts" value={openDisputes} icon={<ShieldAlert size={20} />} variant={openDisputes > 0 ? 'warning' : 'success'} loading={loading} sub={activeRecurring > 0 ? `${activeRecurring} approvisionnement(s) actif(s)` : undefined} />
       </div>
 
       <div className={styles.grid2}>
@@ -174,9 +179,11 @@ function BuyerDashboard({ orders, rfqs, recurring, loading }: {
 
 // ── Seller Dashboard ─────────────────────────────────────────────────────────
 
-function SellerDashboard({ orders, rfqs, loading }: {
+function SellerDashboard({ orders, rfqs, disputes, products, loading }: {
   orders: Order[];
   rfqs: Rfq[];
+  disputes: Dispute[];
+  products: Product[];
   loading: boolean;
 }) {
   const available = orders
@@ -187,6 +194,8 @@ function SellerDashboard({ orders, rfqs, loading }: {
     .reduce((s, o) => s + o.montantVendeur, 0);
   const activeOrders = orders.filter(o => !['complete', 'annule'].includes(o.escrowStatus));
   const openBids = rfqs.filter(r => r.statut === 'active').length;
+  const openDisputes = disputes.filter(d => d.statut === 'ouvert').length;
+  const lowStockProducts = products.filter(p => p.stock <= (p.stockMinimum || 0));
 
   return (
     <div className={styles.page}>
@@ -195,6 +204,8 @@ function SellerDashboard({ orders, rfqs, loading }: {
         <KpiCard label="Fonds disponibles" value={`${fmt(available)} XAF`} icon={<Wallet size={20} />} variant="success" loading={loading} sub="Séquestre libéré" />
         <KpiCard label="En séquestre" value={`${fmt(inEscrow)} XAF`} icon={<ShieldCheck size={20} />} variant="gold" loading={loading} sub="En attente de réception" />
         <KpiCard label="Commandes actives" value={activeOrders.length} icon={<Truck size={20} />} variant="default" loading={loading} />
+        <KpiCard label="Stock faible" value={lowStockProducts.length} icon={<AlertTriangle size={20} />} variant={lowStockProducts.length > 0 ? 'warning' : 'success'} loading={loading} sub={lowStockProducts.length > 0 ? 'À réapprovisionner' : 'Stocks sains'} />
+        <KpiCard label="Litiges ouverts" value={openDisputes} icon={<ShieldAlert size={20} />} variant={openDisputes > 0 ? 'warning' : 'success'} loading={loading} />
         <KpiCard label="Appels d'offres" value={openBids} icon={<ClipboardList size={20} />} variant="default" loading={loading} sub="Ouverts à soumission" />
       </div>
 
@@ -254,6 +265,27 @@ function SellerDashboard({ orders, rfqs, loading }: {
               ))}
             </div>
           </section>
+
+          {/* Stock faible */}
+          {lowStockProducts.length > 0 && (
+            <section className={styles.panel}>
+              <div className={styles.panelHead}>
+                <h2>Stock faible</h2>
+                <Link href="/dashboard/products" className={styles.link}>Gérer <ArrowRight size={14} /></Link>
+              </div>
+              <div className={styles.panelBody}>
+                {lowStockProducts.slice(0, 4).map(product => (
+                  <div key={product.id} className={styles.rfqRow}>
+                    <div className={styles.rfqLeft}>
+                      <span className={styles.rfqTitle}>{product.name}</span>
+                      <span className={styles.rfqMeta}>{product.stock} {product.unite} restant(s) · seuil {product.stockMinimum}</span>
+                    </div>
+                    <Badge variant="warning">À réapprovisionner</Badge>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Actions rapides vendeur */}
           <div className={styles.quickActions} style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -319,27 +351,34 @@ export default function DashboardOverview() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [rfqs, setRfqs] = useState<Rfq[]>([]);
   const [recurring, setRecurring] = useState<RecurringOrder[]>([]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordRes, rfqRes, recRes] = await Promise.allSettled([
+      const isSeller = user?.role === 'seller';
+      const [ordRes, rfqRes, recRes, disRes, prodRes] = await Promise.allSettled([
         orderService.getOrders(),
         rfqService.getMyRfqs(),
         recurringOrderService.getRecurringOrders(),
+        disputeService.getDisputes(),
+        isSeller ? productService.getMyProducts() : Promise.resolve(null),
       ]);
       if (ordRes.status === 'fulfilled') setOrders(ordRes.value.data ?? []);
       if (rfqRes.status === 'fulfilled') setRfqs(rfqRes.value.data ?? []);
       if (recRes.status === 'fulfilled') setRecurring(recRes.value.data ?? []);
+      if (disRes.status === 'fulfilled') setDisputes(disRes.value.data ?? []);
+      if (prodRes.status === 'fulfilled' && prodRes.value) setProducts(prodRes.value.data ?? []);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.role]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   if (user?.role === 'admin') return <AdminDashboard orders={orders} loading={loading} />;
-  if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} loading={loading} />;
-  return <BuyerDashboard orders={orders} rfqs={rfqs} recurring={recurring} loading={loading} />;
+  if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} disputes={disputes} products={products} loading={loading} />;
+  return <BuyerDashboard orders={orders} rfqs={rfqs} recurring={recurring} disputes={disputes} loading={loading} />;
 }
