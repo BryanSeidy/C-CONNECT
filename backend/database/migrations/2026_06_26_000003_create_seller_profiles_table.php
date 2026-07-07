@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('seller_profiles', function (Blueprint $table) {
             $table->integerIncrements('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 

@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->integerIncrements('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
 
             $table->foreignId('seller_id')
                 ->constrained('seller_profiles')

@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('reviews', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('sync_ref')->unique();
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique();
+            // $table->boolean('synced')->default(true);
 
             $table->foreignId('buyer_id')
                 ->constrained('users')

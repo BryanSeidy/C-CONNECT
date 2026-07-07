@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->integerIncrements('id');
-            $table->string('sync_ref')->unique(); // Reference unique globale
-            $table->boolean('synced')->default(true);
+            // $table->string('sync_ref')->unique(); // Reference unique globale
+            // $table->boolean('synced')->default(true);
             $table->string('nom');
             $table->string('prenom');
             $table->string('email')->unique();
