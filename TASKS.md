@@ -73,4 +73,4 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 - [ ] Add centralized frontend error boundaries and observability hooks.
 - [ ] Add API rate limiting and audit logging documentation.
 - [ ] Add CI pipeline for frontend type-check/build and backend PHPUnit.
-- [ ] Wire admin UI for dispute resolution (`DisputeController::resolve` exists; no admin screen yet).
+- [x] Wire admin UI for dispute resolution — this note was stale, `dashboard/admin/disputes/page.tsx` already existed and was wired to `resolveDispute`. Enhanced it: shows buyer/seller/amount via the dispute→order relation (now populated by `normalizeDispute`), added the missing "demander_informations" action (backend already supported it, UI didn't expose it).

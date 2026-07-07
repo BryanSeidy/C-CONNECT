@@ -22,7 +22,7 @@ function normalizeOrderItem(raw: RawOrderItem): OrderItem {
   };
 }
 
-function normalizeOrder(raw: RawOrder): Order {
+export function normalizeOrder(raw: RawOrder): Order {
   return {
     id: raw.id,
     buyerId: raw.buyer_id,
