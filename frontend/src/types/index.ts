@@ -15,6 +15,7 @@ export interface User {
   country?: string | null;
   role: UserRole;
   isVerified?: boolean;
+  email_verified_at?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

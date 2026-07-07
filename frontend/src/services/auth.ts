@@ -71,4 +71,26 @@ export const authService = {
     await apiClient.post('/auth/logout');
     setMemoryToken(null);
   },
+
+  /** POST /api/auth/forgot-password */
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    await authService.getCsrfCookie();
+    return apiClient.post<unknown, { message: string }>('/auth/forgot-password', { email });
+  },
+
+  /** POST /api/auth/reset-password */
+  resetPassword: async (payload: { email: string; token: string; password: string; passwordConfirmation: string }): Promise<{ message: string }> => {
+    await authService.getCsrfCookie();
+    return apiClient.post<unknown, { message: string }>('/auth/reset-password', {
+      email: payload.email,
+      token: payload.token,
+      password: payload.password,
+      password_confirmation: payload.passwordConfirmation,
+    });
+  },
+
+  /** POST /api/auth/email/verification-notification — auth required */
+  resendVerificationEmail: async (): Promise<{ message: string }> => {
+    return apiClient.post<unknown, { message: string }>('/auth/email/verification-notification');
+  },
 };

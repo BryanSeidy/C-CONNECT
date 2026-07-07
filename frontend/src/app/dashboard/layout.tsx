@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Bell, Menu, Search } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
+import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Layout.module.css';
 
@@ -80,6 +81,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
           </div>
+
+          {user && !user.email_verified_at && <VerifyEmailBanner />}
 
           {children}
         </main>

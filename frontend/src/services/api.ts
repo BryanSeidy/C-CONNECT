@@ -16,6 +16,8 @@ const PUBLIC_PATTERNS: RegExp[] = [
   /^\/rfqs(?:\/[^/]+)?$/,
   /^\/auth\/register$/,
   /^\/auth\/login$/,
+  /^\/auth\/forgot-password$/,
+  /^\/auth\/reset-password$/,
   /^\/sanctum\/csrf-cookie$/,
   /^\/webhooks\//,
 ];
@@ -138,7 +140,7 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 401 && typeof window !== 'undefined') {
-      const isAuthPage = /^\/(login|register)/.test(window.location.pathname);
+      const isAuthPage = /^\/(login|register|forgot-password|reset-password)/.test(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }

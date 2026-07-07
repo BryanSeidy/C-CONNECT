@@ -6,12 +6,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -20,7 +23,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
             'role' => ['sometimes', 'string', Rule::in(['buyer', 'seller', 'admin'])],
         ]);
 
@@ -41,6 +44,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
             'message' => 'Registration successful.',
@@ -105,5 +109,83 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Profile updated successfully.', 'data' => ['user' => $user->fresh()]]);
+    }
+
+    /**
+     * Envoie un lien de réinitialisation de mot de passe.
+     * Retourne toujours un message générique pour ne pas révéler
+     * si un compte existe avec cet email.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'string', 'email']]);
+
+        Password::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'message' => "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.",
+        ]);
+    }
+
+    /**
+     * Réinitialise le mot de passe à partir du token reçu par email.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
+        ]);
+
+        $status = Password::reset(
+            $validated,
+            function (User $user, string $password): void {
+                $user->forceFill(['password' => $password])->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Mot de passe réinitialisé avec succès.']);
+        }
+
+        return response()->json(['message' => __($status)], 422);
+    }
+
+    /**
+     * Renvoie l'email de vérification à l'utilisateur authentifié.
+     */
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Cet email est déjà vérifié.']);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Email de vérification envoyé.']);
+    }
+
+    /**
+     * Valide le lien signé reçu par email et marque l'email comme vérifié.
+     * La signature est déjà validée par le middleware `signed` de la route.
+     */
+    public function verifyEmail(Request $request, int $id, string $hash): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return redirect()->away("{$frontendUrl}/login?email_verification=invalid");
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            event(new Verified($user));
+        }
+
+        return redirect()->away("{$frontendUrl}/login?email_verification=success");
     }
 }

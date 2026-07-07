@@ -10,6 +10,7 @@ use App\Events\ProductReviewed;
 use App\Listeners\AwardPointsForCompletedOrder;
 use App\Listeners\AwardPointsForReview;
 use App\Listeners\DispatchOrderCompletedOnRelease;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,5 +28,14 @@ class AppServiceProvider extends ServiceProvider
 
         // Avis déposé → attribuer les points + mise à jour qualité
         Event::listen(ProductReviewed::class, AwardPointsForReview::class);
+
+        // Le lien "mot de passe oublié" doit pointer vers le frontend Next.js
+        // (SPA découplée), pas vers une route Blade côté API.
+        ResetPassword::createUrlUsing(function ($notifiable, string $token): string {
+            $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+            $email = urlencode($notifiable->getEmailForPasswordReset());
+
+            return "{$frontendUrl}/reset-password?token={$token}&email={$email}";
+        });
     }
 }

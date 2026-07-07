@@ -68,6 +68,15 @@ Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
 Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:6,1')
+        ->name('password.update');
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware('signed')
+        ->name('verification.verify');
 
     // OAuth Social — hors middleware auth, callback depuis le provider
     Route::get('/social/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
@@ -89,6 +98,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', [AuthController::class, 'me'])->name('me');
         Route::put('/me', [AuthController::class, 'updateProfile'])->name('update-profile');
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+        Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
+            ->middleware('throttle:6,1')
+            ->name('verification.send');
     });
 
     // --- Gamification ---
