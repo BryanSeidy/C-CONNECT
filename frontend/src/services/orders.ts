@@ -110,9 +110,61 @@ export const orderService = {
 // Payment Service
 // ============================================================================
 
+// ============================================================================
+// Payment Service — Mobile Money (MTN MoMo / Orange Money)
+// ============================================================================
+
+export interface MobileMoneyInitiatePayload {
+  orderId: string | number;
+  phone: string;            // format +237XXXXXXXXX
+  paymentMethod: 'mtn_momo' | 'orange_money';
+}
+
+export interface MobileMoneyInitiateData {
+  transactionReference: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  instructions: string;
+  orderId: string;
+}
+
+interface RawInitiateData {
+  transaction_reference: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  instructions: string;
+  order_id: string;
+}
+
 export const paymentService = {
-  createPayment: async (paymentData: { orderId: number | string; method: string }) => {
-    return apiClient.post('/payments', paymentData);
+  /**
+   * Initie une demande de paiement Mobile Money.
+   * Retourne les instructions PIN a afficher a l'utilisateur.
+   */
+  initiateMobileMoney: async (
+    payload: MobileMoneyInitiatePayload
+  ): Promise<ApiEnvelope<MobileMoneyInitiateData>> => {
+    const res = await apiClient.post<unknown, ApiEnvelope<RawInitiateData>>(
+      '/payments/mobile-money/initiate',
+      {
+        order_id:       payload.orderId,
+        phone:          payload.phone,
+        payment_method: payload.paymentMethod,
+      }
+    );
+    return {
+      ...res,
+      data: {
+        transactionReference: res.data.transaction_reference,
+        amount:               res.data.amount,
+        currency:             res.data.currency,
+        paymentMethod:        res.data.payment_method,
+        instructions:         res.data.instructions,
+        orderId:              res.data.order_id,
+      },
+    };
   },
 
   getPayments: async () => {

@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { dispatchDatabaseMode, type DatabaseMode } from '@/context/DatabaseModeContext';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -118,7 +119,14 @@ async function refreshCsrf(failedConfig: InternalAxiosRequestConfig): Promise<un
 }
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
+  (response: AxiosResponse) => {
+    // Propager le mode base de donnees depuis le header backend
+    const dbMode = response.headers['x-database-mode'] as string | undefined;
+    if (dbMode === 'online' || dbMode === 'offline') {
+      dispatchDatabaseMode(dbMode as DatabaseMode);
+    }
+    return response.data;
+  },
 
   async (error: AxiosError) => {
     const status = error.response?.status;

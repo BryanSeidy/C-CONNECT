@@ -111,11 +111,12 @@ export default function ProductDetailPage() {
     setError(null);
     setSuccess(null);
     try {
-      const orderRes: any = await orderService.createOrder({ productId: product.id, quantity });
-      await paymentService.createPayment({ orderId: orderRes?.data?.id, method: 'BANK_TRANSFER' });
-      setSuccess('Commande et paiement escrow initialisés avec succès.');
-    } catch (err: any) {
-      setError(err?.message || 'La commande a échoué, veuillez réessayer.');
+      await orderService.createOrder({ productId: product.id, quantity });
+      setSuccess('Commande creee avec succes. Procedez au paiement depuis votre espace commandes.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? 'La commande a echoue, veuillez reessayer.';
+      setError(msg);
     } finally {
       setIsOrdering(false);
     }

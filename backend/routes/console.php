@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -8,4 +10,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('db:sync-neon')->everyMinute();
+// Reconciliation SQLite -> Neon toutes les minutes
+Schedule::command('db:sync-neon')->everyMinute()->withoutOverlapping();
+
+// Expirer les RFQs depassees toutes les heures
+Schedule::command('rfqs:expire-stale')->hourly()->withoutOverlapping();

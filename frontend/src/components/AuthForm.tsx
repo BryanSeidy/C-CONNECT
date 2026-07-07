@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Eye, EyeOff, Globe, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import styles from './AuthForm.module.css';
@@ -139,6 +139,16 @@ export const AuthForm = ({
           </div>
         )}
 
+        {/* OAuth Google */}
+        <OAuthGoogle />
+
+        {/* Divider */}
+        <div className={styles.divider} aria-hidden="true">
+          <span className={styles.dividerLine} />
+          <span className={styles.dividerText}>ou par email</span>
+          <span className={styles.dividerLine} />
+        </div>
+
         <form onSubmit={handleSubmit} noValidate className={styles.form}>
 
           {/* Nom complet (register uniquement) */}
@@ -270,6 +280,39 @@ export const AuthForm = ({
     </div>
   );
 };
+
+// ---------------------------------------------------------------------------
+// OAuth Google button
+// ---------------------------------------------------------------------------
+
+function OAuthGoogle() {
+  const [loading, setLoading] = useState(false);
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '');
+
+  const handleClick = () => {
+    setLoading(true);
+    // Redirection vers le backend Laravel Socialite — pas de fetch ici
+    window.location.href = `${API_BASE}/api/auth/social/google/redirect`;
+  };
+
+  return (
+    <button
+      type="button"
+      className={styles.oauthBtn}
+      onClick={handleClick}
+      disabled={loading}
+      aria-busy={loading}
+      aria-label="Continuer avec Google"
+    >
+      {loading ? (
+        <Loader2 size={18} className={styles.spinner} aria-hidden="true" />
+      ) : (
+        <Globe size={18} aria-hidden="true" className={styles.oauthIcon} />
+      )}
+      <span>Continuer avec Google</span>
+    </button>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Helper sub-component

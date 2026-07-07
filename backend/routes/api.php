@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\GamificationController;
 use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\Api\RecurringOrderController;
 use App\Http\Controllers\Api\RfqController;
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -67,6 +68,10 @@ Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
 Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+    // OAuth Social — hors middleware auth, callback depuis le provider
+    Route::get('/social/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+    Route::get('/social/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
 });
 
 // --- Webhooks (callbacks externes) ---
@@ -110,6 +115,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('payments')->name('payments.')->group(function (): void {
         Route::post('/mobile-money', [PaymentController::class, 'processMobileMoney'])
             ->name('mobile-money');
+        // Initiation checkout — retourne instructions PIN a l'utilisateur
+        Route::post('/mobile-money/initiate', [PaymentWebhookController::class, 'initiate'])
+            ->name('mobile-money.initiate');
     });
 
     // --- Gestion des produits (vendeurs uniquement) ---
