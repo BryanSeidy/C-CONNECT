@@ -100,6 +100,17 @@ export const companyService = {
     const res = await apiClient.put<unknown, ApiEnvelope<RawCompany>>(`/companies/${id}`, toPayload(payload));
     return { ...res, data: normalizeCompany(res.data) };
   },
+
+  /** PATCH /api/companies/:id/badges — admin only (KYB decision). */
+  updateVerificationStatus: async (
+    id: number | string,
+    statutVerification: 'verifie' | 'rejete' | 'en_attente' | 'non_verifie'
+  ): Promise<ApiEnvelope<Company>> => {
+    const res = await apiClient.patch<unknown, ApiEnvelope<RawCompany>>(`/companies/${id}/badges`, {
+      statut_verification: statutVerification,
+    });
+    return { ...res, data: normalizeCompany(res.data) };
+  },
 };
 
 export { normalizeCompany };

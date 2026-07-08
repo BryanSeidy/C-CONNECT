@@ -12,8 +12,6 @@
 export const FEATURES = {
   /** No ReviewController / reviews table on the backend yet (services/reviews.ts -> 404). */
   productReviews: false,
-  /** No /matching route on the backend; matching.ts was dead code and has been removed. */
-  advancedMatching: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURES;
