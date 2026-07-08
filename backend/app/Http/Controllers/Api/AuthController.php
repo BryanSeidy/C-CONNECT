@@ -38,19 +38,19 @@ class AuthController extends Controller
             'role' => $validated['role'] ?? 'buyer',
         ]);
 
-        if ($user->role === 'seller') {
-            $user->sellerProfile()->create([
-                'business_name' => $user->fullName ?: 'Coopérative locale',
-                'region' => 'Centre',
-            ]);
-        }
+        // if ($user->role === 'seller') {
+        //     $user->sellerProfile()->create([
+        //         'business_name' => $user->fullName ?: 'Coopérative locale',
+        //         'region' => 'Centre',
+        //     ]);
+        // }
 
         // $user->sendEmailVerificationNotification();
 
         return response()->json([
             'message' => 'Registration successful.',
             'data' => [
-                'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
+                // 'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
                 'token' => $user->createToken('cconnect_auth_token')->plainTextToken
             ]
         ], 201);

@@ -34,7 +34,9 @@ function extractServerError(error: unknown): string | null {
   if (typeof data.message === 'string') return data.message;
   if (typeof data.errors === 'string') return data.errors;
   if (data.errors && typeof data.errors === 'object') {
-    return Object.values(data.errors).flat().join(', ');
+    // Renvoie la première erreur pour chaque champ
+    const firstError = Object.values(data.errors)[0]?.[0];
+    if (firstError) return firstError;
   }
   return null;
 }
