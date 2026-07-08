@@ -11,10 +11,12 @@ import { productService } from '@/services/products';
 import { orderService } from '@/services/orders';
 import { reviewService } from '@/services/reviews';
 import { negotiationService } from '@/services/negotiations';
+import { matchingService } from '@/services/matching';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
 import { extractApiError } from '@/lib/errors';
-import { ShieldCheck, Star } from 'lucide-react';
+import { isFeatureEnabled } from '@/lib/featureFlags';
+import { ShieldCheck, Star, Handshake } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
@@ -22,6 +24,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
+  const [recommended, setRecommended] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isOrdering, setIsOrdering] = useState(false);
@@ -65,6 +68,12 @@ export default function ProductDetailPage() {
         if (prod) {
           setNegPrice(prod.price);
           setNegQuantity(Math.min(10, prod.stock));
+          matchingService
+            .getRecommendations({ category: prod.category, country: prod.country, limit: 4, excludeProductId: prod.id })
+            .then((items) => {
+              if (active) setRecommended(items);
+            })
+            .catch(() => { /* section reste simplement masquée */ });
         }
       })
       .catch((err) => {
@@ -76,14 +85,16 @@ export default function ProductDetailPage() {
         setLoading(false);
       });
 
-    // Load Reviews
-    reviewService
-      .getProductReviews(productId)
-      .then((res) => {
-        if (!active) return;
-        setReviews(res?.data || []);
-      })
-      .catch(() => { });
+    // Load Reviews (feature-gated — no backend endpoint yet, see lib/featureFlags.ts)
+    if (isFeatureEnabled('productReviews')) {
+      reviewService
+        .getProductReviews(productId)
+        .then((res) => {
+          if (!active) return;
+          setReviews(res?.data || []);
+        })
+        .catch(() => { });
+    }
 
     return () => {
       active = false;
@@ -237,9 +248,15 @@ export default function ProductDetailPage() {
           {/* Section Évaluations & Avis */}
           <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--primary-color)' }}>
-              Évaluations & Avis Clients ({reviews.length})
+              Évaluations & Avis Clients
             </h2>
 
+            {!isFeatureEnabled('productReviews') ? (
+              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Les avis clients arrivent bientôt sur C-Connect.
+              </p>
+            ) : (
+              <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
               {reviews.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun avis pour ce produit.</p>
@@ -320,6 +337,8 @@ export default function ProductDetailPage() {
                   Connectez-vous
                 </Link> pour laisser une évaluation.
               </p>
+            )}
+              </>
             )}
           </div>
 
@@ -435,7 +454,8 @@ export default function ProductDetailPage() {
                   }}
                   disabled={product.stock <= 0}
                 >
-                  🤝 Négocier le Prix / Devis
+                  <Handshake size={16} aria-hidden="true" style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                  Négocier le Prix / Devis
                 </Button>
               )}
             </div>
@@ -447,6 +467,41 @@ export default function ProductDetailPage() {
         </Card>
 
       </div>
+
+      {/* Produits similaires */}
+      {recommended.length > 0 && (
+        <div style={{ marginTop: '3rem' }}>
+          <h2 style={{ fontSize: '1.35rem', marginBottom: '1.25rem', color: 'var(--primary-color)' }}>
+            Produits similaires
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.25rem' }}>
+            {recommended.map((rec) => (
+              <Link
+                key={rec.id}
+                href={`/marketplace/product/${rec.id}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <Card style={{ height: '100%' }}>
+                  <CardContent style={{ padding: '1rem' }}>
+                    <div style={{
+                      width: '100%',
+                      aspectRatio: '4 / 3',
+                      borderRadius: '8px',
+                      background: rec.imageUrl ? `url(${rec.imageUrl}) center/cover` : 'var(--surface-muted, #F1F5F9)',
+                      marginBottom: '0.75rem',
+                    }} />
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>{rec.name}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{rec.category}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--primary-color)' }}>
+                      {rec.price.toLocaleString()} FCFA
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modal de Négociation */}
       {isNegModalOpen && (
@@ -480,8 +535,9 @@ export default function ProductDetailPage() {
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-                🤝 Offre de Négociation / Devis
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Handshake size={20} aria-hidden="true" />
+                Offre de Négociation / Devis
               </h3>
               <button
                 onClick={() => setIsNegModalOpen(false)}

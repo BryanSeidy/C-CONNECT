@@ -259,13 +259,6 @@ export default function DashboardProducts() {
 
               {/* Actions */}
               <div className={styles.actions}>
-                <Link
-                  href={`/dashboard/products/${product.id}/edit`}
-                  className={styles.actionBtn}
-                  title="Page d'edition complete"
-                >
-                  <Package size={14} aria-hidden="true" />
-                </Link>
                 <button
                   type="button"
                   className={`${styles.actionBtn} ${styles.deleteBtn}`}
