@@ -14,9 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * DatabaseFailoverMiddleware
  *
- * Intercepte chaque requete entrante et tente une connexion rapide au
- * cluster PostgreSQL Neon (primaire). En cas d'echec, bascule
- * dynamiquement sur SQLite local (database/local_backup.sqlite).
+ * Intercepte chaque requete entrante uniquement lorsque le failover est
+ * explicitement active par DB_FAILOVER_ENABLED=true. En production, le
+ * comportement par defaut est strict : une indisponibilite PostgreSQL doit
+ * etre visible plutot que masquee par une bascule implicite vers SQLite.
  *
  * Header injecte dans chaque reponse :
  *   X-Database-Mode: online  — Neon actif
@@ -31,8 +32,18 @@ class DatabaseFailoverMiddleware
     // Timeout en secondes pour la verification de connexion
     private const CONNECT_TIMEOUT = 3;
 
+    private const CONFIG_FLAG = 'database.failover.enabled';
+
     public function handle(Request $request, Closure $next): Response
     {
+        if (!$this->isFailoverEnabled()) {
+            /** @var Response $response */
+            $response = $next($request);
+            $response->headers->set(self::HEADER, self::MODE_ONLINE);
+
+            return $response;
+        }
+
         $mode = $this->resolveMode();
 
         /** @var Response $response */
@@ -44,6 +55,11 @@ class DatabaseFailoverMiddleware
     }
 
     // ── Core ──────────────────────────────────────────────────────────────────
+
+    private function isFailoverEnabled(): bool
+    {
+        return (bool) Config::get(self::CONFIG_FLAG, false);
+    }
 
     private function resolveMode(): string
     {

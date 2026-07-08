@@ -19,6 +19,10 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'failover' => [
+        'enabled' => env('DB_FAILOVER_ENABLED', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
