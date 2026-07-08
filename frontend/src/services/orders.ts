@@ -167,9 +167,6 @@ export const paymentService = {
     };
   },
 
-  getPayments: async () => {
-    return apiClient.get('/payments');
-  },
 };
 
 // ============================================================================

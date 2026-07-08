@@ -14,6 +14,7 @@ import { negotiationService } from '@/services/negotiations';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
 import { extractApiError } from '@/lib/errors';
+import { isFeatureEnabled } from '@/lib/featureFlags';
 import { ShieldCheck, Star } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -76,14 +77,16 @@ export default function ProductDetailPage() {
         setLoading(false);
       });
 
-    // Load Reviews
-    reviewService
-      .getProductReviews(productId)
-      .then((res) => {
-        if (!active) return;
-        setReviews(res?.data || []);
-      })
-      .catch(() => { });
+    // Load Reviews (feature-gated — no backend endpoint yet, see lib/featureFlags.ts)
+    if (isFeatureEnabled('productReviews')) {
+      reviewService
+        .getProductReviews(productId)
+        .then((res) => {
+          if (!active) return;
+          setReviews(res?.data || []);
+        })
+        .catch(() => { });
+    }
 
     return () => {
       active = false;
@@ -237,9 +240,15 @@ export default function ProductDetailPage() {
           {/* Section Évaluations & Avis */}
           <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--primary-color)' }}>
-              Évaluations & Avis Clients ({reviews.length})
+              Évaluations & Avis Clients
             </h2>
 
+            {!isFeatureEnabled('productReviews') ? (
+              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Les avis clients arrivent bientôt sur C-Connect.
+              </p>
+            ) : (
+              <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
               {reviews.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun avis pour ce produit.</p>
@@ -320,6 +329,8 @@ export default function ProductDetailPage() {
                   Connectez-vous
                 </Link> pour laisser une évaluation.
               </p>
+            )}
+              </>
             )}
           </div>
 
