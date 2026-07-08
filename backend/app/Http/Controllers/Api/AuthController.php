@@ -26,9 +26,13 @@ class AuthController extends Controller
             'role' => ['sometimes', 'string', Rule::in(['buyer', 'seller', 'admin'])],
         ]);
 
+        // La table users stocke nom/prenom (pas de colonne 'name' ou
+        // 'fullName') — on découpe le nom complet envoyé par le frontend.
+        [$prenom, $nom] = $this->splitFullName($validated['name']);
+
         $user = User::create([
-            'name' => $validated['name'],
-            'fullName' => $validated['name'],
+            'nom' => $nom,
+            'prenom' => $prenom,
             'email' => $validated['email'],
             'password' => $validated['password'],
             'role' => $validated['role'] ?? 'buyer',
@@ -36,7 +40,7 @@ class AuthController extends Controller
 
         if ($user->role === 'seller') {
             $user->sellerProfile()->create([
-                'business_name' => $user->fullName ?? $user->name ?? 'Coopérative locale',
+                'business_name' => $user->fullName ?: 'Coopérative locale',
                 'region' => 'Centre',
             ]);
         }
@@ -90,19 +94,42 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'fullName' => ['sometimes', 'string', 'max:255'],
-            'companyName' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'country' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'telephone' => ['sometimes', 'nullable', 'string', 'max:20'],
         ]);
 
         $user = $request->user();
+
+        // La table users n'a pas de colonne 'name'/'fullName' — on découpe
+        // vers nom/prenom. 'companyName'/'country' n'existent nulle part
+        // sur users (le nom d'entreprise et la région vivent sur
+        // SellerProfile/Company) ; on ne les accepte plus ici pour éviter
+        // de refaire planter l'insert comme sur register().
         if (isset($validated['fullName'])) {
-            $validated['name'] = $validated['fullName'];
+            [$prenom, $nom] = $this->splitFullName($validated['fullName']);
+            $user->prenom = $prenom;
+            $user->nom = $nom;
+        }
+        if (array_key_exists('telephone', $validated)) {
+            $user->telephone = $validated['telephone'];
         }
 
-        $user->fill($validated);
         $user->save();
 
         return response()->json(['message' => 'Profile updated successfully.', 'data' => ['user' => $user->fresh()]]);
+    }
+
+    /**
+     * Découpe un nom complet "Prénom Nom" en [prenom, nom]. S'il n'y a
+     * qu'un seul mot, il sert à la fois de prénom et de nom (comme dans
+     * SocialAuthController::callback pour la même situation OAuth).
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function splitFullName(string $fullName): array
+    {
+        $parts = explode(' ', trim($fullName), 2);
+
+        return [$parts[0], $parts[1] ?? $parts[0]];
     }
 
     /**

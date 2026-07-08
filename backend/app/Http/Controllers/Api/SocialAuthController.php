@@ -78,8 +78,8 @@ class SocialAuthController extends Controller
             // Creation automatique du compte
             $nameParts = explode(' ', trim($socialUser->getName() ?? 'Utilisateur'), 2);
             $user = User::create([
-                'nom'             => $nameParts[0],
-                'prenom'          => $nameParts[1] ?? $nameParts[0],
+                'prenom'          => $nameParts[0],
+                'nom'             => $nameParts[1] ?? $nameParts[0],
                 'email'           => $socialUser->getEmail() ?? '',
                 'password'        => null,
                 'role'            => 'buyer',

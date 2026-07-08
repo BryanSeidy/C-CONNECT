@@ -26,14 +26,9 @@ class User extends Authenticatable implements MustVerifyEmail
     // const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
-        'name',
         'email',
         'password',
-        'fullName',
-        'companyName',
-        'country',
         'role',
-        'isVerified',
         'nom',
         'prenom',
         'telephone',
@@ -45,12 +40,25 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
+    protected $appends = ['fullName'];
+
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
             'role' => 'string',
         ];
+    }
+
+    /**
+     * Accesseur en lecture seule — 'nom'/'prenom' sont les vraies colonnes
+     * en base ; 'fullName' n'en est pas une (voir la table users). Utilisé
+     * par le frontend et par les endroits du backend qui veulent un nom
+     * d'affichage complet sans se soucier du découpage nom/prénom.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim(($this->prenom ?? '') . ' ' . ($this->nom ?? ''));
     }
 
     public function isBuyer(): bool
