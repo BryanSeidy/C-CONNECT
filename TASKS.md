@@ -47,8 +47,9 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 
 ## Priority 1 — Remaining brand touchpoints (lower urgency, no user-facing UI exists yet)
 
-- [ ] Loading screen / route-transition state — no dedicated loading UI exists yet to brand (Next.js default only).
-- [ ] Empty states — few exist yet; brand the icon/illustration once each module's empty state is built.
+- [x] Loading screen / route-transition state — added a branded `Spinner` component plus root and `/dashboard` `loading.tsx` route segments (2026-07-08).
+- [x] Reusable `EmptyState` component created and wired into RFQs, Disputes, and Recurring Orders dashboard pages, replacing duplicated inline-styled blocks (2026-07-08). Remaining pages (negotiations, products, orders, dashboard overview) still use their own inline empty blocks — migrate opportunistically.
+- [x] Centralized route-level error boundaries — added `app/error.tsx` (per-route, retry button) and `app/global-error.tsx` (root layout crash fallback) (2026-07-08).
 - [ ] Transactional email templates and PDF export headers (Purchase Order / Invoice / Delivery Note) — currently plain browser-printable HTML with no visual branding pass.
 
 - [x] `services/auth.ts` / backend `/auth/*` routes verified in sync (both use the `auth` prefix: `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`) — resolved by commit `4814f36`, this note was stale.
@@ -70,7 +71,7 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 
 ## Priority 2 — Operational readiness
 
-- [ ] Add centralized frontend error boundaries and observability hooks.
+- [x] Add centralized frontend error boundaries and observability hooks — `error.tsx`/`global-error.tsx` added with a `console.error` hook ready to be swapped for a real logging service (Sentry, etc.) (2026-07-08).
 - [ ] Add API rate limiting and audit logging documentation.
 - [ ] Add CI pipeline for frontend type-check/build and backend PHPUnit.
 - [x] Wire admin UI for dispute resolution — this note was stale, `dashboard/admin/disputes/page.tsx` already existed and was wired to `resolveDispute`. Enhanced it: shows buyer/seller/amount via the dispute→order relation (now populated by `normalizeDispute`), added the missing "demander_informations" action (backend already supported it, UI didn't expose it).

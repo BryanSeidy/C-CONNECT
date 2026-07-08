@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { rfqService } from '@/services/rfqs';
 import { Rfq, RfqBid } from '@/types';
@@ -303,11 +304,11 @@ export default function DashboardRfqs() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement des demandes...</p>
       ) : rfqs.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <ClipboardList size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              {isBuyer ? "Vous n'avez publié aucune demande de devis." : 'Aucune demande active pour le moment.'}
-            </p>
+          <CardContent>
+            <EmptyState
+              icon={ClipboardList}
+              message={isBuyer ? "Vous n'avez publié aucune demande de devis." : 'Aucune demande active pour le moment.'}
+            />
           </CardContent>
         </Card>
       ) : (

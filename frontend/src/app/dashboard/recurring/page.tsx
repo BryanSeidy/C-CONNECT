@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { recurringOrderService } from '@/services/recurring';
@@ -76,11 +77,11 @@ export default function DashboardRecurringOrders() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
       ) : orders.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <CalendarClock size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              Aucune commande recurrente planifiee. Depuis la fiche d&apos;un produit, choisissez l&apos;option de planification.
-            </p>
+          <CardContent>
+            <EmptyState
+              icon={CalendarClock}
+              message="Aucune commande récurrente planifiée. Depuis la fiche d'un produit, choisissez l'option de planification."
+            />
           </CardContent>
         </Card>
       ) : (
