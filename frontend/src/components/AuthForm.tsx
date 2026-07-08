@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, Globe, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import styles from './AuthForm.module.css';
@@ -307,7 +307,7 @@ function OAuthGoogle() {
       {loading ? (
         <Loader2 size={18} className={styles.spinner} aria-hidden="true" />
       ) : (
-        <Globe size={18} aria-hidden="true" className={styles.oauthIcon} />
+        <Image src="/google.jpeg" alt="" width={20} height={20} className={styles.oauthIcon} unoptimized />
       )}
       <span>Continuer avec Google</span>
     </button>

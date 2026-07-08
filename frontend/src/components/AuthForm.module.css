@@ -371,7 +371,7 @@
   cursor: not-allowed;
 }
 
-.oauthIcon { color: var(--text-muted); }
+.oauthIcon { object-fit: contain; flex-shrink: 0; }
 
 /* ── Divider ── */
 

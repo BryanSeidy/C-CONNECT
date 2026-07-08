@@ -67,8 +67,12 @@ Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
 
 // --- Authentification ---
 Route::prefix('auth')->name('auth.')->group(function (): void {
-    Route::post('/register', [AuthController::class, 'register'])->name('register');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/register', [AuthController::class, 'register'])
+        ->middleware('throttle:6,1')
+        ->name('register');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:6,1')
+        ->name('login');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
         ->middleware('throttle:6,1')
         ->name('password.email');

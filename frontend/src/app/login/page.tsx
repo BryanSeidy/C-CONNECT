@@ -14,6 +14,7 @@ function LoginContent() {
   const redirect = getSafeRedirect(params.get('redirect'));
   const registered = params.get('registered') === 'true';
   const emailVerification = params.get('email_verification');
+  const socialError = params.get('social_error');
 
   // Si déjà connecté (ex: retour arrière navigateur), on renvoie directement
   // au dashboard plutôt que de réafficher le formulaire.
@@ -51,6 +52,11 @@ function LoginContent() {
       {emailVerification === 'invalid' && (
         <p style={{ textAlign: 'center', color: '#dc2626', fontSize: '0.875rem', marginTop: '-1rem' }}>
           Ce lien de vérification est invalide ou a expiré.
+        </p>
+      )}
+      {socialError && (
+        <p role="alert" style={{ textAlign: 'center', color: '#dc2626', fontSize: '0.875rem', marginTop: '-1rem' }}>
+          {socialError}
         </p>
       )}
       <p style={{ textAlign: 'center', marginTop: '0.5rem' }}>
