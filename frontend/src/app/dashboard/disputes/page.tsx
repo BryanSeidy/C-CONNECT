@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { disputeService } from '@/services/disputes';
 import { Dispute } from '@/types';
 import { AlertTriangle, Plus, ShieldAlert, X } from 'lucide-react';
@@ -172,9 +173,8 @@ function DisputesContent() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
       ) : disputes.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <ShieldAlert size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Aucun litige ouvert. C&apos;est bon signe.</p>
+          <CardContent>
+            <EmptyState icon={ShieldAlert} message="Aucun litige ouvert. C'est bon signe." />
           </CardContent>
         </Card>
       ) : (
