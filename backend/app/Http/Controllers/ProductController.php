@@ -139,6 +139,7 @@ class ProductController extends Controller
 
     /**
      * Create a new product — authenticated sellers only.
+     * Requires a sellerProfile (created via registration or seller onboarding).
      */
     public function store(Request $request): JsonResponse
     {
@@ -154,13 +155,13 @@ class ProductController extends Controller
             'stockMinimum' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $user = $request->user();
-        $sellerProfile = $user->sellerProfile;
+        $sellerProfile = $request->user()->sellerProfile;
+
         if (!$sellerProfile) {
-            $sellerProfile = $user->sellerProfile()->create([
-                'business_name' => $user->fullName ?? $user->name ?? 'Coopérative locale',
-                'region' => $validated['country'],
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez avoir un profil vendeur pour publier un produit. Complétez votre inscription vendeur d\'abord.',
+            ], 403);
         }
 
         $categoryParam = $validated['category'];
@@ -174,12 +175,11 @@ class ProductController extends Controller
         }
 
         if (!$category) {
-            // Default or create fallback
             $category = \App\Models\Category::firstOrCreate([
                 'nom' => $categoryParam,
             ], [
                 'slug' => \Illuminate\Support\Str::slug($categoryParam),
-                'description' => 'Auto created category',
+                'description' => 'Catégorie créée automatiquement',
             ]);
         }
 

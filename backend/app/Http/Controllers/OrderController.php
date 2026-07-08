@@ -121,7 +121,8 @@ class OrderController extends Controller
 
     /**
      * Update order lifecycle status — restricted to participants.
-     * Releases reserved stock when an order is delivered/completed or cancelled.
+     * - Livré/Complet : consomme définitivement le stock (décrémente stock + stock_reserve).
+     * - Annulé : restitue uniquement le stock réservé (stock_reserve).
      */
     public function update(Request $request, Order $order): JsonResponse
     {
@@ -131,55 +132,71 @@ class OrderController extends Controller
             'escrow_status' => [
                 'required',
                 'string',
-                'in:pending,escrow_locked,en_preparation,expedie,en_transit,livre,complete,annule,dispute',
+                'in:' . implode(',', Order::STATUSES),
             ],
         ]);
 
         $newStatus = $validated['escrow_status'];
 
-        match ($newStatus) {
-            'escrow_locked' => $order->lockEscrow(),
-            'en_preparation' => $order->markEnPreparation(),
-            'expedie' => $order->markExpedie(),
-            'en_transit' => $order->markEnTransit(),
-            'livre' => $order->markLivre(),
-            'complete' => $order->markComplete(),
-            'annule' => $order->cancel(),
-            'dispute' => $order->markAsDisputed(),
-            default => $order->update(['escrow_status' => $newStatus]),
-        };
+        DB::transaction(function () use ($order, $newStatus): void {
+            match ($newStatus) {
+                Order::STATUS_ESCROW_LOCKED => $order->lockEscrow(),
+                Order::STATUS_EN_PREPARATION => $order->markEnPreparation(),
+                Order::STATUS_EXPEDIE => $order->markExpedie(),
+                Order::STATUS_EN_TRANSIT => $order->markEnTransit(),
+                Order::STATUS_LIVRE => $order->markLivre(),
+                Order::STATUS_COMPLETE => $order->markComplete(),
+                Order::STATUS_ANNULE => $order->cancel(),
+                Order::STATUS_DISPUTE => $order->markAsDisputed(),
+                default => $order->update(['escrow_status' => $newStatus]),
+            };
 
-        if (in_array($newStatus, ['livre', 'complete', 'annule'], true)) {
+            // Ajustement du stock selon la nature de l'état final
             foreach ($order->items as $item) {
-                $item->product?->libererStock($item->quantite);
+                $product = $item->product;
+                if (!$product) {
+                    continue;
+                }
+                if (in_array($newStatus, Order::STOCK_RELEASING_STATUSES, true)) {
+                    // Livraison confirmée : consommer le stock définitivement
+                    $product->consommerStock($item->quantite);
+                } elseif (in_array($newStatus, Order::STOCK_RESTORING_STATUSES, true)) {
+                    // Annulation : restituer le stock réservé sans le consommer
+                    $product->libererStock($item->quantite);
+                }
             }
-        }
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $order->fresh()->load('items.product:id,nom,region,unite'),
+            'data' => $order->fresh()->load('items.product:id,nom,region,unite,stock,stock_reserve'),
             'message' => 'Commande mise à jour avec succès.',
         ]);
     }
 
     /**
-     * Cancel: only buyers can cancel orders still pending payment.
+     * Cancel: only buyers can cancel orders still pending payment (before escrow lock).
+     * Restores the reserved stock.
      */
     public function destroy(Request $request, Order $order): JsonResponse
     {
-        if ($request->user()->id !== $order->buyer_id) {
+        if ($request->user()->id !== $order->buyer_id && !$request->user()->isAdmin()) {
             return response()->json(['message' => 'Seul l\'acheteur peut annuler cette commande.'], 403);
         }
 
-        if ($order->escrow_status !== 'pending') {
-            return response()->json(['message' => 'Impossible d\'annuler une commande déjà en séquestre.'], 422);
+        // Annulation possible uniquement avant le verrouillage de l'escrow
+        if (!in_array($order->escrow_status, [Order::STATUS_PENDING], true)) {
+            return response()->json([
+                'message' => 'Impossible d\'annuler une commande déjà en séquestre. Ouvrez un litige si nécessaire.',
+            ], 422);
         }
 
-        foreach ($order->items as $item) {
-            $item->product?->libererStock($item->quantite);
-        }
-
-        $order->cancel();
+        DB::transaction(function () use ($order): void {
+            foreach ($order->items as $item) {
+                $item->product?->libererStock($item->quantite);
+            }
+            $order->cancel();
+        });
 
         return response()->json(['success' => true, 'message' => 'Commande annulée.']);
     }

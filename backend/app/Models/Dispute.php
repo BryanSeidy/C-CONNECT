@@ -57,7 +57,11 @@ class Dispute extends Model
             'resolu_le' => now(),
         ]);
 
-        $this->order->update(['escrow_status' => 'annule']);
+        // Annule la commande et restitue le stock réservé
+        $this->order->cancel();
+        foreach ($this->order->items as $item) {
+            $item->product?->libererStock($item->quantite);
+        }
     }
 
     public function resolveWithRelease(User $admin, string $notes): void
@@ -69,9 +73,10 @@ class Dispute extends Model
             'resolu_le' => now(),
         ]);
 
-        $this->order->update([
-            'escrow_status' => 'complete',
-            'complete_le' => now(),
-        ]);
+        // Libère les fonds au vendeur
+        $this->order->markComplete();
+        foreach ($this->order->items as $item) {
+            $item->product?->consommerStock($item->quantite);
+        }
     }
 }
