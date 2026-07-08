@@ -23,8 +23,8 @@ class NegotiationController extends Controller
         $query = Negotiation::with([
             'product:id,nom,prix,unite,category_id',
             'product.category:id,nom,slug',
-            'buyer:id,fullName,companyName,country',
-            'seller.user:id,fullName,companyName,country',
+            'buyer:id,nom,prenom',
+            'seller.user:id,nom,prenom',
         ])
             ->when($user->isBuyer(), fn ($q) => $q->where('buyer_id', $user->id))
             ->when($user->isSeller() && $user->sellerProfile, fn ($q) => $q->where('seller_id', $user->sellerProfile->id))
@@ -65,7 +65,7 @@ class NegotiationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $negotiation->load(['product:id,nom,prix,unite', 'buyer:id,fullName,companyName']),
+            'data' => $negotiation->load(['product:id,nom,prix,unite', 'buyer:id,nom,prenom']),
             'message' => 'Négociation initiée avec succès.',
         ], 201);
     }
@@ -109,7 +109,7 @@ class NegotiationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $negotiation->fresh()->load(['product:id,nom,prix,unite', 'buyer:id,fullName,companyName', 'seller.user:id,fullName,companyName']),
+            'data' => $negotiation->fresh()->load(['product:id,nom,prix,unite', 'buyer:id,nom,prenom', 'seller.user:id,nom,prenom']),
             'message' => 'Négociation mise à jour.',
         ]);
     }

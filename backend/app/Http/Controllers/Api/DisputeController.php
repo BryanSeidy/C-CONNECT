@@ -20,7 +20,7 @@ class DisputeController extends Controller
     {
         $user = $request->user();
 
-        $query = Dispute::with(['order.buyer:id,fullName,companyName', 'order.seller.user:id,fullName,companyName', 'initiateur:id,fullName'])
+        $query = Dispute::with(['order.buyer:id,nom,prenom', 'order.seller.user:id,nom,prenom', 'initiateur:id,nom,prenom'])
             ->when(!$user->isAdmin(), fn ($q) => $q->whereHas('order', function ($oq) use ($user): void {
                 $oq->where('buyer_id', $user->id)
                    ->orWhere('seller_id', $user->sellerProfile?->id);
@@ -93,7 +93,7 @@ class DisputeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $dispute->load(['order', 'initiateur:id,fullName', 'resolvedBy:id,fullName']),
+            'data' => $dispute->load(['order', 'initiateur:id,nom,prenom', 'resolvedBy:id,nom,prenom']),
         ]);
     }
 
