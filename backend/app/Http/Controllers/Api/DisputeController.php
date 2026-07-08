@@ -20,7 +20,7 @@ class DisputeController extends Controller
     {
         $user = $request->user();
 
-        $query = Dispute::with(['order.buyer:id,fullName,companyName', 'order.seller.user:id,fullName,companyName', 'initiateur:id,fullName'])
+        $query = Dispute::with(['order.buyer:id,nom,prenom', 'order.seller.user:id,nom,prenom', 'initiateur:id,nom,prenom'])
             ->when(!$user->isAdmin(), fn ($q) => $q->whereHas('order', function ($oq) use ($user): void {
                 $oq->where('buyer_id', $user->id)
                    ->orWhere('seller_id', $user->sellerProfile?->id);
@@ -36,7 +36,7 @@ class DisputeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'order_id' => ['required', 'uuid', 'exists:orders,id'],
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
             'raison' => ['required', 'string', 'in:marchandise_non_recue,qualite_non_conforme,quantite_incorrecte,produit_endommage,retard_livraison,autre'],
             'description' => ['required', 'string', 'max:2000'],
             'preuves_urls' => ['nullable', 'array'],
@@ -93,7 +93,7 @@ class DisputeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $dispute->load(['order', 'initiateur:id,fullName', 'resolvedBy:id,fullName']),
+            'data' => $dispute->load(['order', 'initiateur:id,nom,prenom', 'resolvedBy:id,nom,prenom']),
         ]);
     }
 

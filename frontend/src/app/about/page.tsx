@@ -41,7 +41,7 @@ export default function AboutPage() {
               <div>
                 <h2 style={{ fontSize: '2rem', color: 'var(--primary-color)', marginBottom: '1.5rem' }}>Notre Histoire</h2>
                 <p style={{ fontSize: '1.1rem', lineHeight: 1.8, color: 'var(--text-main)', marginBottom: '1rem' }}>
-                  Fondée par une équipe de passionnés de technologie et d'agrobusiness, <strong>C-CONNECT</strong> est née d'un constat simple : l'asymétrie d'information freine le développement économique du Cameroun.
+                  Fondée par une équipe de passionnés de technologie et d&apos;agrobusiness, <strong>C-CONNECT</strong> est née d&apos;un constat simple : l&apos;asymétrie d&apos;information freine le développement économique du Cameroun.
                 </p>
                 <p style={{ fontSize: '1.1rem', lineHeight: 1.8, color: 'var(--text-main)' }}>
                   Nous avons créé un écosystème où un producteur de Garoua peut vendre ses récoltes à un industriel de Douala en toute confiance, sans intermédiaires opaques et avec une sécurité de paiement totale.
@@ -83,7 +83,7 @@ export default function AboutPage() {
                 </div>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Notre Mission</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                  Digitaliser les chaînes de valeur nationales pour permettre à chaque entreprise camerounaise, quelle que soit sa taille, d'accéder au marché national.
+                  Digitaliser les chaînes de valeur nationales pour permettre à chaque entreprise camerounaise, quelle que soit sa taille, d&apos;accéder au marché national.
                 </p>
               </div>
               <div style={{ padding: '2.5rem', background: 'white', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
@@ -92,7 +92,7 @@ export default function AboutPage() {
                 </div>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Notre Vision</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                  Devenir le hub central du commerce B2B au Cameroun, stimulant l'innovation industrielle et l'autosuffisance économique par la technologie.
+                  Devenir le hub central du commerce B2B au Cameroun, stimulant l&apos;innovation industrielle et l&apos;autosuffisance économique par la technologie.
                 </p>
               </div>
             </div>

@@ -18,7 +18,7 @@ class RfqController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Rfq::with(['buyer:id,fullName,companyName,company_id', 'category:id,nom,slug'])
+        $query = Rfq::with(['buyer:id,nom,prenom,company_id', 'category:id,nom,slug'])
             ->active()
             ->when($request->filled('region'), fn ($q) => $q->byRegion($request->input('region')))
             ->when($request->filled('category'), fn ($q) => $q->where('category_id', $request->input('category')))
@@ -44,7 +44,7 @@ class RfqController extends Controller
      */
     public function mine(Request $request): JsonResponse
     {
-        $rfqs = Rfq::with(['category:id,nom,slug', 'bids.seller.user:id,fullName,companyName'])
+        $rfqs = Rfq::with(['category:id,nom,slug', 'bids.seller.user:id,nom,prenom'])
             ->where('buyer_id', $request->user()->id)
             ->latest()
             ->get();
@@ -56,7 +56,7 @@ class RfqController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $rfq->load(['buyer:id,fullName,companyName', 'category:id,nom,slug', 'bids.seller.user:id,fullName,companyName']),
+            'data' => $rfq->load(['buyer:id,nom,prenom', 'category:id,nom,slug', 'bids.seller.user:id,nom,prenom']),
         ]);
     }
 
@@ -72,7 +72,7 @@ class RfqController extends Controller
         $validator = Validator::make($request->all(), [
             'titre' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:2000'],
-            'category_id' => ['nullable', 'uuid', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'quantite' => ['required', 'numeric', 'min:0.01'],
             'unite' => ['required', 'string', 'in:kg,tonnes,sacs,caisses,litres,unites'],
             'budget_max' => ['nullable', 'numeric', 'min:0'],

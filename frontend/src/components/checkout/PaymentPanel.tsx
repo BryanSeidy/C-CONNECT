@@ -206,7 +206,7 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
         <ShieldCheck size={18} aria-hidden="true" className={styles.headerIcon} />
         <div>
           <h2 className={styles.title}>Activer le Sequestre</h2>
-          <p className={styles.titleSub}>Paiement securise — fonds retenus jusqu'a reception</p>
+          <p className={styles.titleSub}>Paiement securise — fonds retenus jusqu&apos;a reception</p>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { companyService } from '@/services/companies';
 import { Company } from '@/types';
 import { REGION_OPTIONS } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
 import { Building2, ShieldCheck } from 'lucide-react';
 
 const TYPE_OPTIONS: { value: string; label: string }[] = [
@@ -57,8 +58,8 @@ export default function DashboardCompany() {
     try {
       const res = await companyService.getCompanyBySlugOrId(String(user.companyId));
       setCompany(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Impossible de charger le profil d'entreprise.");
+    } catch (err) {
+      setError(extractApiError(err, "Impossible de charger le profil d'entreprise."));
     } finally {
       setLoading(false);
     }
@@ -77,10 +78,10 @@ export default function DashboardCompany() {
     try {
       const res = company
         ? await companyService.updateCompany(company.id, form)
-        : await companyService.createCompany(form as any);
+        : await companyService.createCompany(form);
       setCompany(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de sauvegarder le profil.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de sauvegarder le profil.'));
     } finally {
       setSaving(false);
     }

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, ExternalLink, FileText, FlagTriangleRight } from 'lucide-react';
+import { ArrowRight, ExternalLink, FileText, FlagTriangleRight, PackageSearch } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
 import { Order } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
@@ -79,8 +81,8 @@ export default function DashboardOrders() {
     try {
       const res = await orderService.getOrders();
       setOrders(res.data ?? []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Impossible de charger les commandes.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les commandes.'));
     } finally {
       setLoading(false);
     }
@@ -93,8 +95,8 @@ export default function DashboardOrders() {
     try {
       await orderService.updateEscrowStatus(id, next);
       await fetchOrders();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Mise à jour impossible.');
+    } catch (err) {
+      setError(extractApiError(err, 'Mise à jour impossible.'));
     } finally {
       setProcessingId(null);
     }
@@ -142,7 +144,7 @@ export default function DashboardOrders() {
         {loading ? (
           <div className={styles.emptyState}>Chargement…</div>
         ) : displayed.length === 0 ? (
-          <div className={styles.emptyState}>Aucune commande dans cette catégorie.</div>
+          <EmptyState icon={PackageSearch} message="Aucune commande dans cette catégorie." />
         ) : displayed.map(order => {
           const sid = String(order.id);
           const isExp = expandedId === sid;

@@ -6,13 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Product } from '@/types';
+import { Product, Review } from '@/types';
 import { productService } from '@/services/products';
-import { orderService, paymentService } from '@/services/orders';
+import { orderService } from '@/services/orders';
 import { reviewService } from '@/services/reviews';
 import { negotiationService } from '@/services/negotiations';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
 import { ShieldCheck, Star } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -28,7 +29,7 @@ export default function ProductDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Reviews state
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -57,7 +58,7 @@ export default function ProductDetailPage() {
     // Load Product
     productService
       .getProductById(productId)
-      .then((res: any) => {
+      .then((res) => {
         if (!active) return;
         const prod = res?.data || null;
         setProduct(prod);
@@ -66,9 +67,9 @@ export default function ProductDetailPage() {
           setNegQuantity(Math.min(10, prod.stock));
         }
       })
-      .catch((err: any) => {
+      .catch((err) => {
         if (!active) return;
-        setError(err?.message || 'Impossible de charger ce produit');
+        setError(extractApiError(err, 'Impossible de charger ce produit'));
       })
       .finally(() => {
         if (!active) return;
@@ -78,7 +79,7 @@ export default function ProductDetailPage() {
     // Load Reviews
     reviewService
       .getProductReviews(productId)
-      .then((res: any) => {
+      .then((res) => {
         if (!active) return;
         setReviews(res?.data || []);
       })
@@ -128,12 +129,12 @@ export default function ProductDetailPage() {
     setIsSubmittingReview(true);
     setReviewError(null);
     try {
-      const res: any = await reviewService.submitProductReview(product.id, reviewRating, reviewComment);
+      const res = await reviewService.submitProductReview(product.id, reviewRating, reviewComment);
       setReviews((prev) => [res.data, ...prev]);
       setReviewComment('');
       setReviewRating(5);
-    } catch (err: any) {
-      setReviewError(err.message || "Erreur lors de la soumission de l'avis");
+    } catch (err) {
+      setReviewError(extractApiError(err, "Erreur lors de la soumission de l'avis"));
     } finally {
       setIsSubmittingReview(false);
     }
@@ -156,8 +157,8 @@ export default function ProductDetailPage() {
         setIsNegModalOpen(false);
         setNegSuccess(null);
       }, 3500);
-    } catch (err: any) {
-      setNegError(err.message || "Impossible d'initier la négociation");
+    } catch (err) {
+      setNegError(extractApiError(err, "Impossible d'initier la négociation"));
     } finally {
       setIsSubmittingNeg(false);
     }
@@ -305,7 +306,7 @@ export default function ProductDetailPage() {
                     variant="primary"
                     isLoading={isSubmittingReview}
                   >
-                    Soumettre l'avis
+                    Soumettre l&apos;avis
                   </Button>
                 </div>
               </form>
@@ -576,7 +577,7 @@ export default function ProductDetailPage() {
                   onClick={handleNegSubmit}
                   isLoading={isSubmittingNeg}
                 >
-                  Soumettre l'offre B2B
+                  Soumettre l&apos;offre B2B
                 </Button>
               </div>
             </div>

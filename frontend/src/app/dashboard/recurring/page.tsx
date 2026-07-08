@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { recurringOrderService } from '@/services/recurring';
 import { RecurringOrder } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { CalendarClock, Pause, Play, X } from 'lucide-react';
 
 const FREQUENCY_LABELS: Record<RecurringOrder['frequence'], string> = {
@@ -33,8 +34,8 @@ export default function DashboardRecurringOrders() {
     try {
       const res = await recurringOrderService.getRecurringOrders();
       setOrders(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les commandes recurrentes.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les commandes récurrentes.'));
     } finally {
       setLoading(false);
     }
@@ -49,8 +50,8 @@ export default function DashboardRecurringOrders() {
     try {
       await recurringOrderService.updateStatus(id, statut);
       await fetchOrders();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Action impossible.');
+    } catch (err) {
+      setError(extractApiError(err, 'Action impossible.'));
     } finally {
       setActionId(null);
     }

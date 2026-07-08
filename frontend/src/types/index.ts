@@ -90,6 +90,41 @@ export interface Product {
   updatedAt?: string;
 }
 
+export type NegotiationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'COUNTERED';
+
+export interface Negotiation {
+  id: number;
+  productId: number;
+  buyerId: number;
+  sellerId: number;
+  quantity: number;
+  proposedPrice: number;
+  counterPrice?: number | null;
+  message?: string | null;
+  status: NegotiationStatus;
+  product: { id: number; name: string; category: string; price: number };
+  buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  /** Flattened seller *user* (backend nests it under seller.user — normalized in the service layer). */
+  seller?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  createdAt?: string;
+}
+
+export interface RawNegotiation {
+  id: number;
+  product_id: number;
+  buyer_id: number;
+  seller_id: number;
+  quantity: string | number;
+  proposed_price: string | number;
+  counter_price?: string | number | null;
+  message?: string | null;
+  status: NegotiationStatus;
+  product?: { id: number; nom: string; prix: string | number; unite?: string; category?: { nom: string } | null } | null;
+  buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  seller?: { id: number; user?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null } | null;
+  created_at?: string;
+}
+
 export type EscrowStatus =
   | 'pending'
   | 'escrow_locked'
