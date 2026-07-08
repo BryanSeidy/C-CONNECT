@@ -38,7 +38,7 @@ class RecurringOrderController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'product_id' => ['required', 'uuid', 'exists:products,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantite' => ['required', 'numeric', 'min:0.01'],
             'frequence' => ['required', 'string', 'in:hebdomadaire,bimensuelle,mensuelle'],
             'jour_semaine' => ['nullable', 'integer', 'min:0', 'max:6'],

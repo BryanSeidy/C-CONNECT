@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { disputeService } from '@/services/disputes';
 import { Dispute } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { AlertTriangle, Plus, ShieldAlert, X } from 'lucide-react';
 
 const REASON_LABELS: Record<Dispute['raison'], string> = {
@@ -47,8 +48,8 @@ function DisputesContent() {
     try {
       const res = await disputeService.getDisputes();
       setDisputes(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les litiges.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les litiges.'));
     } finally {
       setLoading(false);
     }
@@ -73,8 +74,8 @@ function DisputesContent() {
       setForm({ orderId: '', raison: 'marchandise_non_recue', description: '' });
       setShowForm(false);
       await fetchDisputes();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Impossible d'ouvrir le litige.");
+    } catch (err) {
+      setError(extractApiError(err, "Impossible d'ouvrir le litige."));
     } finally {
       setSubmitting(false);
     }

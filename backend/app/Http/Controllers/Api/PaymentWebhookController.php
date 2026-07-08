@@ -104,7 +104,7 @@ class PaymentWebhookController extends Controller
     public function initiate(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'order_id'       => ['required', 'uuid', 'exists:orders,id'],
+            'order_id'       => ['required', 'integer', 'exists:orders,id'],
             'phone'          => ['required', 'string', 'regex:/^\+237[0-9]{9}$/'],
             'payment_method' => ['required', 'string', Rule::in(['mtn_momo', 'orange_money'])],
         ]);

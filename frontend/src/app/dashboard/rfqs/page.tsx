@@ -9,7 +9,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { rfqService } from '@/services/rfqs';
 import { Rfq, RfqBid } from '@/types';
-import { getRegionLabel, REGION_OPTIONS } from '@/lib/regions';
+import { REGION_OPTIONS } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
 import { CheckCircle2, ClipboardList, Plus, ShieldCheck, X, XCircle } from 'lucide-react';
 
 const RFQ_STATUS_LABELS: Record<Rfq['statut'], string> = {
@@ -62,8 +63,8 @@ export default function DashboardRfqs() {
         const res = await rfqService.getActiveRfqs();
         setRfqs(res.data.items);
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les demandes de devis.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les demandes de devis.'));
       setRfqs([]);
     } finally {
       setLoading(false);
@@ -97,8 +98,8 @@ export default function DashboardRfqs() {
       setForm(emptyForm());
       setShowForm(false);
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de publier la demande.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de publier la demande.'));
     } finally {
       setSubmitting(false);
     }
@@ -117,8 +118,8 @@ export default function DashboardRfqs() {
       });
       setBidForms((prev) => ({ ...prev, [rfqId]: { prix: '', quantite: '', message: '' } }));
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de soumettre votre offre.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de soumettre votre offre.'));
     } finally {
       setActionId(null);
     }
@@ -133,8 +134,8 @@ export default function DashboardRfqs() {
         await rfqService.rejectBid(rfqId, bid.id);
       }
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Action impossible.');
+    } catch (err) {
+      setError(extractApiError(err, 'Action impossible.'));
     } finally {
       setActionId(null);
     }

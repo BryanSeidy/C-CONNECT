@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   const login = useCallback(async (email: string, password: string) => {
     try {

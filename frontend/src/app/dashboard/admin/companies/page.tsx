@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { companyService } from '@/services/companies';
 import { Company } from '@/types';
 import { Badge } from '@/components/ui/Badge';

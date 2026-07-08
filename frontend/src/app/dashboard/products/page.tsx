@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { InlineEdit } from '@/components/ui/InlineEdit';
-import { getRegionLabel, REGION_OPTIONS } from '@/lib/regions';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { getRegionLabel } from '@/lib/regions';
 import styles from './Products.module.css';
 
 const UNIT_OPTIONS = [
@@ -146,13 +147,15 @@ export default function DashboardProducts() {
         {loading ? (
           <div className={styles.emptyState}>Chargement...</div>
         ) : products.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Package size={36} aria-hidden="true" />
-            <p>Aucun produit dans votre catalogue.</p>
-            <Link href="/dashboard/products/add">
-              <Button variant="primary" size="sm">Ajouter mon premier produit</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={Package}
+            message="Aucun produit dans votre catalogue."
+            action={
+              <Link href="/dashboard/products/add">
+                <Button variant="primary" size="sm">Ajouter mon premier produit</Button>
+              </Link>
+            }
+          />
         ) : products.map(product => {
           const stockVariant = product.stock === 0
             ? 'error'

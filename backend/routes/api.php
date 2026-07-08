@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EscrowController;
 use App\Http\Controllers\Api\GamificationController;
+use App\Http\Controllers\Api\NegotiationController;
 use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\Api\RecurringOrderController;
 use App\Http\Controllers\Api\RfqController;
@@ -189,6 +190,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/{bid}/accept', [RfqController::class, 'acceptBid'])->name('accept');
             Route::post('/{bid}/reject', [RfqController::class, 'rejectBid'])->name('reject');
         });
+    });
+
+    // --- Négociations B2B (offre/contre-offre sur un produit) ---
+    Route::prefix('negotiations')->name('negotiations.')->group(function (): void {
+        Route::get('/', [NegotiationController::class, 'index'])->name('index');
+        Route::post('/', [NegotiationController::class, 'store'])->name('store');
+        Route::patch('/{negotiation}', [NegotiationController::class, 'updateStatus'])->name('update-status');
     });
 
     // --- Commandes récurrentes ---

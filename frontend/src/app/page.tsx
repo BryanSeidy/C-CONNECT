@@ -12,7 +12,6 @@ import {
   Scale,
   ShieldCheck,
   Signal,
-  Smartphone,
   Sprout,
   Truck,
   Wallet,

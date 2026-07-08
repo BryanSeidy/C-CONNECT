@@ -72,7 +72,7 @@ class RfqController extends Controller
         $validator = Validator::make($request->all(), [
             'titre' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:2000'],
-            'category_id' => ['nullable', 'uuid', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'quantite' => ['required', 'numeric', 'min:0.01'],
             'unite' => ['required', 'string', 'in:kg,tonnes,sacs,caisses,litres,unites'],
             'budget_max' => ['nullable', 'numeric', 'min:0'],

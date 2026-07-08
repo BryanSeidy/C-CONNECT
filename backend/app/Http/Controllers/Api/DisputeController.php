@@ -36,7 +36,7 @@ class DisputeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'order_id' => ['required', 'uuid', 'exists:orders,id'],
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
             'raison' => ['required', 'string', 'in:marchandise_non_recue,qualite_non_conforme,quantite_incorrecte,produit_endommage,retard_livraison,autre'],
             'description' => ['required', 'string', 'max:2000'],
             'preuves_urls' => ['nullable', 'array'],

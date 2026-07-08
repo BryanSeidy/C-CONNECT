@@ -1,18 +1,21 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { negotiationService } from '@/services/negotiations';
 import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
+import { Negotiation } from '@/types';
 import { Handshake, MapPin, MessageSquare } from 'lucide-react';
 
 export default function DashboardNegotiations() {
   const { user } = useAuth();
-  const [negotiations, setNegotiations] = useState<any[]>([]);
+  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -26,10 +29,10 @@ export default function DashboardNegotiations() {
     setLoading(true);
     setError(null);
     try {
-      const res: any = await negotiationService.getNegotiations();
-      setNegotiations(res?.data || []);
-    } catch (err: any) {
-      setError(err?.message || 'Impossible de récupérer les négociations.');
+      const data = await negotiationService.getNegotiations();
+      setNegotiations(data);
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de récupérer les négociations.'));
     } finally {
       setLoading(false);
     }
@@ -44,8 +47,8 @@ export default function DashboardNegotiations() {
     try {
       await negotiationService.updateNegotiationStatus(id, status);
       await fetchNegotiations();
-    } catch (err: any) {
-      setError(err?.message || 'Erreur lors du traitement.');
+    } catch (err) {
+      setError(extractApiError(err, 'Erreur lors du traitement.'));
     } finally {
       setSubmittingAction(null);
     }
@@ -68,8 +71,8 @@ export default function DashboardNegotiations() {
       setCounterPrice(0);
       setCounterMessage('');
       await fetchNegotiations();
-    } catch (err: any) {
-      setError(err?.message || 'Erreur lors de la contre-proposition.');
+    } catch (err) {
+      setError(extractApiError(err, 'Erreur lors de la contre-proposition.'));
     } finally {
       setSubmittingAction(null);
     }
@@ -111,10 +114,7 @@ export default function DashboardNegotiations() {
           {loading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Chargement...</div>
           ) : negotiations.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-              <Handshake size={44} aria-hidden="true" style={{ marginBottom: '1rem' }} />
-              <p style={{ margin: 0 }}>Aucune négociation ou demande de devis en cours.</p>
-            </div>
+            <EmptyState icon={Handshake} message="Aucune négociation ou demande de devis en cours." />
           ) : (
             <Table>
               <TableHeader>
@@ -233,7 +233,7 @@ export default function DashboardNegotiations() {
                       {neg.message && (
                         <TableRow style={{ backgroundColor: '#F8FAFC' }}>
                           <TableCell colSpan={8} style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 1.5rem' }}>
-                            <MessageSquare size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} /> <strong>Message de {neg.buyerId === user?.id ? 'vous' : 'l\'acheteur'} :</strong> "{neg.message}"
+                            <MessageSquare size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} /> <strong>Message de {neg.buyerId === user?.id ? 'vous' : 'l\'acheteur'} :</strong> &quot;{neg.message}&quot;
                           </TableCell>
                         </TableRow>
                       )}
@@ -260,7 +260,7 @@ export default function DashboardNegotiations() {
                                 </div>
                                 <div>
                                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                                    Message d'accompagnement
+                                    Message d&apos;accompagnement
                                   </label>
                                   <input
                                     type="text"

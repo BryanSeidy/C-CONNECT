@@ -41,7 +41,7 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id' => ['required', 'uuid', 'exists:products,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'adresse_livraison' => ['nullable', 'string', 'max:500'],
             'ville_livraison' => ['nullable', 'string', 'max:100'],
