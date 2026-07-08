@@ -26,11 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // loop"). Le Bearer token est plus simple à déboguer, universel côté
         // mobile, et n'a pas besoin de config CORS/CSRF/SameSite.
         $middleware->trustHosts(at: ['localhost', '127.0.0.1']);
-        $middleware->appendToGroup('api', DatabaseFailoverMiddleware::class); // Failover global sur toutes les requetes API
-    $middleware->alias([
+        $middleware->alias([
             'seller' => EnsureUserIsSeller::class,
             'admin'  => EnsureUserIsAdmin::class,
         ]);
+        $middleware->appendToGroup('api', DatabaseFailoverMiddleware::class); // Failover global sur toutes les requetes API
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
