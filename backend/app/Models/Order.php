@@ -15,34 +15,67 @@ class Order extends Model
         'seller_id',
         'montant_total',
         'commission_plateforme',
-        'montant_net_vendeur',
-        'statut',
+        'montant_vendeur',
+        'escrow_status',
         'payment_provider',
         'payment_reference',
+        'transaction_reference',
         'payment_status',
-        'payment_metadata',
         'adresse_livraison',
         'ville_livraison',
         'telephone_livraison',
-        'notes_livraison',
+        'date_livraison_estimee',
     ];
 
     protected $casts = [
         'montant_total' => 'decimal:2',
         'commission_plateforme' => 'decimal:2',
-        'montant_net_vendeur' => 'decimal:2',
-        'payment_metadata' => 'array',
+        'montant_vendeur' => 'decimal:2',
+        'date_livraison_estimee' => 'date',
         'paid_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'released_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'en_preparation_le' => 'datetime',
+        'en_transit_le' => 'datetime',
+        'complete_le' => 'datetime',
+        'dispute_le' => 'datetime',
     ];
 
-    protected $attributes = [
-        'statut' => 'pending',
+    /**
+     * États finaux du cycle Escrow B2B.
+     * Aligné avec la migration corrective et les contrôleurs.
+     */
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_ESCROW_LOCKED = 'escrow_locked';
+    public const STATUS_EN_PREPARATION = 'en_preparation';
+    public const STATUS_EXPEDIE = 'expedie';
+    public const STATUS_EN_TRANSIT = 'en_transit';
+    public const STATUS_LIVRE = 'livre';
+    public const STATUS_COMPLETE = 'complete';
+    public const STATUS_ANNULE = 'annule';
+    public const STATUS_DISPUTE = 'dispute';
+
+    /** Tous les statuts autorisés du lifecycle. */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_ESCROW_LOCKED,
+        self::STATUS_EN_PREPARATION,
+        self::STATUS_EXPEDIE,
+        self::STATUS_EN_TRANSIT,
+        self::STATUS_LIVRE,
+        self::STATUS_COMPLETE,
+        self::STATUS_ANNULE,
+        self::STATUS_DISPUTE,
     ];
+
+    /** Statuts finaux qui libèrent/déduisent le stock réservé. */
+    public const STOCK_RELEASING_STATUSES = [self::STATUS_LIVRE, self::STATUS_COMPLETE];
+
+    /** Statuts finaux qui annulent et restituent le stock réservé. */
+    public const STOCK_RESTORING_STATUSES = [self::STATUS_ANNULE];
 
     // ==================== RELATIONS ====================
 
@@ -70,7 +103,7 @@ class Order extends Model
 
     public function scopeByStatus($query, string $status)
     {
-        return $query->where('statut', $status);
+        return $query->where('escrow_status', $status);
     }
 
     public function scopeForSeller($query, string $sellerId)
@@ -156,6 +189,6 @@ class Order extends Model
 
     public function getCanBeCancelledAttribute(): bool
     {
-        return in_array($this->statut, ['pending', 'escrow_locked']);
+        return in_array($this->escrow_status, ['pending', 'escrow_locked'], true);
     }
 }

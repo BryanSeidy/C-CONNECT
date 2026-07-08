@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\Api\RecurringOrderController;
 use App\Http\Controllers\Api\RfqController;
 use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -233,28 +234,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // --- Routes réservées aux administrateurs ---
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
-        Route::get('/stats', function () {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_orders'     => \App\Models\Order::count(),
-                    'total_companies'  => \App\Models\Company::where('statut_verification', 'verifie')->count(),
-                    'total_users'      => \App\Models\User::count(),
-                    'commission_total' => \App\Models\Order::where('escrow_status', 'complete')
-                        ->sum('commission_plateforme'),
-                    'disputes_open'    => \App\Models\Dispute::where('statut', 'ouvert')->count(),
-                ],
-            ]);
-        })->name('stats');
-
-        Route::get('/users', function () {
-            return response()->json([
-                'success' => true,
-                'data'    => \App\Models\User::with('gamificationStat')
-                    ->latest()
-                    ->paginate(20),
-            ]);
-        })->name('users');
+        Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
+        Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::get('/disputes', [AdminController::class, 'disputes'])->name('disputes');
+        Route::get('/companies', [AdminController::class, 'companies'])->name('companies');
     });
 
 }); // Fin des routes protégées

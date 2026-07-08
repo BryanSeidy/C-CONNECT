@@ -9,6 +9,8 @@ import { rfqService } from '@/services/rfqs';
 import { recurringOrderService } from '@/services/recurring';
 import { disputeService } from '@/services/disputes';
 import { productService } from '@/services/products';
+import { adminService } from '@/services/admin';
+import type { AdminStats as AdminStatsData } from '@/services/admin';
 import { Order, Rfq, RecurringOrder, Dispute, Product } from '@/types';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Badge } from '@/components/ui/Badge';
@@ -309,18 +311,28 @@ function SellerDashboard({ orders, rfqs, disputes, products, loading }: {
 
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
 
-function AdminDashboard({ orders, loading }: { orders: Order[]; loading: boolean }) {
-  const totalVolume = orders.reduce((s, o) => s + o.montantTotal, 0);
-  const commission = orders.filter(o => o.escrowStatus === 'complete').reduce((s, o) => s + o.commissionPlateforme, 0);
-  const disputes = orders.filter(o => o.escrowStatus === 'dispute').length;
+function AdminDashboard({ loading }: { loading: boolean }) {
+  const [stats, setStats] = useState<AdminStatsData | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    adminService.getStats()
+      .then((data) => { if (active) setStats(data); })
+      .catch(() => { /* KpiCard affiche un tiret si stats reste nul */ })
+      .finally(() => { if (active) setStatsLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const isLoading = loading || statsLoading;
 
   return (
     <div className={styles.page}>
       <div className={styles.kpiGrid}>
-        <KpiCard label="Volume transactions" value={`${fmt(totalVolume)} XAF`} icon={<Wallet size={20} />} variant="default" loading={loading} />
-        <KpiCard label="Commissions collectées" value={`${fmt(commission)} XAF`} icon={<ShieldCheck size={20} />} variant="gold" loading={loading} sub="10% par transaction" />
-        <KpiCard label="Total commandes" value={orders.length} icon={<Truck size={20} />} variant="success" loading={loading} />
-        <KpiCard label="Litiges ouverts" value={disputes} icon={<ShieldAlert size={20} />} variant={disputes > 0 ? 'warning' : 'muted'} loading={loading} />
+        <KpiCard label="Commissions collectées" value={stats ? `${fmt(stats.commissionTotal)} XAF` : '—'} icon={<Wallet size={20} />} variant="gold" loading={isLoading} sub="Commandes clôturées" />
+        <KpiCard label="Total commandes" value={stats?.totalOrders ?? '—'} icon={<Truck size={20} />} variant="success" loading={isLoading} />
+        <KpiCard label="Entreprises vérifiées" value={stats?.totalCompanies ?? '—'} icon={<ShieldCheck size={20} />} variant="default" loading={isLoading} />
+        <KpiCard label="Litiges ouverts" value={stats?.disputesOpen ?? '—'} icon={<ShieldAlert size={20} />} variant={(stats?.disputesOpen ?? 0) > 0 ? 'warning' : 'muted'} loading={isLoading} />
       </div>
 
       <div className={styles.quickActions}>
@@ -358,6 +370,13 @@ export default function DashboardOverview() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      if (user?.role === 'admin') {
+        // Les endpoints /orders, /rfqs/mine, /recurring-orders, /disputes sont
+        // scopés à l'utilisateur authentifié (buyer/seller) — un admin n'a
+        // pas de commandes propres. La vue admin utilise /admin/stats à la
+        // place (voir AdminDashboard ci-dessus).
+        return;
+      }
       const isSeller = user?.role === 'seller';
       const [ordRes, rfqRes, recRes, disRes, prodRes] = await Promise.allSettled([
         orderService.getOrders(),
@@ -378,7 +397,7 @@ export default function DashboardOverview() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  if (user?.role === 'admin') return <AdminDashboard orders={orders} loading={loading} />;
+  if (user?.role === 'admin') return <AdminDashboard loading={loading} />;
   if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} disputes={disputes} products={products} loading={loading} />;
   return <BuyerDashboard orders={orders} rfqs={rfqs} recurring={recurring} disputes={disputes} loading={loading} />;
 }

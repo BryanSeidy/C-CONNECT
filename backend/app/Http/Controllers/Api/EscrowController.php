@@ -22,16 +22,20 @@ class EscrowController extends Controller
 
         $released = DB::transaction(function () use ($order): ?Order {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($locked->escrow_status !== 'escrow_locked') {
+            // Libération possible dès que l'escrow est verrouillé (paiement reçu)
+            // et que la commande n'est ni annulée ni en litige.
+            if (!in_array($locked->escrow_status, ['escrow_locked', 'livre'], true)) {
                 return null;
             }
-            $locked->update(['escrow_status' => 'released']);
+            $locked->markComplete();
 
             return $locked->refresh();
         });
 
         if (! $released) {
-            return response()->json(['message' => 'Order funds are not eligible for release.'], 422);
+            return response()->json([
+                'message' => 'Les fonds ne sont pas éligibles à la libération (paiement non verrouillé ou commande annulée/litigiée).',
+            ], 422);
         }
 
         FundsReleased::dispatch($released);

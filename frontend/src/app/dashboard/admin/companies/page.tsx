@@ -5,6 +5,8 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import { companyService } from '@/services/companies';
 import { Company } from '@/types';
 import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { extractApiError } from '@/lib/errors';
 import styles from '../Admin.module.css';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'success'|'error'|'warning'|'default' }> = {
@@ -18,17 +20,35 @@ export default function AdminCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string|null>(null);
+  const [actingId,  setActingId]  = useState<number | string | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await companyService.getCompanies({});
       setCompanies(res.data.items);
-    } catch { setError('Impossible de charger les entreprises.'); }
-    finally  { setLoading(false); }
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les entreprises.'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  const handleDecision = async (id: number | string, statut: 'verifie' | 'rejete') => {
+    setActingId(id);
+    setError(null);
+    try {
+      const res = await companyService.updateVerificationStatus(id, statut);
+      setCompanies((prev) => prev.map((c) => (c.id === id ? res.data : c)));
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de mettre à jour le statut KYB.'));
+    } finally {
+      setActingId(null);
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -40,6 +60,8 @@ export default function AdminCompanies() {
 
       {loading ? (
         <p className={styles.loading}>Chargement…</p>
+      ) : companies.length === 0 ? (
+        <EmptyState icon={CheckCircle2} message="Aucune entreprise à examiner pour le moment." />
       ) : (
         <div className={styles.table}>
           <div className={styles.thead}>
@@ -66,10 +88,20 @@ export default function AdminCompanies() {
                 </Badge>
               </span>
               <div className={styles.cell} style={{display:'flex',gap:'0.4rem'}}>
-                <button className={`${styles.actionBtn} ${styles.approve}`} title="Approuver">
+                <button
+                  className={`${styles.actionBtn} ${styles.approve}`}
+                  title="Approuver"
+                  disabled={actingId === c.id || c.statutVerification === 'verifie'}
+                  onClick={() => handleDecision(c.id, 'verifie')}
+                >
                   <CheckCircle2 size={15} aria-hidden="true"/> Approuver
                 </button>
-                <button className={`${styles.actionBtn} ${styles.reject}`} title="Rejeter">
+                <button
+                  className={`${styles.actionBtn} ${styles.reject}`}
+                  title="Rejeter"
+                  disabled={actingId === c.id || c.statutVerification === 'rejete'}
+                  onClick={() => handleDecision(c.id, 'rejete')}
+                >
                   <XCircle size={15} aria-hidden="true"/> Rejeter
                 </button>
               </div>

@@ -29,17 +29,17 @@ return new class extends Migration
             $table->decimal('commission_plateforme', 12, 2)->default(0);
             $table->decimal('montant_vendeur', 12, 2)->default(0);
 
-            // Statut de la commande (aligné sur l'Escrow)
+            // Statut de la commande (aligné sur le lifecycle Escrow B2B final)
             $table->enum('escrow_status', [
                 'pending',
                 'escrow_locked',
-                'confirmed',
-                'shipped',
-                'delivered',
-                'released',
-                'disputed',
-                'cancelled',
-                'refunded'
+                'en_preparation',
+                'expedie',
+                'en_transit',
+                'livre',
+                'complete',
+                'annule',
+                'dispute',
             ])->default('pending');
 
             // Fournisseur de paiement

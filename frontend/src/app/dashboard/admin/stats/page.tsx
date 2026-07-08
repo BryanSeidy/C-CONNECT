@@ -1,18 +1,82 @@
 'use client';
-import React from 'react';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { Wallet, Truck, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { Wallet, Truck, ShieldCheck, BarChart3 } from 'lucide-react';
+import { adminService } from '@/services/admin';
+import type { AdminStats as AdminStatsData } from '@/services/admin';
+import { extractApiError } from '@/lib/errors';
+import styles from '../Admin.module.css';
+
 export default function AdminStats() {
+  const [stats, setStats] = useState<AdminStatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminService.getStats();
+      setStats(data);
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les statistiques.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'1rem'}}>
-        <KpiCard label="Volume total" value="Connectez la DB" icon={<Wallet size={20}/>} variant="default" />
-        <KpiCard label="Commandes" value="—" icon={<Truck size={20}/>} variant="success" />
-        <KpiCard label="Entreprises vérifiées" value="—" icon={<ShieldCheck size={20}/>} variant="gold" />
-        <KpiCard label="Taux complétion" value="—" icon={<BarChart3 size={20}/>} variant="default" />
+    <div className={styles.page}>
+      {error && <div className={styles.error}>{error}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <KpiCard
+          label="Commandes totales"
+          value={stats?.totalOrders ?? '—'}
+          icon={<Truck size={20} aria-hidden="true" />}
+          variant="default"
+          loading={loading}
+        />
+        <KpiCard
+          label="Entreprises vérifiées"
+          value={stats?.totalCompanies ?? '—'}
+          icon={<ShieldCheck size={20} aria-hidden="true" />}
+          variant="gold"
+          loading={loading}
+        />
+        <KpiCard
+          label="Utilisateurs inscrits"
+          value={stats?.totalUsers ?? '—'}
+          icon={<Wallet size={20} aria-hidden="true" />}
+          variant="success"
+          loading={loading}
+        />
+        <KpiCard
+          label="Litiges ouverts"
+          value={stats?.disputesOpen ?? '—'}
+          icon={<AlertTriangle size={20} aria-hidden="true" />}
+          variant={stats && stats.disputesOpen > 0 ? 'warning' : 'default'}
+          loading={loading}
+        />
       </div>
-      <div style={{background:'var(--bg-card)',borderRadius:'var(--radius-md)',padding:'2rem',textAlign:'center',color:'var(--text-muted)',border:'1px dashed var(--border-color)'}}>
-        Les graphiques de statistiques seront disponibles après connexion à la base de données de production.
+
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: 'var(--radius-md)',
+        padding: '1.5rem',
+        border: '1px solid var(--border-subtle)',
+      }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Commission plateforme cumulée (commandes clôturées) :
+        </span>
+        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary-color)', marginTop: '0.25rem' }}>
+          {loading ? '—' : `${stats?.commissionTotal.toLocaleString('fr-FR')} FCFA`}
+        </div>
       </div>
     </div>
   );

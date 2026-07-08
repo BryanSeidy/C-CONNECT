@@ -167,9 +167,25 @@ export const paymentService = {
     };
   },
 
-  getPayments: async () => {
-    return apiClient.get('/payments');
+  /**
+   * Historique de paiements pour le buyer/seller courant.
+   *
+   * Il n'existe pas de route `/payments` dédiée côté backend, et il n'en faut
+   * pas : chaque commande porte déjà son statut d'escrow et ses montants
+   * (voir `Order.escrowStatus`/`montantTotal`). Cette fonction dérive donc
+   * l'historique de paiement à partir de `GET /orders`, déjà fonctionnel,
+   * plutôt que d'appeler un endpoint qui n'existe pas.
+   */
+  getPaymentHistory: async (): Promise<Array<Pick<Order, 'id' | 'montantTotal' | 'escrowStatus' | 'createdAt'>>> => {
+    const res = await orderService.getOrders();
+    return res.data.map((o) => ({
+      id: o.id,
+      montantTotal: o.montantTotal,
+      escrowStatus: o.escrowStatus,
+      createdAt: o.createdAt,
+    }));
   },
+
 };
 
 // ============================================================================

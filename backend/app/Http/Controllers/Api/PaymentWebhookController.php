@@ -111,7 +111,7 @@ class PaymentWebhookController extends Controller
 
         $order = Order::where('id', $validated['order_id'])
             ->where('buyer_id', $request->user()->id)
-            ->where('escrow_status', 'pending')
+            ->where('escrow_status', Order::STATUS_PENDING)
             ->firstOrFail();
 
         // Generer une reference unique pour cette transaction
@@ -184,7 +184,7 @@ class PaymentWebhookController extends Controller
             }
 
             $order->update([
-                'escrow_status'         => 'escrow_locked',
+                'escrow_status'         => Order::STATUS_ESCROW_LOCKED,
                 'payment_provider'      => $validated['provider'],
                 'payment_reference'     => $validated['transaction_reference'],
                 'transaction_reference' => $validated['transaction_reference'],
