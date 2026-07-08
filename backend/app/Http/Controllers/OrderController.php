@@ -22,7 +22,7 @@ class OrderController extends Controller
         $user = $request->user();
         $sellerProfileId = $user->sellerProfile?->id;
 
-        $query = Order::with(['items.product:id,nom,region,unite,stock', 'buyer:id,fullName,companyName,email', 'seller.user:id,fullName,companyName'])
+        $query = Order::with(['items.product:id,nom,region,unite,stock', 'buyer:id,nom,prenom,email', 'seller.user:id,nom,prenom'])
             ->when($user->isBuyer(), fn ($q) => $q->where('buyer_id', $user->id))
             ->when($user->isSeller() && $sellerProfileId, fn ($q) => $q->where('seller_id', $sellerProfileId))
             ->latest();
@@ -36,7 +36,7 @@ class OrderController extends Controller
 
     /**
      * Create a new order for the authenticated buyer.
-     * Reserves stock and computes platform commission / seller payout automatically.
+     * Reserves stock atomically and computes platform commission / seller payout.
      */
     public function store(Request $request): JsonResponse
     {
@@ -46,47 +46,61 @@ class OrderController extends Controller
             'adresse_livraison' => ['nullable', 'string', 'max:500'],
             'ville_livraison' => ['nullable', 'string', 'max:100'],
             'telephone_livraison' => ['nullable', 'string', 'max:20'],
+            'notes_livraison' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
+        $buyer = $request->user();
 
-        if ($product->statut !== 'active' || $product->stock_disponible < $validated['quantity']) {
-            return response()->json([
-                'message' => 'Produit indisponible ou stock insuffisant pour la quantité demandée.',
-            ], 422);
+        if (!$buyer->isBuyer()) {
+            return response()->json(['message' => 'Seuls les acheteurs peuvent passer commande.'], 403);
         }
 
-        $order = DB::transaction(function () use ($product, $validated, $request) {
-            $montantTotal = (float) $product->prix * $validated['quantity'];
-            $financials = Order::computeFinancials($montantTotal);
+        try {
+            $order = DB::transaction(function () use ($validated, $buyer) {
+                // Verrouiller le produit pour éviter la sur-réservation concurrente
+                $product = Product::lockForUpdate()->findOrFail($validated['product_id']);
 
-            $order = Order::create([
-                'buyer_id' => $request->user()->id,
-                'seller_id' => $product->seller_id,
-                ...$financials,
-                'escrow_status' => 'pending',
-                'adresse_livraison' => $validated['adresse_livraison'] ?? null,
-                'ville_livraison' => $validated['ville_livraison'] ?? null,
-                'telephone_livraison' => $validated['telephone_livraison'] ?? null,
-            ]);
+                if ($product->statut !== 'active') {
+                    throw new \DomainException('Ce produit n\'est plus disponible.');
+                }
+                if ($product->stock_disponible < $validated['quantity']) {
+                    throw new \DomainException('Stock insuffisant pour la quantité demandée.');
+                }
 
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'seller_id' => $product->seller_id,
-                'quantite' => $validated['quantity'],
-                'prix_unitaire' => $product->prix,
-                'sous_total' => $montantTotal,
-            ]);
+                $montantTotal = (float) $product->prix * $validated['quantity'];
+                $financials = Order::computeFinancials($montantTotal);
 
-            $product->reserverStock($validated['quantity']);
+                $order = Order::create([
+                    'buyer_id' => $buyer->id,
+                    'seller_id' => $product->seller_id,
+                    ...$financials,
+                    'escrow_status' => Order::STATUS_PENDING,
+                    'adresse_livraison' => $validated['adresse_livraison'] ?? null,
+                    'ville_livraison' => $validated['ville_livraison'] ?? null,
+                    'telephone_livraison' => $validated['telephone_livraison'] ?? null,
+                ]);
 
-            return $order;
-        });
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'seller_id' => $product->seller_id,
+                    'quantite' => $validated['quantity'],
+                    'prix_unitaire' => $product->prix,
+                    'sous_total' => $montantTotal,
+                ]);
+
+                // Réserver atomiquement le stock dans la même transaction
+                $product->reserverStock($validated['quantity']);
+
+                return $order;
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $order->load(['items.product:id,nom,region,unite', 'seller.user:id,fullName,companyName']),
+            'data' => $order->load(['items.product:id,nom,region,unite', 'seller.user:id,nom,prenom', 'buyer:id,nom,prenom,email']),
             'message' => 'Commande créée avec succès. En attente de paiement en séquestre.',
         ], 201);
     }
@@ -100,7 +114,7 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $order->load(['items.product:id,nom,region,unite', 'buyer:id,fullName,email,companyName', 'seller.user:id,fullName,companyName', 'dispute']),
+            'data' => $order->load(['items.product:id,nom,region,unite', 'buyer:id,nom,prenom,email', 'seller.user:id,nom,prenom', 'dispute']),
             'message' => 'Commande récupérée avec succès.',
         ]);
     }
