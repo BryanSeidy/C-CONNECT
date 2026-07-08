@@ -10,7 +10,6 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
@@ -42,8 +41,6 @@ class AuthController extends Controller
             ]);
         }
 
-        Auth::login($user);
-        $request->session()->regenerate();
         $user->sendEmailVerificationNotification();
 
         return response()->json([
@@ -62,27 +59,24 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-            $user = Auth::user();
-            return response()->json([
-                'message' => 'Login successful.',
-                'data' => [
-                    'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
-                    'token' => $user->createToken('cconnect_auth_token')->plainTextToken
-                ]
-            ]);
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
-        return response()->json(['message' => 'Invalid credentials.'], 401);
+        return response()->json([
+            'message' => 'Login successful.',
+            'data' => [
+                'user' => $user->loadMissing(['sellerProfile', 'gamificationStat']),
+                'token' => $user->createToken('cconnect_auth_token')->plainTextToken
+            ]
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()?->currentAccessToken()?->delete();
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Logout successful.']);
     }

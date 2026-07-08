@@ -63,7 +63,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(restoredSession.user);
     }
 
-    // Validate session with the server (cookie-based)
+    // Validate the session with the server via the Bearer token
+    // (already restored into memory/sessionStorage by services/api.ts).
     authService.getProfile()
       .then((profile) => {
         const validatedUser = normalizeProfile(profile);
@@ -92,21 +93,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password });
-      const authToken = response.data.token ?? response.data.access_token;
       const authUser = response.data.user;
 
       if (!authUser) {
         throw new Error('Réponse de connexion invalide — données utilisateur manquantes.');
       }
 
-      // Store token in memory for immediate use in this session
-      if (authToken) {
-        setMemoryToken(authToken);
-      }
-
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
-      sessionService.save(authToken ?? '', normalizedUser);
+      sessionService.saveUser(normalizedUser);
     } catch (error: unknown) {
       const message = extractServerError(error);
       throw new Error(message ?? 'Connexion échouée. Vérifiez vos identifiants.');
@@ -117,19 +112,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
       const authUser = response.data.user;
-      const authToken = response.data.token ?? response.data.access_token;
 
       if (!authUser) {
         throw new Error('Réponse d\'inscription invalide — données utilisateur manquantes.');
       }
 
-      if (authToken) {
-        setMemoryToken(authToken);
-      }
-
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
-      sessionService.save(authToken ?? '', normalizedUser);
+      sessionService.saveUser(normalizedUser);
     } catch (error: unknown) {
       const message = extractServerError(error);
       throw new Error(message ?? 'Inscription échouée. Veuillez réessayer.');

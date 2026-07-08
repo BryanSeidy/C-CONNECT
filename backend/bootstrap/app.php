@@ -19,7 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
-        $middleware->statefulApi();
+        // Auth par token Bearer (Sanctum) uniquement — plus de mode SPA cookie.
+        // statefulApi() posait laravel_session/XSRF-TOKEN sur toute requête
+        // stateful (même anonyme), ce qui a causé un bug de boucle de
+        // redirection sur le frontend (voir commit "Fix critical redirect
+        // loop"). Le Bearer token est plus simple à déboguer, universel côté
+        // mobile, et n'a pas besoin de config CORS/CSRF/SameSite.
         $middleware->trustHosts(at: ['localhost', '127.0.0.1']);
         $middleware->appendToGroup('api', DatabaseFailoverMiddleware::class); // Failover global sur toutes les requetes API
     $middleware->alias([

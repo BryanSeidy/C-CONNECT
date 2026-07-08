@@ -7,8 +7,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 /**
@@ -48,7 +46,7 @@ class SocialAuthController extends Controller
      * GET /api/auth/social/{provider}/callback
      * Traite le retour du provider, cree ou connecte l'utilisateur.
      */
-    public function callback(string $provider, Request $request): JsonResponse
+    public function callback(string $provider): JsonResponse
     {
         if (!in_array($provider, self::SUPPORTED_PROVIDERS, true)) {
             return response()->json(['message' => "Provider '{$provider}' non supporte."], 422);
@@ -100,9 +98,6 @@ class SocialAuthController extends Controller
                 ]);
             }
         }
-
-        Auth::login($user);
-        $request->session()->regenerate();
 
         $token = $user->createToken('cconnect_oauth_token')->plainTextToken;
 

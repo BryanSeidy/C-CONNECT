@@ -23,22 +23,9 @@ export interface AuthData {
 export type AuthResponse    = ApiEnvelope<AuthData>;
 export type ProfileResponse = ApiEnvelope<{ user: User }>;
 
-function backendRoot(): string {
-  return (apiClient.defaults.baseURL ?? 'http://localhost:8000/api').replace(/\/api\/?$/, '');
-}
-
 export const authService = {
-  /**
-   * Récupère le cookie CSRF — doit appeler le ROOT du backend, pas /api.
-   * Correspond à GET http://localhost:8000/sanctum/csrf-cookie
-   */
-  getCsrfCookie: async (): Promise<void> => {
-    await apiClient.get('/sanctum/csrf-cookie', { baseURL: backendRoot() });
-  },
-
   /** POST /api/auth/login */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    await authService.getCsrfCookie();
     const res = await apiClient.post<unknown, AuthResponse>('/auth/login', credentials);
     if (res?.data?.token) setMemoryToken(res.data.token);
     return res;
@@ -46,14 +33,15 @@ export const authService = {
 
   /** POST /api/auth/register */
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
-    await authService.getCsrfCookie();
-    return apiClient.post<unknown, AuthResponse>('/auth/register', {
+    const res = await apiClient.post<unknown, AuthResponse>('/auth/register', {
       name: payload.fullName ?? '',
       email: payload.email,
       password: payload.password,
       password_confirmation: payload.password,
       role: payload.role ?? 'buyer',
     });
+    if (res?.data?.token) setMemoryToken(res.data.token);
+    return res;
   },
 
   /** GET /api/auth/me */
@@ -68,19 +56,20 @@ export const authService = {
 
   /** POST /api/auth/logout */
   logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
-    setMemoryToken(null);
+    try {
+      await apiClient.post('/auth/logout');
+    } finally {
+      setMemoryToken(null);
+    }
   },
 
   /** POST /api/auth/forgot-password */
   forgotPassword: async (email: string): Promise<{ message: string }> => {
-    await authService.getCsrfCookie();
     return apiClient.post<unknown, { message: string }>('/auth/forgot-password', { email });
   },
 
   /** POST /api/auth/reset-password */
   resetPassword: async (payload: { email: string; token: string; password: string; passwordConfirmation: string }): Promise<{ message: string }> => {
-    await authService.getCsrfCookie();
     return apiClient.post<unknown, { message: string }>('/auth/reset-password', {
       email: payload.email,
       token: payload.token,

@@ -5,19 +5,16 @@ declare(strict_types=1);
 /**
  * CORS — Cross-Origin Resource Sharing
  *
- * Clés de la config :
- *  - supports_credentials DOIT être true pour que les cookies Sanctum
- *    traversent le boundary localhost:3000 → localhost:8000.
- *  - allowed_origins ne peut PAS être ['*'] quand supports_credentials=true
- *    (le navigateur bloque la réponse avec une erreur CORS).
- *  - La route 'sanctum/csrf-cookie' doit être dans paths pour que le
- *    handshake CSRF soit accessible cross-origin.
+ * Authentification par Bearer token (Sanctum personal access token) — aucun
+ * cookie de session n'est en jeu, donc `supports_credentials` est à false et
+ * `allowed_origins` pourrait même être '*' sans risque. On garde une liste
+ * explicite par prudence (moins de surface pour un CORS mal configuré en
+ * prod), mais ce n'est plus une contrainte de sécurité liée aux cookies.
  */
 return [
 
     'paths' => [
         'api/*',
-        'sanctum/csrf-cookie',
     ],
 
     'allowed_methods' => ['*'],
@@ -35,7 +32,6 @@ return [
         'Accept',
         'Authorization',
         'X-Requested-With',
-        'X-XSRF-TOKEN',
         'X-Database-Mode',
         'x-database-mode',
     ],
@@ -46,10 +42,6 @@ return [
 
     'max_age' => 0,
 
-    /*
-     * CRITIQUE : doit être true pour transmettre les cookies de session
-     * et le cookie XSRF-TOKEN au frontend.
-     */
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];

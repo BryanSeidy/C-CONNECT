@@ -10,11 +10,11 @@ export interface StoredSession {
 /**
  * Session service — manages the minimal client-side state.
  *
- * Architecture note: The primary auth mechanism is the Sanctum httpOnly cookie
- * set by the backend. This service only caches the User object in localStorage
- * for immediate UI hydration (avoids layout flash on page load). The raw bearer
- * token is never stored in localStorage; it exists only in memory and in the
- * httpOnly cookie managed by the browser.
+ * Architecture note: authentication is a Bearer token (Laravel Sanctum
+ * personal access token), kept in memory + sessionStorage by services/api.ts
+ * (see setMemoryToken/getMemoryToken). This service only caches the User
+ * object in localStorage for immediate UI hydration on page load (avoids a
+ * layout flash while /auth/me resolves) — it never stores the token itself.
  */
 export const sessionService = {
   /**
