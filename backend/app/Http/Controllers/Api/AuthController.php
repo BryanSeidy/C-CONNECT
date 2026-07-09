@@ -48,7 +48,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // $user->sendEmailVerificationNotification();
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
             'message' => 'Registration successful.',
@@ -165,7 +165,7 @@ class AuthController extends Controller
         $status = Password::reset(
             $validated,
             function (User $user, string $password): void {
-                $user->forceFill(['password' => $password])->save();
+                $user->forceFill(['password' => Hash::make($password)])->save();
             }
         );
 

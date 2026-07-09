@@ -82,7 +82,6 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined' && _memoryToken && !isPublic(config.url)) {
     config.headers.Authorization = `Bearer ${_memoryToken}`;
-    console.log('✅ Token ajouté à la requête');
   }
   return config;
 });

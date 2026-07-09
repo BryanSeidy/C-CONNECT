@@ -1,11 +1,11 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/types';
 import { authService, ProfileResponse } from '@/services/auth';
 import { sessionService } from '@/services/session';
-import { setMemoryToken } from '@/services/api';
+import { getMemoryToken, setMemoryToken } from '@/services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -56,7 +56,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // On mount: restore cached user for fast UI, then validate via /me
+  // Compteur de génération : toute réponse /auth/me obsolète (résolue après
+  // une requête plus récente, ex: refreshProfile() lancé par la page de
+  // callback OAuth pendant que cette validation initiale est encore en vol)
+  // est ignorée au lieu d'écraser un état plus frais. C'était la cause
+  // exacte de la boucle post-connexion Google : la validation initiale
+  // (sans token, forcément 401) pouvait se résoudre APRÈS le refreshProfile()
+  // authentifié du callback, et remettait `user` à null juste après qu'il
+  // ait été correctement défini.
+  const profileRequestId = useRef(0);
+
+  // On mount: restore cached user for fast UI, then validate via /me —
+  // mais seulement s'il existe déjà un token. Sans token, l'appel est
+  // garanti de renvoyer 401 (ex: première visite, ou page de callback OAuth
+  // qui n'a pas encore extrait son token de l'URL) ; le tenter quand même
+  // ouvre la fenêtre de course ci-dessus pour rien.
   useEffect(() => {
     const restoredSession = sessionService.read();
 
@@ -65,21 +79,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(restoredSession.user);
     }
 
-    // Validate the session with the server via the Bearer token
-    // (already restored into memory/sessionStorage by services/api.ts).
+    if (!getMemoryToken()) {
+      setIsLoading(false);
+      return;
+    }
+
+    const requestId = ++profileRequestId.current;
+
     authService.getProfile()
       .then((profile) => {
+        if (requestId !== profileRequestId.current) return; // réponse obsolète
         const validatedUser = normalizeProfile(profile);
         if (validatedUser) {
           setUser(validatedUser);
           sessionService.saveUser(validatedUser);
         } else {
-          // Server rejected the session
           setUser(null);
           sessionService.clear();
         }
       })
       .catch(() => {
+        if (requestId !== profileRequestId.current) return; // réponse obsolète
         // Network error or 401 — clear stale local cache if no server session
         if (!restoredSession.user) {
           setUser(null);
@@ -88,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // to avoid a jarring logout on transient network errors
       })
       .finally(() => {
+        if (requestId !== profileRequestId.current) return;
         setIsLoading(false);
       });
   }, []);  
@@ -118,8 +139,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
       const authUser = response.data?.user;
       const token = response.data.token;
-      console.log('Register response:', response);
-      console.log('Auth user:', authUser);
 
       if (!authUser) {
         throw new Error('Réponse d\'inscription invalide — données utilisateur manquantes.');
@@ -137,8 +156,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const refreshProfile = useCallback(async () => {
+    const requestId = ++profileRequestId.current;
     try {
       const profile = await authService.getProfile();
+      if (requestId !== profileRequestId.current) return; // une requête plus récente a pris le dessus
       const nextUser = normalizeProfile(profile);
       if (!nextUser) return;
       setUser(nextUser);
