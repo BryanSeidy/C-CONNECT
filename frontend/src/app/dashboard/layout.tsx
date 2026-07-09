@@ -36,6 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pageLabel = PAGE_LABELS[pathname] ?? 'Dashboard';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // Garde d'authentification côté client — seule source de vérité fiable :
   // le cookie de session Sanctum est httpOnly et ne prouve rien depuis
@@ -85,13 +86,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className={styles.topbarRight}>
-            <button type="button" className={styles.iconBtn} aria-label="Recherche">
+            <button
+              type="button"
+              className={styles.iconBtn}
+              aria-label="Rechercher un produit"
+              onClick={() => router.push('/marketplace')}
+            >
               <Search size={18} aria-hidden="true" />
             </button>
-            <button type="button" className={styles.iconBtn} aria-label="Notifications">
-              <Bell size={18} aria-hidden="true" />
-              <span className={styles.notifDot} aria-hidden="true" />
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                aria-label="Notifications"
+                aria-expanded={notifOpen}
+                onClick={() => setNotifOpen((v) => !v)}
+              >
+                <Bell size={18} aria-hidden="true" />
+              </button>
+              {notifOpen && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 0.5rem)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle, #E2E8F0)',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    padding: '1rem',
+                    width: '260px',
+                    fontSize: '0.85rem',
+                    color: 'var(--text-muted)',
+                    zIndex: 20,
+                  }}
+                >
+                  Aucune notification pour le moment.
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
