@@ -23,7 +23,10 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
-            'role' => ['sometimes', 'string', Rule::in(['buyer', 'seller', 'admin'])],
+            // Sécurité : l'inscription publique ne doit JAMAIS permettre de
+            // créer un compte admin. Un admin ne peut être créé que par un
+            // seeder ou manuellement en base — jamais via cet endpoint.
+            'role' => ['sometimes', 'string', Rule::in(['buyer', 'seller'])],
         ]);
 
         // La table users stocke nom/prenom (pas de colonne 'name' ou
