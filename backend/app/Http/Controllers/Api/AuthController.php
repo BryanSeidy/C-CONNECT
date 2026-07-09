@@ -37,7 +37,7 @@ class AuthController extends Controller
             'nom' => $nom,
             'prenom' => $prenom,
             'email' => $validated['email'],
-            'password' => $validated['password'],
+            'password' => Hash::make($validated['password']),
             'role' => $validated['role'] ?? 'buyer',
         ]);
 
@@ -48,7 +48,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->sendEmailVerificationNotification();
+        // $user->sendEmailVerificationNotification();
 
         return response()->json([
             'message' => 'Registration successful.',

@@ -16,7 +16,7 @@ export interface RegisterPayload {
 
 export interface AuthData {
   user: User;
-  token?: string;
+  token: string;
   access_token?: string;
 }
 
@@ -41,7 +41,7 @@ export const authService = {
       role: payload.role ?? 'buyer',
     });
     if (res?.data?.token) setMemoryToken(res.data.token);
-    return res;
+    return res as AuthResponse;
   },
 
   /** GET /api/auth/me */

@@ -82,6 +82,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined' && _memoryToken && !isPublic(config.url)) {
     config.headers.Authorization = `Bearer ${_memoryToken}`;
+    console.log('✅ Token ajouté à la requête');
   }
   return config;
 });
@@ -92,18 +93,20 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Propager le mode base de donnees depuis le header backend
+    // Propager le mode base de données depuis le header backend
     const dbMode = response.headers['x-database-mode'] as string | undefined;
     if (dbMode === 'online' || dbMode === 'offline') {
       dispatchDatabaseMode(dbMode as DatabaseMode);
+      window.dispatchEvent(new CustomEvent('database-offline', { detail: dbMode === 'offline' }));
     }
-    return response.data;
+    return response.data;  // ← TOUJOURS retourner response.data
   },
 
   async (error: AxiosError) => {
     const status = error.response?.status;
     const config = error.config as InternalAxiosRequestConfig | undefined;
 
+    // Gestion 401
     if (status === 401 && typeof window !== 'undefined') {
       const isAuthPage = /^\/(login|register|forgot-password|reset-password)/.test(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
@@ -112,28 +115,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error);
-  },
-);
-
-apiClient.interceptors.response.use(
-  (response) => {
-    const dbMode = response.headers['x-database-mode'];
-
-    if (dbMode === 'offline') {
-      // Déclencher un événement global ou mettre à jour un store (Zustand/Redux)
-      window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
-    } else if (dbMode === 'online') {
-      window.dispatchEvent(new CustomEvent('database-offline', { detail: false }));
-    }
-
-    return response;
-  },
-  (error) => {
-    // En cas d'erreur réseau totale (Laravel lui-même est inaccessible)
+    // Gestion erreur réseau
     if (!error.response) {
       window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
     }
+
     return Promise.reject(error);
-  }
+  },
 );

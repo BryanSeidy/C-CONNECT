@@ -96,10 +96,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await authService.login({ email, password });
       const authUser = response.data.user;
+      const token = response.data.token;
 
       if (!authUser) {
         throw new Error('Réponse de connexion invalide — données utilisateur manquantes.');
       }
+
+      setMemoryToken(token);
 
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
@@ -113,11 +116,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = useCallback(async (email: string, password: string, fullName: string, role: string) => {
     try {
       const response = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
-      const authUser = response.data.user;
+      const authUser = response.data?.user;
+      const token = response.data.token;
+      console.log('Register response:', response);
+      console.log('Auth user:', authUser);
 
       if (!authUser) {
         throw new Error('Réponse d\'inscription invalide — données utilisateur manquantes.');
       }
+
+      setMemoryToken(token);
 
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
