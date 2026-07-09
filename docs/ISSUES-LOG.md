@@ -8,6 +8,19 @@ Ce fichier est la référence unique pour tout bug, régression ou incohérence 
 
 ## 2026-07-09 — Claude1 (Dashboard-01 depuis ce jour, ex-Auth)
 
+### 🟡 Blocage cross-agent — Aucune API pour les notifications
+
+**Constat :** en démarrant l'audit Dashboard-01, aucune UI de notifications n'existe côté frontend (attendu dans le scope Dashboard-01). Côté backend, seule la table `notifications` (migration Laravel standard, `database/migrations/2026_06_29_181704_create_notifications_table.php`) et un `app/Jobs/SendOrderNotificationJob.php` existent — **aucune route API pour lister/marquer comme lue une notification**.
+
+**Ce qu'il faut côté Backend-01/Zai** (pas dans mon scope de fichiers, je ne le fais pas moi-même) :
+- `GET /api/notifications` (paginé, filtrable par lu/non-lu)
+- `PATCH /api/notifications/{id}/read` ou `POST /api/notifications/mark-all-read`
+- Idéalement le nombre de non-lus dans le header ou un endpoint dédié `GET /api/notifications/unread-count` pour un badge léger dans la topbar sans charger toute la liste.
+
+**En attendant**, je me concentre sur les écrans dashboard qui ne dépendent pas de cette API manquante.
+
+
+
 ### 🔴 Critique — Boucle de redirection après connexion Google + 401 répétés sur `/auth/me`
 
 **Symptôme :** après une connexion Google réussie, l'app redirige vers `/dashboard` puis rebondit en boucle, avec des appels répétés à `GET /auth/me` retournant 401.
