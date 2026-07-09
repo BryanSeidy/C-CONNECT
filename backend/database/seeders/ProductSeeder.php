@@ -21,9 +21,9 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'cecile@example.cm',
                 'category' => 'Agroalimentaire',
                 'products' => [
-                    ['nom' => 'Jus de Gingembre Naturel 1L', 'description' => 'Jus de gingembre 100% naturel, sans conservateur. Produit à Bafoussam.', 'prix' => 2500, 'stock' => 50, 'region' => 'Ouest'],
-                    ['nom' => 'Confiture de Mangue Sauvage', 'description' => 'Confiture artisanale aux mangues sauvages du pays bamiléké.', 'prix' => 3000, 'stock' => 30, 'region' => 'Ouest'],
-                    ['nom' => 'Miel Pur de Montagne', 'description' => 'Miel récolté dans les montagnes de l\'Ouest Cameroun. Non pasteurisé.', 'prix' => 4500, 'stock' => 20, 'region' => 'Ouest'],
+                    ['nom' => 'Jus de Gingembre Naturel 1L', 'description' => 'Jus de gingembre 100% naturel, sans conservateur. Produit à Bafoussam.', 'prix' => 2500, 'stock' => 50, 'region' => 'Ouest', 'image_url' => 'backend\storage\app\public\photos\gingembre.jpeg'],
+                    ['nom' => 'Confiture de Mangue Sauvage', 'description' => 'Confiture artisanale aux mangues sauvages du pays bamiléké.', 'prix' => 3000, 'stock' => 30, 'region' => 'Ouest', 'image_url' => 'Artisanat'],
+                    ['nom' => 'Miel Pur de Montagne', 'description' => 'Miel récolté dans les montagnes de l\'Ouest Cameroun. Non pasteurisé.', 'prix' => 4500, 'stock' => 20, 'region' => 'Ouest', 'image_url' => 'backend\storage\app\public\photos\huile de palme.jpeg'],
                 ]
             ],
             // Pauline Cosmetics
@@ -31,8 +31,8 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'pauline@example.cm',
                 'category' => 'Cosmétique & Bien-être',
                 'products' => [
-                    ['nom' => 'Beurre de Karité Brut 250g', 'description' => 'Beurre de karité non raffiné du Nord Cameroun. Hydratant intense.', 'prix' => 3500, 'stock' => 100, 'region' => 'Nord'],
-                    ['nom' => 'Savon Noir Africain', 'description' => 'Savon noir traditionnel à base de cendres de plantain et huile de coco.', 'prix' => 1500, 'stock' => 200, 'region' => 'Nord'],
+                    ['nom' => 'Beurre de Karité Brut 250g', 'description' => 'Beurre de karité non raffiné du Nord Cameroun. Hydratant intense.', 'prix' => 3500, 'stock' => 100, 'region' => 'Nord', 'image_url' => 'Artisanat'],
+                    ['nom' => 'Savon Noir Africain', 'description' => 'Savon noir traditionnel à base de cendres de plantain et huile de coco.', 'prix' => 1500, 'stock' => 200, 'region' => 'Nord', 'image_url' => 'Artisanat'],
                 ]
             ],
             // Esther Fashion Design
@@ -40,8 +40,8 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'esther@example.cm',
                 'category' => 'Mode & Textile',
                 'products' => [
-                    ['nom' => 'Robe Toghu Moderne', 'description' => 'Robe contemporaine en tissu Toghu brodé main. Pièce unique.', 'prix' => 45000, 'stock' => 3, 'region' => 'Littoral'],
-                    ['nom' => 'Ensemble Pagne Ndop', 'description' => 'Ensemble femme en authentique Ndop de l\'Ouest. Sur mesure.', 'prix' => 35000, 'stock' => 5, 'region' => 'Littoral'],
+                    ['nom' => 'Robe Toghu Moderne', 'description' => 'Robe contemporaine en tissu Toghu brodé main. Pièce unique.', 'prix' => 45000, 'stock' => 3, 'region' => 'Littoral', 'image_url' => 'Artisanat'],
+                    ['nom' => 'Ensemble Pagne Ndop', 'description' => 'Ensemble femme en authentique Ndop de l\'Ouest. Sur mesure.', 'prix' => 35000, 'stock' => 5, 'region' => 'Littoral', 'image_url' => 'Artisanat'],
                 ]
             ],
             // Coopérative Tchinda
@@ -49,8 +49,8 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'jean@example.cm',
                 'category' => 'Épicerie fine',
                 'products' => [
-                    ['nom' => 'Cacao en Poudre 500g', 'description' => 'Cacao camerounais 100% pur, torréfié artisanalement.', 'prix' => 4000, 'stock' => 80, 'region' => 'Centre'],
-                    ['nom' => 'Café Robusta 250g', 'description' => 'Café robusta des plateaux de l\'Ouest. Torréfaction traditionnelle.', 'prix' => 3000, 'stock' => 60, 'region' => 'Centre'],
+                    ['nom' => 'Cacao en Poudre 500g', 'description' => 'Cacao camerounais 100% pur, torréfié artisanalement.', 'prix' => 4000, 'stock' => 80, 'region' => 'Centre', 'image_url' => 'backend\storage\app\public\photos\cacao.jpeg',],
+                    ['nom' => 'Café Robusta 250g', 'description' => 'Café robusta des plateaux de l\'Ouest. Torréfaction traditionnelle.', 'prix' => 3000, 'stock' => 60, 'region' => 'Centre', 'image_url' => 'backend\storage\app\public\photos\café.jpeg'],
                 ]
             ],
             // Artisanat Kamga
@@ -58,8 +58,8 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'pierre@example.cm',
                 'category' => 'Artisanat',
                 'products' => [
-                    ['nom' => 'Masque Bamileke Authentique', 'description' => 'Masque cérémoniel sculpté main. Bois d\'ébène. Collection.', 'prix' => 85000, 'stock' => 2, 'region' => 'Ouest'],
-                    ['nom' => 'Statue Reine Mère', 'description' => 'Statuette en bronze représentant une reine mère. H 30cm.', 'prix' => 65000, 'stock' => 4, 'region' => 'Ouest'],
+                    ['nom' => 'Masque Bamileke Authentique', 'description' => 'Masque cérémoniel sculpté main. Bois d\'ébène. Collection.', 'prix' => 85000, 'stock' => 2, 'region' => 'Ouest', 'image_url' => 'Artisanat'],
+                    ['nom' => 'Statue Reine Mère', 'description' => 'Statuette en bronze représentant une reine mère. H 30cm.', 'prix' => 65000, 'stock' => 4, 'region' => 'Ouest', 'image_url' => 'Artisanat'],
                 ]
             ],
         ];
@@ -78,6 +78,7 @@ class ProductSeeder extends Seeder
                     'prix' => $p['prix'],
                     'stock' => $p['stock'],
                     'region' => $p['region'],
+                    'image_url' => $p['image_url'],
                     'statut' => 'active',
                     'quality_rating' => fake()->randomFloat(2, 3.5, 5.0),
                     'reviews_count' => fake()->numberBetween(0, 50),
