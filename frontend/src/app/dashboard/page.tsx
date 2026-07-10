@@ -16,6 +16,8 @@ import { Order, Rfq, RecurringOrder, Dispute, Product, Company } from '@/types';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Badge } from '@/components/ui/Badge';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
+import { DonutChartCard, DistributionDatum } from '@/components/dashboard/DonutChartCard';
+import { BarChartCard, SeriesDatum } from '@/components/dashboard/BarChartCard';
 import styles from './DashboardOverview.module.css';
 
 const ESCROW_LABELS: Record<string, string> = {
@@ -31,6 +33,41 @@ const ESCROW_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error
 };
 
 function fmt(n: number) { return n.toLocaleString('fr-FR'); }
+
+function orderStatusDistribution(orders: Order[]): DistributionDatum[] {
+  const counts = new Map<string, number>();
+  for (const o of orders) {
+    const label = ESCROW_LABELS[o.escrowStatus] ?? o.escrowStatus;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
+const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+/** Regroupe un montant de commande par mois sur les 6 derniers mois glissants. */
+function monthlyAmountSeries(orders: Order[], amountKey: 'montantTotal' | 'montantVendeur'): SeriesDatum[] {
+  const now = new Date();
+  const months: { key: string; name: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, name: MONTH_LABELS[d.getMonth()] });
+  }
+
+  const totals = new Map(months.map((m) => [m.key, 0]));
+  for (const o of orders) {
+    if (!o.createdAt) continue;
+    const d = new Date(o.createdAt);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (totals.has(key)) {
+      totals.set(key, (totals.get(key) ?? 0) + (o[amountKey] ?? 0));
+    }
+  }
+
+  return months.map((m) => ({ name: m.name, value: totals.get(m.key) ?? 0 }));
+}
 
 // ── Checklist d'onboarding vendeur (signaux de confiance) ───────────────────
 
@@ -125,6 +162,22 @@ function BuyerDashboard({ orders, rfqs, recurring, disputes, loading }: {
         <KpiCard label="Commandes actives" value={active.length} icon={<Truck size={20} />} variant="success" loading={loading} sub={`sur ${orders.length} total`} />
         <KpiCard label="RFQs ouvertes" value={openRfqs} icon={<ClipboardList size={20} />} variant="default" loading={loading} sub={`${rfqs.length} publiées`} />
         <KpiCard label="Litiges ouverts" value={openDisputes} icon={<ShieldAlert size={20} />} variant={openDisputes > 0 ? 'warning' : 'success'} loading={loading} sub={activeRecurring > 0 ? `${activeRecurring} approvisionnement(s) actif(s)` : undefined} />
+      </div>
+
+      {/* Graphiques */}
+      <div className={styles.chartsGrid}>
+        <BarChartCard
+          title="Dépenses des 6 derniers mois"
+          data={monthlyAmountSeries(orders, 'montantTotal')}
+          loading={loading}
+          valueFormatter={(v) => `${Math.round(v / 1000)}k`}
+          emptyLabel="Aucune commande sur les 6 derniers mois."
+        />
+        <DonutChartCard
+          title="Répartition des commandes par statut"
+          data={orderStatusDistribution(orders)}
+          loading={loading}
+        />
       </div>
 
       <div className={styles.grid2}>
@@ -277,6 +330,22 @@ function SellerDashboard({ orders, rfqs, disputes, products, company, loading }:
         <KpiCard label="Stock faible" value={lowStockProducts.length} icon={<AlertTriangle size={20} />} variant={lowStockProducts.length > 0 ? 'warning' : 'success'} loading={loading} sub={lowStockProducts.length > 0 ? 'À réapprovisionner' : 'Stocks sains'} />
         <KpiCard label="Litiges ouverts" value={openDisputes} icon={<ShieldAlert size={20} />} variant={openDisputes > 0 ? 'warning' : 'success'} loading={loading} />
         <KpiCard label="Appels d'offres" value={openBids} icon={<ClipboardList size={20} />} variant="default" loading={loading} sub="Ouverts à soumission" />
+      </div>
+
+      {/* Graphiques */}
+      <div className={styles.chartsGrid}>
+        <BarChartCard
+          title="Chiffre d'affaires des 6 derniers mois"
+          data={monthlyAmountSeries(orders, 'montantVendeur')}
+          loading={loading}
+          valueFormatter={(v) => `${Math.round(v / 1000)}k`}
+          emptyLabel="Aucune vente sur les 6 derniers mois."
+        />
+        <DonutChartCard
+          title="Répartition des commandes par statut"
+          data={orderStatusDistribution(orders)}
+          loading={loading}
+        />
       </div>
 
       <div className={styles.grid2}>

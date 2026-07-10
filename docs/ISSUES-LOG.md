@@ -67,6 +67,14 @@ Deux `console.log` de debug (un dans `useAuth.tsx::register()`, un dans `api.ts`
 
 ---
 
+### 🟢 Limite connue — Graphiques admin basés sur un échantillon de 50 entreprises
+
+Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / statut de vérification) sont calculés côté client à partir de `companyService.getCompanies({ pageSize: 50 })` — le maximum autorisé par `CompanyController::index` (`min($pageSize, 50)`). Tant que la plateforme a moins de ~50 entreprises, les graphiques sont exacts. Au-delà, ils ne représentent qu'un échantillon (les 50 mieux classées par `trust_score`), pas la totalité.
+
+**Amélioration future pour Backend-01** : un endpoint dédié type `GET /admin/stats/companies-by-type` faisant un vrai `GROUP BY` en base serait plus correct et plus léger que de paginer 50 lignes côté client. Pas bloquant pour l'MVP actuel.
+
+---
+
 ## 2026-07-09 (suite) — Claude2
 
 ### 🟡 Deux modèles "profil vendeur" en parallèle — `SellerProfile` est mort côté frontend

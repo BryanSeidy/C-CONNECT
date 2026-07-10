@@ -17,6 +17,13 @@
   align-items: start;
 }
 
+/* ── Charts row ── */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.25rem;
+}
+
 .rightCol { display: flex; flex-direction: column; gap: 1.25rem; }
 
 /* ── Panel ── */
@@ -209,6 +216,7 @@
 
 @media (max-width: 860px) {
   .grid2 { grid-template-columns: 1fr; }
+  .chartsGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
