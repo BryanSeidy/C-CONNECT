@@ -21,9 +21,9 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'cecile@example.cm',
                 'category' => 'Agroalimentaire',
                 'products' => [
-                    ['nom' => 'Jus de Gingembre Naturel 1L', 'description' => 'Jus de gingembre 100% naturel, sans conservateur. Produit à Bafoussam.', 'prix' => 2500, 'stock' => 50, 'region' => 'Ouest', 'image_url' => 'backend\storage\app\public\photos\gingembre.jpeg'],
-                    ['nom' => 'Confiture de Mangue Sauvage', 'description' => 'Confiture artisanale aux mangues sauvages du pays bamiléké.', 'prix' => 3000, 'stock' => 30, 'region' => 'Ouest', 'image_url' => 'Artisanat'],
-                    ['nom' => 'Miel Pur de Montagne', 'description' => 'Miel récolté dans les montagnes de l\'Ouest Cameroun. Non pasteurisé.', 'prix' => 4500, 'stock' => 20, 'region' => 'Ouest', 'image_url' => 'backend\storage\app\public\photos\huile de palme.jpeg'],
+                    ['nom' => 'Jus de Gingembre Naturel 1L', 'description' => 'Jus de gingembre 100% naturel, sans conservateur. Produit à Bafoussam.', 'prix' => 2500, 'stock' => 50, 'region' => 'Ouest', 'image_url' => 'http://localhost:8000/storage/products/gingembre.jpeg'],
+                    ['nom' => 'Confiture de Mangue Sauvage', 'description' => 'Confiture artisanale aux mangues sauvages du pays bamiléké.', 'prix' => 3000, 'stock' => 30, 'region' => 'Ouest', 'image_url' => 'http://localhost:8000/storage/products/Artisanat.jpg'],
+                    ['nom' => 'Miel Pur de Montagne', 'description' => 'Miel récolté dans les montagnes de l\'Ouest Cameroun. Non pasteurisé.', 'prix' => 4500, 'stock' => 20, 'region' => 'Ouest', 'image_url' => 'http://localhost:8000/storage/products/huile_de_palme.jpeg'],
                 ]
             ],
             // Pauline Cosmetics
@@ -49,8 +49,8 @@ class ProductSeeder extends Seeder
                 'seller_email' => 'jean@example.cm',
                 'category' => 'Épicerie fine',
                 'products' => [
-                    ['nom' => 'Cacao en Poudre 500g', 'description' => 'Cacao camerounais 100% pur, torréfié artisanalement.', 'prix' => 4000, 'stock' => 80, 'region' => 'Centre', 'image_url' => 'backend\storage\app\public\photos\cacao.jpeg',],
-                    ['nom' => 'Café Robusta 250g', 'description' => 'Café robusta des plateaux de l\'Ouest. Torréfaction traditionnelle.', 'prix' => 3000, 'stock' => 60, 'region' => 'Centre', 'image_url' => 'backend\storage\app\public\photos\café.jpeg'],
+                    ['nom' => 'Cacao en Poudre 500g', 'description' => 'Cacao camerounais 100% pur, torréfié artisanalement.', 'prix' => 4000, 'stock' => 80, 'region' => 'Centre', 'image_url' => 'http://localhost:8000/storage/products/cacao.jpeg',],
+                    ['nom' => 'Café Robusta 250g', 'description' => 'Café robusta des plateaux de l\'Ouest. Torréfaction traditionnelle.', 'prix' => 3000, 'stock' => 60, 'region' => 'Centre', 'image_url' => 'http://localhost:8000/storage/products/café.jpeg'],
                 ]
             ],
             // Artisanat Kamga
