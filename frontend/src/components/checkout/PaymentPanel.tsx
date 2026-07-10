@@ -72,7 +72,7 @@ function MethodCard({
           {isMtn ? 'MTN Mobile Money' : 'Orange Money'}
         </span>
         <span className={styles.methodSub}>
-          {isMtn ? 'Reseau MTN — +237 6[5-9]X' : 'Reseau Orange — +237 6[9-6]X'}
+          {isMtn ? 'Reseau MTN — 67X / 650-654 / 680-684' : 'Reseau Orange — 69X / 655-659 / 685-689'}
         </span>
       </div>
 
@@ -162,7 +162,9 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
     setStep('pending_pin');
 
     try {
-      const res = await apiClient.post<unknown, InitiateResponse>(
+      // 1. Initier la transaction — enregistre la référence et affiche les
+      //    instructions de validation PIN à l'utilisateur (étape UX réelle).
+      const initRes = await apiClient.post<unknown, InitiateResponse>(
         '/payments/mobile-money/initiate',
         {
           order_id:       orderId,
@@ -171,14 +173,24 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
         }
       );
 
-      setTxRef(res.data.transaction_reference);
+      setTxRef(initRes.data.transaction_reference);
 
-      // Simulation : dans la vraie implementation, on attend le webhook
-      // Ici on simule un delai de traitement
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      // 2. Confirmer le paiement — endpoint de simulation dédié côté backend
+      //    (PaymentController::processMobileMoney, "conservé pour les tests
+      //    et la simulation front-end"), qui verrouille réellement l'escrow.
+      //    Sans cet appel, la commande resterait indéfiniment en statut
+      //    "pending" : /mobile-money/initiate n'attend qu'un webhook réel
+      //    d'agrégateur (Campay/NotchPay) qui n'existe pas dans cet
+      //    environnement de démo. On ne montre donc jamais un succès qui ne
+      //    reflète pas un vrai changement d'état de la commande.
+      await apiClient.post('/payments/mobile-money', {
+        order_id: orderId,
+        phone: normalized,
+        provider: method === 'mtn_momo' ? 'MTN' : 'Orange',
+      });
 
       setStep('success');
-      onSuccess?.(res.data.transaction_reference);
+      onSuccess?.(initRes.data.transaction_reference);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -278,7 +290,7 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
             <button
               type="submit"
               className={styles.ctaBtn}
-              disabled={loading || phone.length < 8}
+              disabled={loading || phone.length < 9}
             >
               {loading ? (
                 <Loader2 size={16} className={styles.spinner} aria-hidden="true" />

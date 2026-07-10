@@ -132,7 +132,11 @@ const faqItems = [
   },
   {
     question: 'Quels moyens de paiement sont acceptés ?',
-    answer: 'Le Mobile Money et le virement professionnel sont pris en charge, afin de s’adapter aussi bien aux acheteurs institutionnels qu’aux producteurs sur le terrain.',
+    answer: 'Le paiement se fait par Mobile Money (MTN Mobile Money et Orange Money), directement depuis votre téléphone au moment de la commande — aucune carte bancaire requise.',
+  },
+  {
+    question: 'C-Connect prend-il une commission ?',
+    answer: 'Une commission de 10% est prélevée côté fournisseur sur chaque commande finalisée, une fois les fonds libérés du séquestre. Ce que l’acheteur voit au paiement est le montant exact à régler, sans frais caché.',
   },
   {
     question: 'Que se passe-t-il en cas de désaccord sur une commande ?',

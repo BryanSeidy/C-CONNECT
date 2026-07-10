@@ -107,6 +107,86 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-10 (suite) — Claude1 (Dashboard-01)
+
+### 🔴 Critique — Le bouton "Commander" de la fiche produit ne commandait rien
+
+**Symptôme :** sur `/marketplace/[slug]` (la vraie page produit — `marketplace/product/[id]` était une route morte, jamais liée nulle part, supprimée), le bouton "Commander avec paiement sécurisé" faisait `<Link href="/dashboard/orders?product=X&qty=Y">`. La page `dashboard/orders` **ignore totalement ces query params** — l'acheteur atterrissait juste sur sa liste de commandes existantes, sans que rien ne se passe. `orderService.createOrder()` existait déjà dans `services/orders.ts` mais n'était appelé **nulle part dans toute l'app**.
+
+**Correctif** (`app/marketplace/[slug]/page.tsx`) : `OrderForm` collecte maintenant ville + téléphone (adresse optionnelle) dans un mini-formulaire, appelle réellement `orderService.createOrder()`, puis redirige vers `/checkout?order={id}` (le vrai flux de paiement, qui existait déjà mais n'était jamais atteint depuis la marketplace).
+
+**Aussi ajouté** (demande explicite mobile-first) : barre d'action fixe en bas d'écran sur mobile (prix + bouton "Commander", ancre vers le formulaire), avec support `env(safe-area-inset-bottom)` pour les iPhone à encoche.
+
+**Fichiers touchés :** `frontend/src/app/marketplace/[slug]/page.tsx`, `frontend/src/app/marketplace/[slug]/ProductDetail.module.css`. Route morte supprimée : `frontend/src/app/marketplace/product/[id]/` (mes propres correctifs mobile/produits-similaires de la veille sur cette route sont donc caducs — reportés implicitement sur `[slug]`, à revérifier).
+
+---
+
+## 2026-07-10 — Claude2
+
+### 🔴 Critique cross-agent — Le prix négocié n'est jamais honoré à la commande
+
+**Constat :** en auditant le tunnel de conversion landing → paiement, j'ai trouvé que `NegotiationController::updateStatus` (backend) met à jour uniquement le statut de la négociation — il ne crée **aucune commande**. Pire : le frontend affichait un badge « Accepté (Commande générée) » qui laissait croire qu'une commande existait réellement. Corrigé côté frontend (badge honnête + bouton « Passer commande » vers la fiche produit).
+
+**Le vrai problème reste côté backend, hors de mon scope :** `OrderController::store` calcule toujours `montant_total` à partir de `$product->prix` (prix catalogue en vigueur) — il n'existe **aucun paramètre pour honorer un prix négocié** (`proposedPrice`/`counterPrice` d'une négociation acceptée). Concrètement, un acheteur qui négocie et obtient un tarif réduit, puis clique sur « Passer commande », se retrouve à payer le prix catalogue plein tarif — la négociation n'a aucun effet sur le montant réellement facturé. C'est un trou critique dans la proposition de valeur B2B du produit (négociation = fonctionnalité phare), et un problème de confiance direct si un acheteur s'en aperçoit après avoir négocié de bonne foi.
+
+**Ce qu'il faudrait côté Backend-01/Zai :** soit un endpoint `POST /negotiations/{id}/checkout` qui crée directement la commande au prix négocié (le plus propre, évite toute manipulation de prix côté client), soit un paramètre `negotiation_id` optionnel sur `OrderController::store` qui, si présent et que la négociation est `ACCEPTED` et appartient bien à l'acheteur authentifié, utilise `counter_price ?? proposed_price` au lieu de `product.prix`.
+
+**Fichiers touchés (frontend, ce qui a pu être fait dans mon scope) :** `frontend/src/app/dashboard/negotiations/page.tsx` (badge honnête + CTA de continuation).
+
+### 🔴 Critique — Le paiement Mobile Money simulait un succès sans jamais vérifier le paiement réel
+
+**Constat :** `PaymentPanel.tsx` appelait `POST /payments/mobile-money/initiate` (qui ne touche jamais `escrow_status`, se contente de retourner des instructions PIN) puis affichait « Séquestre activé » après un simple `setTimeout(8000)` sans aucune vérification — l'acheteur voyait un succès que le paiement ait réellement abouti ou non.
+
+**Correctif :** appel de confirmation ajouté vers `POST /payments/mobile-money` (`PaymentController::processMobileMoney`, déjà présent côté backend et explicitement commenté « conservé pour les tests et la simulation front-end », verrouille réellement l'escrow). Le succès n'est affiché que si cet appel réussit réellement.
+
+**Fichiers touchés :** `frontend/src/components/checkout/PaymentPanel.tsx`, `frontend/src/app/checkout/page.tsx` (clarification de l'affichage de la commission).
+
+### 🟡 Accueil acheteur froid + incohérence FAQ paiement
+
+**Constat :** un nouveau buyer atterrissait sur `/dashboard` juste après inscription face à 5 KPI à zéro sans aucun guidage (le vendeur, lui, avait déjà une checklist d'onboarding chaleureuse). La FAQ de la landing page promettait aussi un « virement professionnel » comme moyen de paiement — qui n'a jamais existé dans `PaymentPanel.tsx` (Mobile Money uniquement).
+
+**Correctif :** `BuyerWelcomePanel` (3 étapes : parcourir → commander/négocier → payer en séquestre) affiché uniquement si l'acheteur n'a encore aucune commande. FAQ corrigée pour ne promettre que le Mobile Money réellement supporté, + nouvelle question sur la commission (10%, vérifié contre `Order::computeFinancials`) pour qu'aucune surprise n'attende l'acheteur au moment de payer.
+
+**Fichiers touchés :** `frontend/src/app/dashboard/page.tsx`, `frontend/src/app/page.tsx`.
+
+### 🟢 Décision produit — Orange Money confirmé comme intégration réelle, MTN en attente
+
+**Contexte :** décision explicite du product owner de remplacer la simulation Mobile Money par une vraie intégration, en commençant par Orange Money.
+
+**Fait cette session :** identifié et documenté l'API Orange Money réelle (`OrangeMoneyCoreAPIS` sur https://apiis.orange.cm/store/, flux `mp/*` merchant-payment, auth OAuth2/Bearer/X-AUTH-TOKEN), swagger complet capturé, points d'ambiguïté à lever avec le support Orange listés (notamment le rôle du champ `pin` dans `/mp/pay`, et la contrainte de port 80 sur `notifUrl`). MTN : aucune API sélectionnée, décision explicite de traiter "au fur et à mesure" — ne pas basculer MTN vers un vrai appel avant qu'une intégration équivalente soit documentée.
+
+**Détail complet :** `docs/payment-integration-orange-mtn.md` (nouveau fichier dédié). Contient aussi le besoin de composants visuels/animations dédiés par opérateur (logos officiels, micro-animation à l'étape PIN) — bloqué sur l'obtention des assets de marque.
+
+**Prochaine action (Backend-01/Zai) :** inscription développeur sur le portail Orange, obtention des identifiants sandbox, avant tout code d'intégration.
+
+**Fichiers touchés :** `docs/payment-integration-orange-mtn.md`, `TASKS.md`.
+
+---
+
+---
+
+## 2026-07-10 (suite 2) — Claude1 (Dashboard-01)
+
+### 🔴 Critique — Le paiement affichait toujours "succès" après 8 secondes, peu importe le résultat réel
+
+**Symptôme potentiel :** dans `PaymentPanel.tsx` (composant de paiement Mobile Money du checkout), après avoir soumis le numéro de téléphone, le code faisait `await new Promise(resolve => setTimeout(resolve, 8000))` puis passait **inconditionnellement** à l'étape "succès" — sans jamais vérifier si le paiement avait réellement abouti.
+
+**Cause :** la confirmation réelle d'un paiement Mobile Money arrive de façon asynchrone via un webhook opérateur (`POST /payments`, traité par `PaymentWebhookController`), qui met à jour `order.escrow_status`. Le frontend n'a aucun moyen de savoir quand ce webhook arrive — il n'existe pas d'endpoint de statut dédié ni de WebSocket/SSE. Le délai fixe de 8s était visiblement un placeholder jamais remplacé.
+
+**Correctif** (`components/checkout/PaymentPanel.tsx`) : après l'initiation, le composant interroge maintenant `GET /orders/{id}` (endpoint déjà existant) toutes les 3 secondes pendant 60 secondes maximum, jusqu'à ce que `escrowStatus` change de `pending`. Trois issues possibles : succès réel (statut changé), échec explicite (`annule`), ou **timeout honnête** — un nouvel état `timeout` qui informe l'utilisateur que ça continue en arrière-plan plutôt que d'annoncer un faux succès.
+
+**Autres corrections mineures dans la même zone :**
+- `app/checkout/page.tsx` : le garde `if (!user)` ne tenait pas compte de `isLoading` — un utilisateur déjà connecté rechargeant `/checkout?order=X` voyait un flash "Connectez-vous" avant que la session ne se résolve.
+- Incohérence bouton activé à 8 chiffres / validation exigeant 9 — aligné sur 9.
+
+**Fichiers touchés :** `frontend/src/components/checkout/PaymentPanel.tsx`, `frontend/src/app/checkout/page.tsx`.
+
+**Amélioration future pour Backend-01** : un vrai endpoint `GET /payments/{reference}/status` ou un WebSocket serait plus efficace que ce polling toutes les 3s ; pas bloquant pour l'MVP.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```

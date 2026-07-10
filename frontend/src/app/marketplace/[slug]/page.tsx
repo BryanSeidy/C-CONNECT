@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Award, BadgeCheck, MapPin, Package,
-  ShieldCheck, Star, Truck, Users,
+  ArrowLeft, Award, BadgeCheck, Loader2, MapPin, Package,
+  Phone, ShieldCheck, Star, Truck, Users,
 } from 'lucide-react';
 import { productService } from '@/services/products';
+import { orderService } from '@/services/orders';
 import { Product } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -97,9 +98,45 @@ function RatingStars({ rating, count }: { rating: number; count: number }) {
 
 function OrderForm({ product }: { product: Product }) {
   const { isAuthenticated, user } = useAuth();
-  const [qty, setQty] = useState(1);
+  const router = useRouter();
+  const [qty, setQty] = useState(Math.max(1, product.stockMinimum ?? 1));
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [ville, setVille] = useState('');
+  const [adresse, setAdresse] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const canOrder = isAuthenticated && user?.role === 'buyer' && product.stock > 0;
+  const deliveryValid = ville.trim().length > 1 && telephone.trim().length >= 8;
+
+  const handleStartOrder = () => {
+    setFormError(null);
+    setShowDelivery(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!deliveryValid) {
+      setFormError('Indiquez au moins votre ville et un numéro de téléphone joignable.');
+      return;
+    }
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      const res = await orderService.createOrder({
+        productId: product.id,
+        quantity: qty,
+        villeLivraison: ville.trim(),
+        adresseLivraison: adresse.trim() || undefined,
+        telephoneLivraison: telephone.trim(),
+      });
+      router.push(`/checkout?order=${res.data.id}`);
+    } catch (err: unknown) {
+      const anyErr = err as { response?: { data?: { message?: string } } };
+      setFormError(anyErr?.response?.data?.message ?? "Impossible de créer la commande pour le moment. Réessayez.");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className={styles.orderCard}>
@@ -121,7 +158,7 @@ function OrderForm({ product }: { product: Product }) {
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.max(product.stockMinimum ?? 1, q - 1))}
-            disabled={qty <= (product.stockMinimum ?? 1)}
+            disabled={qty <= (product.stockMinimum ?? 1) || submitting}
             aria-label="Diminuer la quantité"
           >
             -
@@ -133,13 +170,14 @@ function OrderForm({ product }: { product: Product }) {
             value={qty}
             min={product.stockMinimum ?? 1}
             max={product.stock}
+            disabled={submitting}
             onChange={e => setQty(Math.min(product.stock, Math.max(product.stockMinimum ?? 1, parseInt(e.target.value) || 1)))}
           />
           <button
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.min(product.stock, q + 1))}
-            disabled={qty >= product.stock}
+            disabled={qty >= product.stock || submitting}
             aria-label="Augmenter la quantité"
           >
             +
@@ -152,13 +190,88 @@ function OrderForm({ product }: { product: Product }) {
         <strong>{(product.price * qty).toLocaleString('fr-FR')} XAF</strong>
       </div>
 
+      {canOrder && showDelivery && (
+        <div className={styles.deliveryForm}>
+          <p className={styles.deliveryTitle}>Où livrer votre commande ?</p>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="ville" className={styles.qtyLabel}>Ville *</label>
+            <div className={styles.deliveryInputWrap}>
+              <MapPin size={15} aria-hidden="true" className={styles.deliveryIcon} />
+              <input
+                id="ville"
+                type="text"
+                className={styles.deliveryInput}
+                placeholder="Ex : Douala, Yaoundé…"
+                value={ville}
+                onChange={(e) => setVille(e.target.value)}
+                disabled={submitting}
+                autoComplete="address-level2"
+              />
+            </div>
+          </div>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="telephone" className={styles.qtyLabel}>Téléphone de contact *</label>
+            <div className={styles.deliveryInputWrap}>
+              <Phone size={15} aria-hidden="true" className={styles.deliveryIcon} />
+              <input
+                id="telephone"
+                type="tel"
+                className={styles.deliveryInput}
+                placeholder="6XX XX XX XX"
+                value={telephone}
+                onChange={(e) => setTelephone(e.target.value)}
+                disabled={submitting}
+                autoComplete="tel"
+              />
+            </div>
+          </div>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="adresse" className={styles.qtyLabel}>Adresse précise (optionnel)</label>
+            <textarea
+              id="adresse"
+              className={styles.deliveryTextarea}
+              placeholder="Quartier, repère, numéro de porte…"
+              value={adresse}
+              onChange={(e) => setAdresse(e.target.value)}
+              disabled={submitting}
+              rows={2}
+            />
+          </div>
+        </div>
+      )}
+
+      {formError && <p className={styles.formError}>{formError}</p>}
+
       {canOrder ? (
-        <Link href={`/dashboard/orders?product=${product.id}&qty=${qty}`}>
-          <Button variant="primary" size="lg" style={{ width: '100%' }}>
+        !showDelivery ? (
+          <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={handleStartOrder}>
             <ShieldCheck size={16} aria-hidden="true" />
             Commander avec paiement sécurisé
           </Button>
-        </Link>
+        ) : (
+          <Button
+            variant="primary"
+            size="lg"
+            style={{ width: '100%' }}
+            onClick={handleConfirmOrder}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={16} aria-hidden="true" className={styles.spinIcon} />
+                Création de la commande…
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={16} aria-hidden="true" />
+                Confirmer et payer {(product.price * qty).toLocaleString('fr-FR')} XAF
+              </>
+            )}
+          </Button>
+        )
       ) : !isAuthenticated ? (
         <Link href={`/login?redirect=/marketplace/${product.slug}`}>
           <Button variant="secondary" size="lg" style={{ width: '100%' }}>
@@ -169,12 +282,32 @@ function OrderForm({ product }: { product: Product }) {
         <Button variant="outline" size="lg" style={{ width: '100%' }} disabled>
           Produit indisponible
         </Button>
+      ) : user?.role !== 'buyer' ? (
+        <p className={styles.sellerNotice}>Connectez-vous avec un compte acheteur pour commander ce produit.</p>
       ) : null}
 
       <p className={styles.escrowNote}>
         <ShieldCheck size={13} aria-hidden="true" />
         Paiement retenu en séquestre jusqu&apos;à confirmation de réception
       </p>
+    </div>
+  );
+}
+
+// ── Barre d'action mobile (sticky) ───────────────────────────────────────────
+
+function MobileStickyBar({ product }: { product: Product }) {
+  if (product.stock === 0) return null;
+  return (
+    <div className={styles.mobileStickyBar}>
+      <div className={styles.mobileStickyPrice}>
+        <span className={styles.mobileStickyAmount}>{product.price.toLocaleString('fr-FR')} XAF</span>
+        <span className={styles.mobileStickyUnit}>/ {product.unite ?? 'unité'}</span>
+      </div>
+      <a href="#order-panel" className={styles.mobileStickyBtn}>
+        <ShieldCheck size={16} aria-hidden="true" />
+        Commander
+      </a>
     </div>
   );
 }
@@ -329,10 +462,12 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Colonne commande */}
-            <div className={styles.sideCol}>
+            <div className={styles.sideCol} id="order-panel">
               <OrderForm product={product} />
             </div>
           </div>
+
+          <MobileStickyBar product={product} />
 
           {/* Vendeur */}
           <section className={styles.sellerSection}>
