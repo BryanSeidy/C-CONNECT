@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
@@ -90,7 +91,7 @@ function DashboardNegotiationsContent() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACCEPTED':
-        return <Badge variant="success">Accepté (Commande générée)</Badge>;
+        return <Badge variant="success">Accepté</Badge>;
       case 'DECLINED':
         return <Badge variant="error">Décliné</Badge>;
       case 'COUNTERED':
@@ -233,6 +234,15 @@ function DashboardNegotiationsContent() {
                                   Décliner
                                 </Button>
                               </>
+                            )}
+
+                            {/* Buyer: continuer le tunnel vers la commande une fois l'accord trouvé */}
+                            {user?.role === 'buyer' && neg.status === 'ACCEPTED' && (
+                              <Link href={`/marketplace/product/${neg.productId}`}>
+                                <Button variant="primary" size="sm">
+                                  Passer commande
+                                </Button>
+                              </Link>
                             )}
                           </div>
                         </TableCell>

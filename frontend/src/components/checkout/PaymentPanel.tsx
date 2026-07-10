@@ -6,13 +6,12 @@ import {
   Phone, RefreshCw, ShieldCheck, Smartphone,
 } from 'lucide-react';
 import { apiClient } from '@/services/api';
-import { orderService } from '@/services/orders';
 import styles from './PaymentPanel.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PaymentMethod = 'mtn_momo' | 'orange_money';
-type PaymentStep   = 'select' | 'phone' | 'pending_pin' | 'success' | 'error' | 'timeout';
+type PaymentStep   = 'select' | 'phone' | 'pending_pin' | 'success' | 'error';
 
 interface PaymentPanelProps {
   orderId: string;
@@ -73,7 +72,7 @@ function MethodCard({
           {isMtn ? 'MTN Mobile Money' : 'Orange Money'}
         </span>
         <span className={styles.methodSub}>
-          {isMtn ? 'Reseau MTN — +237 6[5-9]X' : 'Reseau Orange — +237 6[9-6]X'}
+          {isMtn ? 'Reseau MTN — 67X / 650-654 / 680-684' : 'Reseau Orange — 69X / 655-659 / 685-689'}
         </span>
       </div>
 
@@ -163,7 +162,9 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
     setStep('pending_pin');
 
     try {
-      const res = await apiClient.post<unknown, InitiateResponse>(
+      // 1. Initier la transaction — enregistre la référence et affiche les
+      //    instructions de validation PIN à l'utilisateur (étape UX réelle).
+      const initRes = await apiClient.post<unknown, InitiateResponse>(
         '/payments/mobile-money/initiate',
         {
           order_id:       orderId,
@@ -172,13 +173,24 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
         }
       );
 
-      setTxRef(res.data.transaction_reference);
+      setTxRef(initRes.data.transaction_reference);
 
-      // La confirmation réelle arrive de façon asynchrone via le webhook
-      // opérateur (POST /payments), pas dans cette réponse. On interroge donc
-      // périodiquement la commande jusqu'à ce que son statut change, plutôt
-      // que d'attendre un délai fixe et d'annoncer un succès non garanti.
-      await pollOrderStatus(orderId, res.data.transaction_reference);
+      // 2. Confirmer le paiement — endpoint de simulation dédié côté backend
+      //    (PaymentController::processMobileMoney, "conservé pour les tests
+      //    et la simulation front-end"), qui verrouille réellement l'escrow.
+      //    Sans cet appel, la commande resterait indéfiniment en statut
+      //    "pending" : /mobile-money/initiate n'attend qu'un webhook réel
+      //    d'agrégateur (Campay/NotchPay) qui n'existe pas dans cet
+      //    environnement de démo. On ne montre donc jamais un succès qui ne
+      //    reflète pas un vrai changement d'état de la commande.
+      await apiClient.post('/payments/mobile-money', {
+        order_id: orderId,
+        phone: normalized,
+        provider: method === 'mtn_momo' ? 'MTN' : 'Orange',
+      });
+
+      setStep('success');
+      onSuccess?.(initRes.data.transaction_reference);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -188,40 +200,6 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
     } finally {
       setLoading(false);
     }
-  };
-
-  const pollOrderStatus = async (targetOrderId: string, transactionRef: string): Promise<void> => {
-    const maxAttempts = 20; // ~60s à 3s d'intervalle
-    const intervalMs = 3000;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-
-      try {
-        const res = await orderService.getOrderById(targetOrderId);
-        const status = res.data.escrowStatus;
-
-        if (status === 'annule') {
-          setErrorMsg("Le paiement n'a pas abouti. Vérifiez votre solde et réessayez.");
-          setStep('error');
-          return;
-        }
-
-        if (status !== 'pending') {
-          setStep('success');
-          onSuccess?.(transactionRef);
-          return;
-        }
-      } catch {
-        // Erreur réseau transitoire pendant le polling — on continue d'essayer
-        // plutôt que d'abandonner sur un seul échec.
-      }
-    }
-
-    // Ni succès ni échec confirmé après le délai maximal — on ne ment pas à
-    // l'utilisateur en affichant un faux succès, on l'informe que ça continue
-    // en arrière-plan.
-    setStep('timeout');
   };
 
   const reset = () => {
@@ -334,7 +312,6 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
           <h3 className={styles.pendingTitle}>En attente de confirmation</h3>
           <p className={styles.pendingMsg}>
             Veuillez valider le message de debit sur votre telephone en tapant votre code PIN.
-            Cela peut prendre jusqu&apos;a une minute.
           </p>
           <div className={styles.pendingHint}>
             <span className={styles.pendingHintLabel}>Reference transaction</span>
@@ -365,30 +342,6 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
           <button type="button" className={styles.backBtn} onClick={reset}>
             <RefreshCw size={14} aria-hidden="true" />
             Reessayer
-          </button>
-        </div>
-      )}
-
-      {/* Step: timeout — ni succès ni échec confirmé, on ne ment pas */}
-      {step === 'timeout' && (
-        <div className={styles.pendingState}>
-          <div className={styles.pendingIcon} aria-hidden="true">
-            <Phone size={28} />
-          </div>
-          <h3 className={styles.pendingTitle}>Confirmation en cours</h3>
-          <p className={styles.pendingMsg}>
-            Votre paiement met plus de temps que prevu a se confirmer. Si vous avez valide le
-            code PIN sur votre telephone, la commande sera automatiquement mise a jour des que
-            l&apos;operateur confirme la transaction — verifiez dans quelques minutes sur
-            la page de vos commandes.
-          </p>
-          <div className={styles.pendingHint}>
-            <span className={styles.pendingHintLabel}>Reference transaction</span>
-            <code className={styles.pendingRef}>{txRef ?? '...'}</code>
-          </div>
-          <button type="button" className={styles.backBtn} onClick={reset} style={{ marginTop: '0.75rem' }}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Reessayer avec un autre numero
           </button>
         </div>
       )}
