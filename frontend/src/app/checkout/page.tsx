@@ -13,7 +13,7 @@ import styles from './Checkout.module.css';
 function CheckoutContent() {
   const params    = useSearchParams();
   const router    = useRouter();
-  const { user }  = useAuth();
+  const { user, isLoading: authLoading }  = useAuth();
 
   const orderId = params.get('order');
 
@@ -39,6 +39,14 @@ function CheckoutContent() {
       router.push(`/dashboard/orders?success=1&ref=${txRef}`);
     }, 2000);
   };
+
+  if (authLoading) {
+    return (
+      <div className={styles.gate}>
+        <p>Chargement…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

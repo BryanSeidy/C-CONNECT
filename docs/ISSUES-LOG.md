@@ -123,6 +123,28 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-10 (suite 2) — Claude1 (Dashboard-01)
+
+### 🔴 Critique — Le paiement affichait toujours "succès" après 8 secondes, peu importe le résultat réel
+
+**Symptôme potentiel :** dans `PaymentPanel.tsx` (composant de paiement Mobile Money du checkout), après avoir soumis le numéro de téléphone, le code faisait `await new Promise(resolve => setTimeout(resolve, 8000))` puis passait **inconditionnellement** à l'étape "succès" — sans jamais vérifier si le paiement avait réellement abouti.
+
+**Cause :** la confirmation réelle d'un paiement Mobile Money arrive de façon asynchrone via un webhook opérateur (`POST /payments`, traité par `PaymentWebhookController`), qui met à jour `order.escrow_status`. Le frontend n'a aucun moyen de savoir quand ce webhook arrive — il n'existe pas d'endpoint de statut dédié ni de WebSocket/SSE. Le délai fixe de 8s était visiblement un placeholder jamais remplacé.
+
+**Correctif** (`components/checkout/PaymentPanel.tsx`) : après l'initiation, le composant interroge maintenant `GET /orders/{id}` (endpoint déjà existant) toutes les 3 secondes pendant 60 secondes maximum, jusqu'à ce que `escrowStatus` change de `pending`. Trois issues possibles : succès réel (statut changé), échec explicite (`annule`), ou **timeout honnête** — un nouvel état `timeout` qui informe l'utilisateur que ça continue en arrière-plan plutôt que d'annoncer un faux succès.
+
+**Autres corrections mineures dans la même zone :**
+- `app/checkout/page.tsx` : le garde `if (!user)` ne tenait pas compte de `isLoading` — un utilisateur déjà connecté rechargeant `/checkout?order=X` voyait un flash "Connectez-vous" avant que la session ne se résolve.
+- Incohérence bouton activé à 8 chiffres / validation exigeant 9 — aligné sur 9.
+
+**Fichiers touchés :** `frontend/src/components/checkout/PaymentPanel.tsx`, `frontend/src/app/checkout/page.tsx`.
+
+**Amélioration future pour Backend-01** : un vrai endpoint `GET /payments/{reference}/status` ou un WebSocket serait plus efficace que ce polling toutes les 3s ; pas bloquant pour l'MVP.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
