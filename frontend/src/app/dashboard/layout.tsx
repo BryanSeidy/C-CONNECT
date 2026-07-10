@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Loader2, Menu, Search } from 'lucide-react';
+import { Bell, Loader2, Menu, Search, ShieldOff } from 'lucide-react';
+import Link from 'next/link';
 import { Sidebar } from '@/components/Sidebar';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +31,33 @@ const ROLE_LABELS: Record<string, string> = {
   admin:  'Administrateur',
 };
 
+function ForbiddenNotice() {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      gap: '0.75rem',
+      padding: '4rem 1.5rem',
+    }}>
+      <ShieldOff size={40} aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
+      <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--primary-color)' }}>
+        Accès réservé aux administrateurs
+      </h2>
+      <p style={{ margin: 0, color: 'var(--text-muted)', maxWidth: 400 }}>
+        Cette section est réservée à l&apos;équipe C-Connect. Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, contactez le support.
+      </p>
+      <Link
+        href="/dashboard"
+        style={{ marginTop: '0.5rem', color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+      >
+        Retour à mon tableau de bord
+      </Link>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
@@ -48,6 +76,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [isLoading, isAuthenticated, pathname, router]);
+
+  const isAdminRoute = pathname.startsWith('/dashboard/admin');
+  const isForbidden = isAuthenticated && isAdminRoute && user?.role !== 'admin';
 
   if (isLoading) {
     return (
@@ -145,7 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {user && !user.email_verified_at && <VerifyEmailBanner />}
 
-          {children}
+          {isForbidden ? <ForbiddenNotice /> : children}
         </main>
       </div>
     </div>
