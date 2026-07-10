@@ -119,7 +119,37 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 **Aussi ajouté** (demande explicite mobile-first) : barre d'action fixe en bas d'écran sur mobile (prix + bouton "Commander", ancre vers le formulaire), avec support `env(safe-area-inset-bottom)` pour les iPhone à encoche.
 
-**Fichiers touchés :** `frontend/src/app/marketplace/[slug]/page.tsx`, `frontend/src/app/marketplace/[slug]/ProductDetail.module.css`. Route morte supprimée : `frontend/src/app/marketplace/product/[id]/`.
+**Fichiers touchés :** `frontend/src/app/marketplace/[slug]/page.tsx`, `frontend/src/app/marketplace/[slug]/ProductDetail.module.css`. Route morte supprimée : `frontend/src/app/marketplace/product/[id]/` (mes propres correctifs mobile/produits-similaires de la veille sur cette route sont donc caducs — reportés implicitement sur `[slug]`, à revérifier).
+
+---
+
+## 2026-07-10 — Claude2
+
+### 🔴 Critique cross-agent — Le prix négocié n'est jamais honoré à la commande
+
+**Constat :** en auditant le tunnel de conversion landing → paiement, j'ai trouvé que `NegotiationController::updateStatus` (backend) met à jour uniquement le statut de la négociation — il ne crée **aucune commande**. Pire : le frontend affichait un badge « Accepté (Commande générée) » qui laissait croire qu'une commande existait réellement. Corrigé côté frontend (badge honnête + bouton « Passer commande » vers la fiche produit).
+
+**Le vrai problème reste côté backend, hors de mon scope :** `OrderController::store` calcule toujours `montant_total` à partir de `$product->prix` (prix catalogue en vigueur) — il n'existe **aucun paramètre pour honorer un prix négocié** (`proposedPrice`/`counterPrice` d'une négociation acceptée). Concrètement, un acheteur qui négocie et obtient un tarif réduit, puis clique sur « Passer commande », se retrouve à payer le prix catalogue plein tarif — la négociation n'a aucun effet sur le montant réellement facturé. C'est un trou critique dans la proposition de valeur B2B du produit (négociation = fonctionnalité phare), et un problème de confiance direct si un acheteur s'en aperçoit après avoir négocié de bonne foi.
+
+**Ce qu'il faudrait côté Backend-01/Zai :** soit un endpoint `POST /negotiations/{id}/checkout` qui crée directement la commande au prix négocié (le plus propre, évite toute manipulation de prix côté client), soit un paramètre `negotiation_id` optionnel sur `OrderController::store` qui, si présent et que la négociation est `ACCEPTED` et appartient bien à l'acheteur authentifié, utilise `counter_price ?? proposed_price` au lieu de `product.prix`.
+
+**Fichiers touchés (frontend, ce qui a pu être fait dans mon scope) :** `frontend/src/app/dashboard/negotiations/page.tsx` (badge honnête + CTA de continuation).
+
+### 🔴 Critique — Le paiement Mobile Money simulait un succès sans jamais vérifier le paiement réel
+
+**Constat :** `PaymentPanel.tsx` appelait `POST /payments/mobile-money/initiate` (qui ne touche jamais `escrow_status`, se contente de retourner des instructions PIN) puis affichait « Séquestre activé » après un simple `setTimeout(8000)` sans aucune vérification — l'acheteur voyait un succès que le paiement ait réellement abouti ou non.
+
+**Correctif :** appel de confirmation ajouté vers `POST /payments/mobile-money` (`PaymentController::processMobileMoney`, déjà présent côté backend et explicitement commenté « conservé pour les tests et la simulation front-end », verrouille réellement l'escrow). Le succès n'est affiché que si cet appel réussit réellement.
+
+**Fichiers touchés :** `frontend/src/components/checkout/PaymentPanel.tsx`, `frontend/src/app/checkout/page.tsx` (clarification de l'affichage de la commission).
+
+### 🟡 Accueil acheteur froid + incohérence FAQ paiement
+
+**Constat :** un nouveau buyer atterrissait sur `/dashboard` juste après inscription face à 5 KPI à zéro sans aucun guidage (le vendeur, lui, avait déjà une checklist d'onboarding chaleureuse). La FAQ de la landing page promettait aussi un « virement professionnel » comme moyen de paiement — qui n'a jamais existé dans `PaymentPanel.tsx` (Mobile Money uniquement).
+
+**Correctif :** `BuyerWelcomePanel` (3 étapes : parcourir → commander/négocier → payer en séquestre) affiché uniquement si l'acheteur n'a encore aucune commande. FAQ corrigée pour ne promettre que le Mobile Money réellement supporté, + nouvelle question sur la commission (10%, vérifié contre `Order::computeFinancials`) pour qu'aucune surprise n'attende l'acheteur au moment de payer.
+
+**Fichiers touchés :** `frontend/src/app/dashboard/page.tsx`, `frontend/src/app/page.tsx`.
 
 ---
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { CHART_PALETTE, CHART_TOOLTIP_STYLE } from '@/lib/chartTheme';
 import styles from './ChartCard.module.css';
 
