@@ -17,6 +17,7 @@ import { GamificationWidget } from '@/components/GamificationWidget';
 const BUYER_LINKS = [
   { href: '/dashboard', label: 'Vue générale', Icon: Home },
   { href: '/dashboard/rfqs', label: 'Mes RFQs', Icon: ClipboardList },
+  { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
   { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
   { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
   { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
@@ -29,6 +30,7 @@ const SELLER_LINKS = [
   { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
   { href: '/dashboard/rfqs', label: 'Appels d\'offres', Icon: ClipboardList },
   { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
+  { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
   { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
   { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
 ];

@@ -9,6 +9,7 @@ import { recurringOrderService } from '@/services/recurring';
 import { RecurringOrder } from '@/types';
 import { extractApiError } from '@/lib/errors';
 import { CalendarClock, Pause, Play, X } from 'lucide-react';
+import { RoleGuard } from '@/components/RoleGuard';
 
 const FREQUENCY_LABELS: Record<RecurringOrder['frequence'], string> = {
   hebdomadaire: 'Chaque semaine',
@@ -24,6 +25,14 @@ const STATUS_LABELS: Record<RecurringOrder['statut'], string> = {
 };
 
 export default function DashboardRecurringOrders() {
+  return (
+    <RoleGuard allowedRoles={['buyer', 'seller']}>
+      <DashboardRecurringOrdersContent />
+    </RoleGuard>
+  );
+}
+
+function DashboardRecurringOrdersContent() {
   const [orders, setOrders] = useState<RecurringOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

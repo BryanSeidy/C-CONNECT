@@ -12,8 +12,17 @@ import { getRegionLabel } from '@/lib/regions';
 import { extractApiError } from '@/lib/errors';
 import { Negotiation } from '@/types';
 import { Handshake, MapPin, MessageSquare } from 'lucide-react';
+import { RoleGuard } from '@/components/RoleGuard';
 
 export default function DashboardNegotiations() {
+  return (
+    <RoleGuard allowedRoles={['buyer', 'seller']}>
+      <DashboardNegotiationsContent />
+    </RoleGuard>
+  );
+}
+
+function DashboardNegotiationsContent() {
   const { user } = useAuth();
   const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [loading, setLoading] = useState(true);

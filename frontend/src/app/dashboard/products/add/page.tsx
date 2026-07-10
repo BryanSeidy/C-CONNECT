@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { productService, ProductMutationPayload } from '@/services/products';
 import { REGION_OPTIONS } from '@/lib/regions';
+import { RoleGuard } from '@/components/RoleGuard';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Le nom du produit doit contenir au moins 2 caractères.'),
@@ -22,6 +23,14 @@ const productSchema = z.object({
 type FormFieldErrors = Partial<Record<keyof ProductMutationPayload, string>>;
 
 export default function AddProductPage() {
+  return (
+    <RoleGuard allowedRoles={['seller']}>
+      <AddProductPageContent />
+    </RoleGuard>
+  );
+}
+
+function AddProductPageContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -13,6 +13,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { InlineEdit } from '@/components/ui/InlineEdit';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getRegionLabel } from '@/lib/regions';
+import { RoleGuard } from '@/components/RoleGuard';
 import styles from './Products.module.css';
 
 const UNIT_OPTIONS = [
@@ -27,6 +28,14 @@ const UNIT_OPTIONS = [
 function fmt(n: number) { return n.toLocaleString('fr-FR'); }
 
 export default function DashboardProducts() {
+  return (
+    <RoleGuard allowedRoles={['seller']}>
+      <DashboardProductsContent />
+    </RoleGuard>
+  );
+}
+
+function DashboardProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

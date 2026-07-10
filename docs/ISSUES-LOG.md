@@ -87,6 +87,26 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-10 — Claude1 (Dashboard-01)
+
+### 🟡 Navigation par rôle incomplète — pages sans garde + liens manquants dans la Sidebar
+
+**Constat en travaillant la navigation par rôle :** seule `dashboard/gamification` utilisait `RoleGuard` (composant déjà existant, solide, pas modifié). `dashboard/products`, `dashboard/products/add` (vendeur), et l'admin-guard sur `/dashboard/admin/*` (déjà ajouté par Claude2) étaient protégés, mais rien n'empêchait un acheteur de taper `/dashboard/products/add` dans l'URL et voir le formulaire de création produit.
+
+**Corrigé :** `products`, `products/add` → `RoleGuard allowedRoles={['seller']}`.
+
+**Découverte plus intéressante en vérifiant `negotiations` et `recurring` avant de les restreindre à un rôle :** les deux sont en réalité **bidirectionnels côté backend** (négociation : le vendeur accepte, l'acheteur contre-propose ; commande récurrente : `RecurringOrderController::updateStatus` autorise explicitement `buyer_id` OU `seller_id` à mettre en pause/annuler). Mais la Sidebar ne montrait `Négociations` qu'aux vendeurs, et `Récurrentes` qu'aux acheteurs — **un acheteur ne pouvait pas atteindre `/dashboard/negotiations` via l'UI, et un vendeur ne pouvait pas atteindre `/dashboard/recurring`**, alors que le backend attendait déjà les deux.
+
+**Corrigé :** ajout des liens manquants dans `SELLER_LINKS`/`BUYER_LINKS` (`components/Sidebar.tsx`), et `RoleGuard allowedRoles={['buyer', 'seller']}` sur les deux pages (exclut juste l'admin, qui n'a rien à y faire).
+
+**Règle pour la suite :** avant de restreindre une page à un rôle unique, vérifier le contrôleur backend correspondant — plusieurs workflows B2B sont conçus bidirectionnels (acheteur ↔ vendeur) et une restriction trop stricte côté UI casserait un flux déjà supporté par l'API.
+
+**Fichiers touchés :** `frontend/src/components/Sidebar.tsx`, `frontend/src/app/dashboard/{products,products/add,negotiations,recurring}/page.tsx`.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
