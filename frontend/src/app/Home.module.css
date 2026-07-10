@@ -214,7 +214,7 @@
 .docCardBack,
 .docCardFront {
   position: absolute;
-  width: 270px;
+  width: min(270px, 78vw);
   border-radius: var(--radius-md);
   background: #fff;
   border: 1px solid var(--line);

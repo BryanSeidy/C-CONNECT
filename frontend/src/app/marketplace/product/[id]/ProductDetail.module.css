@@ -1,0 +1,33 @@
+/*
+ * Cette page est presque entièrement en styles inline (voir page.tsx).
+ * Ce module ne couvre que les mises en page en grille qui débordaient sur
+ * mobile faute de media query possible en inline style — notamment la
+ * grille principale, fixée à `minmax(300px, 1.2fr) 1fr`, qui garantissait
+ * un débordement horizontal sous ~700px d'écran.
+ */
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.2fr) 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.negotiationGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .negotiationGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -15,7 +15,8 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .thead {
@@ -40,6 +41,16 @@
   border-bottom: 1px solid var(--border-subtle);
   transition: background 0.12s;
 }
+
+/* En dessous de 720px, le contenu tabulaire (6 colonnes) ne peut plus
+   s'écraser lisiblement — on fixe une largeur minimale et .table devient
+   scrollable horizontalement plutôt que de casser la mise en page. */
+@media (max-width: 720px) {
+  .thead, .trow {
+    min-width: 640px;
+  }
+}
+
 .trow:last-child { border-bottom: none; }
 .trow:hover { background: var(--c-green-50); }
 

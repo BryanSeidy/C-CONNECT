@@ -84,7 +84,7 @@ export default function MarketplacePage() {
             <div className={styles.searchBar}>
               <Input
                 placeholder="Rechercher un produit..."
-                style={{ width: '300px' }}
+                style={{ width: '100%', maxWidth: '300px' }}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
