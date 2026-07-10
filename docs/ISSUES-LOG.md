@@ -107,6 +107,22 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-10 (suite) — Claude1 (Dashboard-01)
+
+### 🔴 Critique — Le bouton "Commander" de la fiche produit ne commandait rien
+
+**Symptôme :** sur `/marketplace/[slug]` (la vraie page produit — `marketplace/product/[id]` était une route morte, jamais liée nulle part, supprimée), le bouton "Commander avec paiement sécurisé" faisait `<Link href="/dashboard/orders?product=X&qty=Y">`. La page `dashboard/orders` **ignore totalement ces query params** — l'acheteur atterrissait juste sur sa liste de commandes existantes, sans que rien ne se passe. `orderService.createOrder()` existait déjà dans `services/orders.ts` mais n'était appelé **nulle part dans toute l'app**.
+
+**Correctif** (`app/marketplace/[slug]/page.tsx`) : `OrderForm` collecte maintenant ville + téléphone (adresse optionnelle) dans un mini-formulaire, appelle réellement `orderService.createOrder()`, puis redirige vers `/checkout?order={id}` (le vrai flux de paiement, qui existait déjà mais n'était jamais atteint depuis la marketplace).
+
+**Aussi ajouté** (demande explicite mobile-first) : barre d'action fixe en bas d'écran sur mobile (prix + bouton "Commander", ancre vers le formulaire), avec support `env(safe-area-inset-bottom)` pour les iPhone à encoche.
+
+**Fichiers touchés :** `frontend/src/app/marketplace/[slug]/page.tsx`, `frontend/src/app/marketplace/[slug]/ProductDetail.module.css`. Route morte supprimée : `frontend/src/app/marketplace/product/[id]/`.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
