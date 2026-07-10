@@ -67,6 +67,18 @@ Deux `console.log` de debug (un dans `useAuth.tsx::register()`, un dans `api.ts`
 
 ---
 
+## 2026-07-09 (suite) — Claude2
+
+### 🟡 Deux modèles "profil vendeur" en parallèle — `SellerProfile` est mort côté frontend
+
+**Constat :** en construisant un checklist d'onboarding vendeur, j'ai trouvé deux entités backend qui se recoupent : `Company` (table `companies` — rccm, niu, trustScore, badges KYB) est le modèle **réellement utilisé** par tout le frontend (`dashboard/company`, `entreprises/[slug]`, marketplace). `SellerProfile` (table `seller_profiles` — business_name, region, is_female_owned, quality_score, verification_status) existe aussi côté backend avec ses propres routes (`Route::apiResource('/seller-profiles', ...)`), mais **aucun appel frontend ne l'utilise** — le type TypeScript `SellerProfile` dans `types/index.ts` n'a même pas les bons noms de colonnes (`businessSector`/`nationalIdRef`/`isOnboardingComplete` n'existent pas dans la vraie migration).
+
+**Second problème, plus sérieux pour Backend-01/Zai :** `SellerProfileController` (`app/Http/Controllers/SellerProfileController.php`) n'implémente que `show()` et `update()`. Les routes `index`/`store`/`destroy` sont bien enregistrées via `apiResource`, donc si quoi que ce soit les appelle un jour, ce sera une erreur fatale "Call to undefined method". Je n'ai pas touché ce contrôleur (backend, hors de mon scope) — à trancher côté Backend-01 : soit compléter le contrôleur, soit déprécier `seller_profiles` au profit de `companies` si c'est bien un doublon issu d'une itération antérieure.
+
+**Ce que j'ai fait côté frontend (mon scope) :** l'onboarding checklist vendeur (`dashboard/page.tsx`) utilise `Company` + le nombre de produits — pas `SellerProfile`, qui reste non branché.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```

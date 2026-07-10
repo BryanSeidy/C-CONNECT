@@ -2,16 +2,17 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, AlertTriangle, CalendarClock, ClipboardList, FileText, Package, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
+import { ArrowRight, AlertTriangle, CalendarClock, CheckCircle2, Circle, ClipboardList, FileText, Package, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
 import { rfqService } from '@/services/rfqs';
 import { recurringOrderService } from '@/services/recurring';
 import { disputeService } from '@/services/disputes';
 import { productService } from '@/services/products';
+import { companyService } from '@/services/companies';
 import { adminService } from '@/services/admin';
 import type { AdminStats as AdminStatsData } from '@/services/admin';
-import { Order, Rfq, RecurringOrder, Dispute, Product } from '@/types';
+import { Order, Rfq, RecurringOrder, Dispute, Product, Company } from '@/types';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Badge } from '@/components/ui/Badge';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
@@ -30,6 +31,70 @@ const ESCROW_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'error
 };
 
 function fmt(n: number) { return n.toLocaleString('fr-FR'); }
+
+// ── Checklist d'onboarding vendeur (signaux de confiance) ───────────────────
+
+function OnboardingChecklist({ company, productCount }: { company: Company | null; productCount: number }) {
+  const steps = [
+    {
+      done: !!(company?.nom && company?.rccm && company?.niu && company?.description),
+      label: 'Compléter le profil entreprise',
+      sub: 'Nom, RCCM, NIU et description — visibles par les acheteurs',
+      href: '/dashboard/company',
+    },
+    {
+      done: productCount > 0,
+      label: 'Ajouter votre premier produit',
+      sub: 'Votre catalogue doit contenir au moins un produit pour apparaître dans la marketplace',
+      href: '/dashboard/products/add',
+    },
+    {
+      done: company?.statutVerification === 'verifie',
+      label: 'Vérification KYB (badge entreprise vérifiée)',
+      sub: company?.statutVerification === 'en_attente'
+        ? 'Votre dossier est en cours d\'examen par notre équipe'
+        : 'Renforce fortement la confiance des acheteurs et votre position dans les résultats',
+      href: '/dashboard/company',
+    },
+  ];
+
+  const remaining = steps.filter(s => !s.done).length;
+  if (remaining === 0) return null; // onboarding terminé : ne pas encombrer l'écran
+
+  return (
+    <section className={styles.panel} style={{ marginBottom: '1.5rem' }}>
+      <div className={styles.panelHead}>
+        <h2>Finaliser votre profil vendeur</h2>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          {steps.length - remaining}/{steps.length} étape(s) complétée(s)
+        </span>
+      </div>
+      <div className={styles.panelBody}>
+        {steps.map((step) => (
+          <Link
+            key={step.label}
+            href={step.href}
+            className={styles.rfqRow}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              {step.done
+                ? <CheckCircle2 size={20} aria-hidden="true" style={{ color: 'var(--success, #16A34A)', flexShrink: 0, marginTop: '0.1rem' }} />
+                : <Circle size={20} aria-hidden="true" style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: '0.1rem' }} />}
+              <div className={styles.rfqLeft}>
+                <span className={styles.rfqTitle} style={{ textDecoration: step.done ? 'line-through' : 'none', opacity: step.done ? 0.6 : 1 }}>
+                  {step.label}
+                </span>
+                <span className={styles.rfqMeta}>{step.sub}</span>
+              </div>
+            </div>
+            {!step.done && <ArrowRight size={16} aria-hidden="true" />}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 // ── Buyer Dashboard ──────────────────────────────────────────────────────────
 
@@ -181,11 +246,12 @@ function BuyerDashboard({ orders, rfqs, recurring, disputes, loading }: {
 
 // ── Seller Dashboard ─────────────────────────────────────────────────────────
 
-function SellerDashboard({ orders, rfqs, disputes, products, loading }: {
+function SellerDashboard({ orders, rfqs, disputes, products, company, loading }: {
   orders: Order[];
   rfqs: Rfq[];
   disputes: Dispute[];
   products: Product[];
+  company: Company | null;
   loading: boolean;
 }) {
   const available = orders
@@ -201,6 +267,8 @@ function SellerDashboard({ orders, rfqs, disputes, products, loading }: {
 
   return (
     <div className={styles.page}>
+      <OnboardingChecklist company={company} productCount={products.length} />
+
       {/* KPIs */}
       <div className={styles.kpiGrid}>
         <KpiCard label="Fonds disponibles" value={`${fmt(available)} XAF`} icon={<Wallet size={20} />} variant="success" loading={loading} sub="Séquestre libéré" />
@@ -365,6 +433,7 @@ export default function DashboardOverview() {
   const [recurring, setRecurring] = useState<RecurringOrder[]>([]);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -378,26 +447,28 @@ export default function DashboardOverview() {
         return;
       }
       const isSeller = user?.role === 'seller';
-      const [ordRes, rfqRes, recRes, disRes, prodRes] = await Promise.allSettled([
+      const [ordRes, rfqRes, recRes, disRes, prodRes, companyRes] = await Promise.allSettled([
         orderService.getOrders(),
         rfqService.getMyRfqs(),
         recurringOrderService.getRecurringOrders(),
         disputeService.getDisputes(),
         isSeller ? productService.getMyProducts() : Promise.resolve(null),
+        isSeller && user?.companyId ? companyService.getCompanyBySlugOrId(String(user.companyId)) : Promise.resolve(null),
       ]);
       if (ordRes.status === 'fulfilled') setOrders(ordRes.value.data ?? []);
       if (rfqRes.status === 'fulfilled') setRfqs(rfqRes.value.data ?? []);
       if (recRes.status === 'fulfilled') setRecurring(recRes.value.data ?? []);
       if (disRes.status === 'fulfilled') setDisputes(disRes.value.data ?? []);
       if (prodRes.status === 'fulfilled' && prodRes.value) setProducts(prodRes.value.data ?? []);
+      if (companyRes.status === 'fulfilled' && companyRes.value) setCompany(companyRes.value.data);
     } finally {
       setLoading(false);
     }
-  }, [user?.role]);
+  }, [user?.role, user?.companyId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   if (user?.role === 'admin') return <AdminDashboard loading={loading} />;
-  if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} disputes={disputes} products={products} loading={loading} />;
+  if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} disputes={disputes} products={products} company={company} loading={loading} />;
   return <BuyerDashboard orders={orders} rfqs={rfqs} recurring={recurring} disputes={disputes} loading={loading} />;
 }
