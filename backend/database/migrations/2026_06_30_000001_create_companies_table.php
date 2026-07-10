@@ -16,8 +16,9 @@ return new class extends Migration
             // $table->string('sync_ref')->unique();
             // $table->boolean('synced')->default(true);
             $table->foreignId('seller_id')
+                ->nullable()
                 ->constrained('seller_profiles')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
             // Identité légale
             $table->string('nom');
             $table->string('slug')->unique();
