@@ -151,6 +151,18 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 **Fichiers touchés :** `frontend/src/app/dashboard/page.tsx`, `frontend/src/app/page.tsx`.
 
+### 🟢 Décision produit — Orange Money confirmé comme intégration réelle, MTN en attente
+
+**Contexte :** décision explicite du product owner de remplacer la simulation Mobile Money par une vraie intégration, en commençant par Orange Money.
+
+**Fait cette session :** identifié et documenté l'API Orange Money réelle (`OrangeMoneyCoreAPIS` sur https://apiis.orange.cm/store/, flux `mp/*` merchant-payment, auth OAuth2/Bearer/X-AUTH-TOKEN), swagger complet capturé, points d'ambiguïté à lever avec le support Orange listés (notamment le rôle du champ `pin` dans `/mp/pay`, et la contrainte de port 80 sur `notifUrl`). MTN : aucune API sélectionnée, décision explicite de traiter "au fur et à mesure" — ne pas basculer MTN vers un vrai appel avant qu'une intégration équivalente soit documentée.
+
+**Détail complet :** `docs/payment-integration-orange-mtn.md` (nouveau fichier dédié). Contient aussi le besoin de composants visuels/animations dédiés par opérateur (logos officiels, micro-animation à l'étape PIN) — bloqué sur l'obtention des assets de marque.
+
+**Prochaine action (Backend-01/Zai) :** inscription développeur sur le portail Orange, obtention des identifiants sandbox, avant tout code d'intégration.
+
+**Fichiers touchés :** `docs/payment-integration-orange-mtn.md`, `TASKS.md`.
+
 ---
 
 ---
