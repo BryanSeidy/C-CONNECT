@@ -37,6 +37,7 @@ export interface CompanyFilters {
   cooperatives?: boolean;
   femmes?: boolean;
   q?: string;
+  pageSize?: number;
 }
 
 export interface CompanyPayload {
