@@ -57,7 +57,7 @@ class GamificationService
     {
         return DB::transaction(function () use ($sellerId, $montantTotal): GamificationStat {
             $stat = $this->lockedStat($sellerId);
-            $stat->increment('total_sales');
+            $stat->increment('total_sales_count');
 
             if ($montantTotal > 0) {
                 $stat->increment('volume_ventes', $montantTotal);
