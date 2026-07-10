@@ -143,10 +143,10 @@ export default function AddProductPage() {
             </div>
 
             {/* Cameroon 10 Regions Graphical Grid Selection */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            <fieldset style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', border: 'none', padding: 0, margin: 0 }}>
+              <legend style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', padding: 0 }}>
                 Région de Production (Cameroun) <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
+              </legend>
               
               <div style={{ 
                 display: 'grid', 
@@ -160,6 +160,7 @@ export default function AddProductPage() {
                     <button
                       key={region.code}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => setCountry(region.code)}
                       style={{
                         padding: '12px 10px',
@@ -198,7 +199,7 @@ export default function AddProductPage() {
                   {fieldErrors.country}
                 </p>
               )}
-            </div>
+            </fieldset>
 
             {/* Stock */}
             <div>
@@ -215,10 +216,11 @@ export default function AddProductPage() {
             
             {/* Description */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              <label htmlFor="product-description" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
                 Description (Détails du produit, conditionnement) <span style={{ color: 'var(--error)' }}>*</span>
               </label>
-              <textarea 
+              <textarea
+                id="product-description"
                 required
                 placeholder="Décrivez les spécifications de votre produit (ex: poivre séché sous soleil, trié à la main)..."
                 value={description}

@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getRegionLabel } from '@/lib/regions';
 import { extractApiError } from '@/lib/errors';
 import { isFeatureEnabled } from '@/lib/featureFlags';
+import styles from './ProductDetail.module.css';
 import { ShieldCheck, Star, Handshake } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -197,7 +198,7 @@ export default function ProductDetailPage() {
         Retour au marketplace
       </Link>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.2fr) 1fr', gap: '3rem', alignItems: 'start' }}>
+      <div className={styles.mainGrid}>
 
         {/* Left Side: Image placeholder and details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -540,7 +541,9 @@ export default function ProductDetailPage() {
                 Offre de Négociation / Devis
               </h3>
               <button
+                type="button"
                 onClick={() => setIsNegModalOpen(false)}
+                aria-label="Fermer la fenêtre de négociation"
                 style={{
                   background: 'none',
                   border: 'none',
@@ -565,7 +568,7 @@ export default function ProductDetailPage() {
                 <div style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{product.name} (Prix standard : {product.price.toLocaleString()} FCFA)</div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className={styles.negotiationGrid}>
                 <div>
                   <label htmlFor="neg-quantity" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.9rem' }}>Quantité</label>
                   <input
