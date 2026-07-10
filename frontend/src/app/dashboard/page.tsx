@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, AlertTriangle, CalendarClock, CheckCircle2, Circle, ClipboardList, FileText, Package, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
+import { ArrowRight, AlertTriangle, CalendarClock, CheckCircle2, Circle, ClipboardList, FileText, Handshake, Package, Search, ShieldAlert, ShieldCheck, Truck, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
 import { rfqService } from '@/services/rfqs';
@@ -133,6 +133,54 @@ function OnboardingChecklist({ company, productCount }: { company: Company | nul
   );
 }
 
+// ── Accueil premier achat (0 commande) — construit la confiance avant paiement ──
+
+function BuyerWelcomePanel() {
+  const steps = [
+    {
+      icon: <Search size={18} aria-hidden="true" />,
+      title: 'Parcourez le marketplace',
+      text: 'Des fournisseurs vérifiés dans tout le Cameroun, par catégorie et par région.',
+    },
+    {
+      icon: <Handshake size={18} aria-hidden="true" />,
+      title: 'Commandez ou négociez',
+      text: 'Prix catalogue ou devis sur-mesure pour vos volumes B2B.',
+    },
+    {
+      icon: <ShieldCheck size={18} aria-hidden="true" />,
+      title: 'Payez en toute sécurité',
+      text: 'Vos fonds restent en séquestre C-Connect jusqu\u2019à votre confirmation de réception.',
+    },
+  ];
+
+  return (
+    <section className={styles.panel} style={{ marginBottom: '1.5rem' }}>
+      <div className={styles.panelHead}>
+        <h2>Bienvenue sur C-Connect</h2>
+      </div>
+      <div className={styles.panelBody} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', padding: '0.5rem 0 1rem' }}>
+        {steps.map((s) => (
+          <div key={s.title} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)' }}>
+              {s.icon}
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{s.title}</span>
+            </div>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{s.text}</span>
+          </div>
+        ))}
+      </div>
+      <Link
+        href="/marketplace"
+        className={styles.ctaLink}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+      >
+        Explorer le marketplace <ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </section>
+  );
+}
+
 // ── Buyer Dashboard ──────────────────────────────────────────────────────────
 
 function BuyerDashboard({ orders, rfqs, recurring, disputes, loading }: {
@@ -155,6 +203,8 @@ function BuyerDashboard({ orders, rfqs, recurring, disputes, loading }: {
 
   return (
     <div className={styles.page}>
+      {!loading && orders.length === 0 && <BuyerWelcomePanel />}
+
       {/* KPIs */}
       <div className={styles.kpiGrid}>
         <KpiCard label="Dépenses totales" value={`${fmt(totalSpent)} XAF`} icon={<Wallet size={20} />} variant="default" loading={loading} sub="Commandes terminées" />
