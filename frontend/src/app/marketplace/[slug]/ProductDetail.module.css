@@ -233,6 +233,19 @@
   box-shadow: var(--shadow-md);
 }
 
+.negotiatedBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--c-gold-100);
+  color: var(--primary-color);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+}
+
 .priceRow {
   display: flex;
   align-items: baseline;

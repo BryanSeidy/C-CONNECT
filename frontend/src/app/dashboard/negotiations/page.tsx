@@ -88,10 +88,12 @@ function DashboardNegotiationsContent() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, orderId?: number | null) => {
     switch (status) {
       case 'ACCEPTED':
-        return <Badge variant="success">Accepté</Badge>;
+        return orderId
+          ? <Badge variant="success">Accepté — commande passée</Badge>
+          : <Badge variant="success">Accepté</Badge>;
       case 'DECLINED':
         return <Badge variant="error">Décliné</Badge>;
       case 'COUNTERED':
@@ -176,7 +178,7 @@ function DashboardNegotiationsContent() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>{getStatusBadge(neg.status)}</TableCell>
+                        <TableCell>{getStatusBadge(neg.status, neg.orderId)}</TableCell>
                         <TableCell style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                             {/* Seller Actions for PENDING */}
@@ -238,11 +240,21 @@ function DashboardNegotiationsContent() {
 
                             {/* Buyer: continuer le tunnel vers la commande une fois l'accord trouvé */}
                             {user?.role === 'buyer' && neg.status === 'ACCEPTED' && (
-                              <Link href={`/marketplace/product/${neg.productId}`}>
-                                <Button variant="primary" size="sm">
-                                  Passer commande
-                                </Button>
-                              </Link>
+                              neg.orderId ? (
+                                <Link href={`/checkout?order=${neg.orderId}`}>
+                                  <Button variant="ghost" size="sm">
+                                    Commande déjà passée — voir le paiement
+                                  </Button>
+                                </Link>
+                              ) : neg.product.slug ? (
+                                <Link
+                                  href={`/marketplace/${neg.product.slug}?negotiation=${neg.id}&qty=${neg.quantity}&price=${neg.counterPrice ?? neg.proposedPrice}`}
+                                >
+                                  <Button variant="primary" size="sm">
+                                    Passer commande au prix négocié
+                                  </Button>
+                                </Link>
+                              ) : null
                             )}
                           </div>
                         </TableCell>

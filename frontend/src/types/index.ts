@@ -102,7 +102,9 @@ export interface Negotiation {
   counterPrice?: number | null;
   message?: string | null;
   status: NegotiationStatus;
-  product: { id: number; name: string; category: string; price: number };
+  /** Non-null une fois convertie en commande — empêche de la réutiliser. */
+  orderId?: number | null;
+  product: { id: number; slug: string; name: string; category: string; price: number };
   buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
   /** Flattened seller *user* (backend nests it under seller.user — normalized in the service layer). */
   seller?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
@@ -119,7 +121,8 @@ export interface RawNegotiation {
   counter_price?: string | number | null;
   message?: string | null;
   status: NegotiationStatus;
-  product?: { id: number; nom: string; prix: string | number; unite?: string; category?: { nom: string } | null } | null;
+  order_id?: number | null;
+  product?: { id: number; nom: string; slug: string; prix: string | number; unite?: string; category?: { nom: string } | null } | null;
   buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
   seller?: { id: number; user?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null } | null;
   created_at?: string;
