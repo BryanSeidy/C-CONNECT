@@ -266,3 +266,94 @@ Toute la section Table/Banners/EmptyState/Responsive (`.thead`, `.trow`, `.cell`
 **Correctif :** ce qui a été changé.
 **Fichiers touchés :** liste.
 ```
+
+---
+
+## 2026-07-11 — Zai (Backend métier transactionnel)
+
+### 🔴 Corrigé — `escrow_status` enum incohérent entre modèle, contrôleur et base (tests SQLite)
+
+**Symptôme :** `OrderController::update` validait des statuts B2B (`en_preparation`, `expedie`, `complete`...) que l'ancien `enum` de la migration `2026_06_26_000005` refusait sur SQLite (CHECK constraint). La migration corrective `2026_06_30_000008` censée corriger cela était **entièrement commentée**. Sur Neon (production), `escrow_status` est un `varchar(255)` sans contrainte, donc ça marchait en prod mais explosait les tests.
+
+**Correctif :**
+- Migration source `2026_06_26_000005_create_orders_table.php` : enum `escrow_status` aligné sur les 9 états finaux.
+- Nouvelle migration `2026_07_08_100000_align_orders_escrow_lifecycle.php` : additive (garde-fou multi-DB, ajoute les colonnes manquantes).
+- `Order` model : `$fillable` corrigé (`montant_vendeur` au lieu de `montant_net_vendeur`, `escrow_status`, `transaction_reference`), constantes `STATUS_*` et `STATUSES`, `$casts` complet.
+
+**Fichiers touchés :** `backend/database/migrations/2026_06_26_000005_create_orders_table.php`, `backend/database/migrations/2026_07_08_100000_align_orders_escrow_lifecycle.php`, `backend/app/Models/Order.php`, `backend/app/Models/OrderItem.php`.
+
+---
+
+### 🔴 Corrigé — `disputes.resolu_par` était `uuid` alors que `users.id` est `bigint`
+
+**Symptôme :** La résolution d'un litige par un admin échouait silencieusement — impossible de stocker un `users.id` (bigint) dans une colonne `uuid`.
+
+**Correctif :** Migration `2026_07_08_100001_fix_disputes_resolu_par_type.php` : recrée la colonne en `foreignId` (bigint) avec contrainte FK vers `users`.
+
+**Fichiers touchés :** `backend/database/migrations/2026_07_08_100001_fix_disputes_resolu_par_type.php`, `backend/app/Models/Dispute.php`.
+
+---
+
+### 🔴 Corrigé — `PaymentController` écrivait sur une colonne inexistante et validait une table inexistante
+
+**Symptôme :** `PaymentController::processMobileMoney` validait `exists:Order,id` (table inexistante — le bon nom est `orders`) et faisait `$order->update(['statut' => 'paid'])` — la colonne `statut` n'existe pas sur `orders`.
+
+**Correctif :** `PaymentController` réécrit — valide `exists:orders,id`, verrouille l'escrow via `Order::STATUS_ESCROW_LOCKED`, génère une `transaction_reference`, journalise via `Log::info`.
+
+**Fichiers touchés :** `backend/app/Http/Controllers/PaymentController.php`.
+
+---
+
+### 🟡 Corrigé — `companies.seller_id` NOT NULL cassait la création d'entreprise
+
+**Symptôme :** `Company::create()` (via `CompanyController::store` ou factory) échouait car `seller_id` est NOT NULL FK, mais le contrôleur ne le définit jamais (une company peut être créée indépendamment du seller).
+
+**Correctif :** Migration source `2026_06_30_000001_create_companies_table.php` : `seller_id` rendu nullable avec `nullOnDelete`.
+
+**Fichiers touchés :** `backend/database/migrations/2026_06_30_000001_create_companies_table.php`.
+
+---
+
+### 🟡 Corrigé — `GamificationService::updateVendorSales` incrémentait une colonne inexistante
+
+**Symptôme :** Le webhook de paiement (`PaymentWebhookController`) dispatchait `OrderCompleted` → listener `AwardPointsForCompletedOrder` → `GamificationService::updateVendorSales()` → `increment('total_sales')`. Or la colonne s'appelle `total_sales_count` (pas `total_sales`). Le webhook retournait 500.
+
+**Correctif :** `increment('total_sales')` → `increment('total_sales_count')`. ⚠️ **Attention :** `evaluateBadges()` contient encore 6 lectures `$stat->total_sales` qui retournent `null` (colonnes inexistantes) — les badges basés sur le nombre de ventes ne se déclencheront pas tant que ces références ne seront pas corrigées en `total_sales_count`. Je n'ai corrigé que le crash bloquant (l'`increment`), pas les lectures de badges (gamification n'est pas dans mon scope principal). À corriger côté GamificationService.
+
+**Fichiers touchés :** `backend/app/Services/GamificationService.php`.
+
+---
+
+### 🟡 Découverte — `CategoryController` utilisait des colonnes inexistantes (`name_fr`, `name_en`, `icon`)
+
+**Symptôme :** `CategoryController::store/update` validaient et écrivaient `name_fr`/`name_en`/`icon`, mais le schéma réel est `nom`/`icone`.
+
+**Correctif :** `CategoryController` réécrit pour utiliser `nom`/`icone`/`description`/`is_active`/`order`.
+
+**Fichiers touchés :** `backend/app/Http/Controllers/CategoryController.php`.
+
+---
+
+### 🟢 Amélioration — Routes admin extraites des closures vers `AdminController`
+
+**Ancien état :** `admin/stats` et `admin/users` étaient des closures inline dans `routes/api.php`. Pas de route disputes/companies pour l'admin.
+
+**Correctif :** Nouveau `App\Http\Controllers\Api\AdminController` avec `stats()`, `users()`, `disputes()`, `companies()`. Routes ajoutées : `GET /api/admin/disputes`, `GET /api/admin/companies`.
+
+**Fichiers touchés :** `backend/app/Http/Controllers/Api/AdminController.php`, `backend/routes/api.php`.
+
+---
+
+### 🟢 Livrable — Contrats API publiés
+
+`docs/api-contracts.md` : statuts escrow, payloads order/payment/RFQ/dispute/product/company, règles d'autorisation, liste des tests. Référence pour Claude2 et le CTO.
+
+---
+
+### 📋 Tests backend métier — 41 tests passants
+
+Factories créées : `CategoryFactory`, `SellerProfileFactory`, `ProductFactory`, `OrderFactory`, `OrderItemFactory`, `CompanyFactory`, `RfqFactory`, `RfqBidFactory`, `DisputeFactory`. `UserFactory` étendue avec `buyer()`/`seller()`/`admin()`.
+
+Suites : `OrderLifecycleTest` (7), `ProductCrudTest` (8), `PaymentWebhookTest` (6), `RfqWorkflowTest` (7), `DisputeWorkflowTest` (7), `AdminAccessTest` (6) — **toutes passantes**.
+
+**⚠️ Bloquant côté Claude1 :** `AuthTest` a 5 échecs (register/login/logout/token-revocation) — c'est le scope de Claude1, pas le mien. Mes tests métier qui utilisent `actingAs($user, 'sanctum')` fonctionnent car ils créent le token directement via la factory, sans passer par l'API d'auth.

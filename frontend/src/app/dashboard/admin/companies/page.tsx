@@ -7,6 +7,8 @@ import { Company } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { extractApiError } from '@/lib/errors';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import styles from '../Admin.module.css';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'success'|'error'|'warning'|'default' }> = {
@@ -21,6 +23,8 @@ export default function AdminCompanies() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string|null>(null);
   const [actingId,  setActingId]  = useState<number | string | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -37,14 +41,29 @@ export default function AdminCompanies() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const handleDecision = async (id: number | string, statut: 'verifie' | 'rejete') => {
+  const handleDecision = async (id: number | string, statut: 'verifie' | 'rejete', companyName?: string) => {
+    if (statut === 'rejete') {
+      const ok = await confirmDialog({
+        title: 'Rejeter cette entreprise ?',
+        message: companyName
+          ? `« ${companyName} » ne pourra pas publier de catalogue tant que son statut KYB n'est pas revu.`
+          : 'Cette entreprise ne pourra pas publier de catalogue tant que son statut KYB n\'est pas revu.',
+        confirmLabel: 'Rejeter',
+        cancelLabel: 'Annuler',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     setActingId(id);
     setError(null);
     try {
       const res = await companyService.updateVerificationStatus(id, statut);
       setCompanies((prev) => prev.map((c) => (c.id === id ? res.data : c)));
+      showToast(statut === 'verifie' ? 'Entreprise vérifiée.' : 'Entreprise rejetée.', statut === 'verifie' ? 'success' : 'info');
     } catch (err) {
-      setError(extractApiError(err, 'Impossible de mettre à jour le statut KYB.'));
+      const msg = extractApiError(err, 'Impossible de mettre à jour le statut KYB.');
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setActingId(null);
     }
@@ -92,7 +111,7 @@ export default function AdminCompanies() {
                   className={`${styles.actionBtn} ${styles.approve}`}
                   title="Approuver"
                   disabled={actingId === c.id || c.statutVerification === 'verifie'}
-                  onClick={() => handleDecision(c.id, 'verifie')}
+                  onClick={() => handleDecision(c.id, 'verifie', c.nom)}
                 >
                   <CheckCircle2 size={15} aria-hidden="true"/> Approuver
                 </button>
@@ -100,7 +119,7 @@ export default function AdminCompanies() {
                   className={`${styles.actionBtn} ${styles.reject}`}
                   title="Rejeter"
                   disabled={actingId === c.id || c.statutVerification === 'rejete'}
-                  onClick={() => handleDecision(c.id, 'rejete')}
+                  onClick={() => handleDecision(c.id, 'rejete', c.nom)}
                 >
                   <XCircle size={15} aria-hidden="true"/> Rejeter
                 </button>

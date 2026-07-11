@@ -13,6 +13,8 @@ import { extractApiError } from '@/lib/errors';
 import { Negotiation } from '@/types';
 import { Handshake, MapPin, MessageSquare } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 export default function DashboardNegotiations() {
   return (
@@ -33,6 +35,8 @@ function DashboardNegotiationsContent() {
   const [counterPrice, setCounterPrice] = useState<number>(0);
   const [counterMessage, setCounterMessage] = useState<string>('');
   const [submittingAction, setSubmittingAction] = useState<number | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const fetchNegotiations = useCallback(async () => {
     setLoading(true);
@@ -52,12 +56,25 @@ function DashboardNegotiationsContent() {
   }, [fetchNegotiations]);
 
   const handleAction = async (id: number, status: 'ACCEPTED' | 'DECLINED') => {
+    if (status === 'DECLINED') {
+      const ok = await confirmDialog({
+        title: 'Décliner cette négociation ?',
+        message: 'L\'autre partie sera notifiée du refus. Vous ne pourrez plus revenir sur cette décision pour cette offre.',
+        confirmLabel: 'Décliner',
+        cancelLabel: 'Revenir en arrière',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     setSubmittingAction(id);
     try {
       await negotiationService.updateNegotiationStatus(id, status);
       await fetchNegotiations();
+      showToast(status === 'ACCEPTED' ? 'Négociation acceptée.' : 'Négociation déclinée.', status === 'ACCEPTED' ? 'success' : 'info');
     } catch (err) {
-      setError(extractApiError(err, 'Erreur lors du traitement.'));
+      const msg = extractApiError(err, 'Erreur lors du traitement.');
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSubmittingAction(null);
     }
