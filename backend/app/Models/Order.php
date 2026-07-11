@@ -25,6 +25,17 @@ class Order extends Model
         'ville_livraison',
         'telephone_livraison',
         'date_livraison_estimee',
+        'paid_at',
+        'confirmed_at',
+        'shipped_at',
+        'delivered_at',
+        'released_at',
+        'cancelled_at',
+        'en_preparation_le',
+        'en_transit_le',
+        'complete_le',
+        'dispute_le',
+        'synced',
     ];
 
     protected $casts = [

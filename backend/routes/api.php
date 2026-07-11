@@ -67,6 +67,10 @@ Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
 });
 
 // --- Authentification ---
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+    ->middleware('signed')
+    ->name('verification.verify');
+
 Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register'])
         ->middleware('throttle:6,1')
