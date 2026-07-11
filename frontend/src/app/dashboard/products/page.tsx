@@ -173,7 +173,6 @@ function DashboardProductsContent() {
           const stockVariant = product.stock === 0
             ? 'error'
             : product.stock <= (product.stockMinimum ?? 5) ? 'warning' : 'success';
-          console.log('Rendu du produit:', product.name);
           return (
             <div key={product.id} className={styles.trow}>
 

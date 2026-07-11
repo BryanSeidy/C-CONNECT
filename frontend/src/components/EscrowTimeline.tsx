@@ -33,8 +33,34 @@ export const EscrowTimeline = ({ escrowStatus }: { escrowStatus: EscrowStatus })
 
   const currentIndex = STATUS_ORDER.indexOf(escrowStatus);
 
+  // Variante mobile compacte : la timeline complète (4 étapes + libellés) ne
+  // tient pas sur un écran <640px sans être coupée — .track a overflow:hidden
+  // (pas de scroll), donc les dernières étapes deviennent invisibles plutôt
+  // que juste compressées. On calcule ici l'étape courante pour un indicateur
+  // "Étape X/4 : Libellé" + barre de progression fine, affiché uniquement en
+  // dessous de 640px (voir EscrowTimeline.module.css).
+  const currentStepIdx = STEPS.findIndex((s) =>
+    s.value === escrowStatus ||
+    (escrowStatus === 'en_transit' && s.value === 'expedie') ||
+    (escrowStatus === 'complete' && s.value === 'livre')
+  );
+  const activeStepIdx = currentStepIdx >= 0 ? currentStepIdx : 0;
+  const activeStepLabel = STEPS[activeStepIdx]?.label ?? '';
+  const progressPercent = ((activeStepIdx + 1) / STEPS.length) * 100;
+
   return (
-    <div className={styles.track} role="list" aria-label="Progression de la commande">
+    <>
+      <div className={styles.compactTrack}>
+        <div className={styles.compactHeader}>
+          <span className={styles.compactStepCount}>Étape {activeStepIdx + 1}/{STEPS.length}</span>
+          <span className={styles.compactStepLabel}>{activeStepLabel}</span>
+        </div>
+        <div className={styles.compactBar}>
+          <div className={styles.compactBarFill} style={{ width: `${progressPercent}%` }} />
+        </div>
+      </div>
+
+      <div className={styles.track} role="list" aria-label="Progression de la commande">
       {STEPS.map((step, i) => {
         const stepIndex = STATUS_ORDER.indexOf(step.value);
         const done = stepIndex < currentIndex;
@@ -59,6 +85,7 @@ export const EscrowTimeline = ({ escrowStatus }: { escrowStatus: EscrowStatus })
           </React.Fragment>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 };

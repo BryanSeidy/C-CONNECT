@@ -232,6 +232,28 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-11 — Claude1 (Dashboard-01)
+
+### 🟡 Mobile — Timeline de commande coupée (invisible), pas juste compressée
+
+`EscrowTimeline.tsx` (4 étapes + libellés, utilisé dans `dashboard/orders`) avait `overflow: hidden` sur son conteneur avec des étapes en `flex-shrink: 0`. Sur un écran <640px, les dernières étapes ne rétrécissent jamais et sont **découpées silencieusement** plutôt que scrollables — l'acheteur/vendeur ne voit pas où en est sa commande. Ajout d'une variante mobile compacte (barre de progression + "Étape X/4 : Libellé"), affichée uniquement sous 640px, timeline complète conservée au-dessus.
+
+### 🔴 `dashboard/products/Products.module.css` était intégralement dupliqué
+
+Toute la section Table/Banners/EmptyState/Responsive (`.thead`, `.trow`, `.cell`, etc.) était définie **deux fois** dans le même fichier. La cascade CSS faisait que seule la deuxième copie s'appliquait réellement — la première (~187 lignes) était du code mort. Supprimée.
+
+**Bugs trouvés dans la copie qui s'appliquait réellement (donc en prod) :**
+- `.thead`/`.trow` définissaient seulement 7 pistes de grille (`grid-template-columns`) pour 8 colonnes réelles (Produit/Catégorie/Région/Prix/Stock/Unité/Statut/Actions) — la 8ᵉ (Actions) n'avait donc pas la largeur prévue, juste une taille implicite par défaut. Corrigé à 8 valeurs.
+- Sous 768px, le responsive masquait 2 colonnes par `nth-child` puis réduisait à `grid-template-columns: 1fr 1fr 1fr` — il restait quand même 5 cellules hétérogènes à ranger dans 3 colonnes, complètement désynchronisées de l'en-tête (même symptôme que le tableau `negotiations` corrigé plus tôt). Remplacé par un vrai empilement en carte sous 768px (masquage de l'en-tête, `.trow` en `flex-direction: column`).
+
+**Autre :** `console.log('Rendu du produit:', ...)` retiré — tournait à chaque rendu de chaque produit.
+
+**Fichiers touchés :** `frontend/src/components/EscrowTimeline.tsx`, `EscrowTimeline.module.css`, `frontend/src/app/dashboard/products/{page.tsx,Products.module.css}`. Cleanup : `backend/scratch_debug.php` supprimé (script de debug personnel committé par erreur, non référencé nulle part).
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
