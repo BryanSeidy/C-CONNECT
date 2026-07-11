@@ -63,6 +63,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const pageLabel = PAGE_LABELS[pathname] ?? 'Dashboard';
+
+  // Pages réellement imbriquées (2 niveaux sous /dashboard) : on affiche le
+  // niveau intermédiaire dans le fil d'Ariane, cliquable quand une page
+  // existe pour ce niveau. 'admin' n'a pas de page propre — libellé simple.
+  const parentCrumb: { label: string; href?: string } | null = (() => {
+    if (pathname === '/dashboard/products/add') {
+      return { label: PAGE_LABELS['/dashboard/products'], href: '/dashboard/products' };
+    }
+    if (pathname.startsWith('/dashboard/admin/') && pathname !== '/dashboard/admin') {
+      return { label: 'Administration' };
+    }
+    return null;
+  })();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -113,6 +126,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <span>C-Connect</span>
             <span aria-hidden="true">›</span>
+            {parentCrumb && (
+              <>
+                {parentCrumb.href ? (
+                  <Link href={parentCrumb.href} className={styles.breadcrumbLink}>
+                    {parentCrumb.label}
+                  </Link>
+                ) : (
+                  <span>{parentCrumb.label}</span>
+                )}
+                <span aria-hidden="true">›</span>
+              </>
+            )}
             <strong>{pageLabel}</strong>
           </div>
 

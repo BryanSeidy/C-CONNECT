@@ -10,6 +10,8 @@ import { RecurringOrder } from '@/types';
 import { extractApiError } from '@/lib/errors';
 import { CalendarClock, Pause, Play, X } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const FREQUENCY_LABELS: Record<RecurringOrder['frequence'], string> = {
   hebdomadaire: 'Chaque semaine',
@@ -37,6 +39,8 @@ function DashboardRecurringOrdersContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -55,12 +59,30 @@ function DashboardRecurringOrdersContent() {
   }, [fetchOrders]);
 
   const changeStatus = async (id: string, statut: 'active' | 'en_pause' | 'annulee') => {
+    if (statut === 'annulee') {
+      const ok = await confirmDialog({
+        title: 'Annuler cette planification ?',
+        message: 'Plus aucune commande ne sera générée automatiquement pour ce produit. Cette action est irréversible.',
+        confirmLabel: 'Annuler la planification',
+        cancelLabel: 'Garder active',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     setActionId(id);
     try {
       await recurringOrderService.updateStatus(id, statut);
       await fetchOrders();
+      const messages: Record<typeof statut, string> = {
+        active: 'Commande récurrente réactivée.',
+        en_pause: 'Commande récurrente mise en pause.',
+        annulee: 'Commande récurrente annulée.',
+      };
+      showToast(messages[statut], statut === 'annulee' ? 'info' : 'success');
     } catch (err) {
-      setError(extractApiError(err, 'Action impossible.'));
+      const msg = extractApiError(err, 'Action impossible.');
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setActionId(null);
     }
