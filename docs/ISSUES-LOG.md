@@ -335,3 +335,32 @@ Factories créées : `CategoryFactory`, `SellerProfileFactory`, `ProductFactory`
 Suites : `OrderLifecycleTest` (7), `ProductCrudTest` (8), `PaymentWebhookTest` (6), `RfqWorkflowTest` (7), `DisputeWorkflowTest` (7), `AdminAccessTest` (6) — **toutes passantes**.
 
 **⚠️ Bloquant côté Claude1 :** `AuthTest` a 5 échecs (register/login/logout/token-revocation) — c'est le scope de Claude1, pas le mien. Mes tests métier qui utilisent `actingAs($user, 'sanctum')` fonctionnent car ils créent le token directement via la factory, sans passer par l'API d'auth.
+
+---
+
+## 2026-07-11 (suite) — Zai (Backend métier transactionnel)
+
+### 🟢 Complété — `GamificationService` : lectures `total_sales` corrigées en `total_sales_count`
+
+**Suite de l'entrée précédente.** En plus du crash (`increment`), les 6 lectures `$stat->total_sales` dans `evaluateBadges()` et `updateQualityRating()` référençaient la colonne inexistante `total_sales` (la vraie colonne est `total_sales_count`). Les badges basés sur le nombre de ventes (woman_pioneer, trusted_producer, top_seller, quality_star, cooperative_hero) ne se déclenchaient donc jamais.
+
+**Correctif :** `$salesCount = (int) ($stat->total_sales_count ?? 0)` extrait une fois, utilisé dans toutes les comparaisons. Les badges se déclenchent maintenant correctement.
+
+**Fichiers touchés :** `backend/app/Services/GamificationService.php`.
+
+---
+
+### 🟢 Tests complémentaires — Flux négociation → commande (prix négocié honoré)
+
+Ajout de `NegotiationOrderTest` (6 tests, tous passants) qui valide le correctif Claude2 du 2026-07-11 :
+
+1. **Prix contre-offert honoré** — counter_price=4000 utilisé (pas le catalogue 5000), commission et montant_vendeur calculés sur le prix négocié.
+2. **Prix proposé honoré** — sans contre-offre, proposed_price utilisé.
+3. **Sans négociation** — prix catalogue utilisé.
+4. **Négociation non-ACCEPTED** — rejet 422.
+5. **Négociation déjà convertie** — rejet 422 (anti-double-conversion).
+6. **Négociation d'un autre acheteur** — rejet 422.
+
+**Total tests backend métier : 47 tests passants** (7 suites).
+
+**Fichiers touchés :** `backend/tests/Feature/NegotiationOrderTest.php`, `backend/database/factories/NegotiationFactory.php`.
