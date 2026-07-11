@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { InlineEdit } from '@/components/ui/InlineEdit';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { getRegionLabel } from '@/lib/regions';
 import { RoleGuard } from '@/components/RoleGuard';
 import styles from './Products.module.css';
@@ -40,6 +42,8 @@ function DashboardProductsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | number | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const mountedRef = useRef(true);
 
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -88,19 +92,30 @@ function DashboardProductsContent() {
   }, []);
 
   const remove = useCallback(async (id: string | number) => {
-    if (!confirm('Supprimer définitivement ce produit ?')) return;
+    const product = products.find(p => p.id === id);
+    const ok = await confirmDialog({
+      title: 'Supprimer ce produit ?',
+      message: product
+        ? `« ${product.name} » sera définitivement retiré de votre catalogue. Cette action est irréversible.`
+        : 'Ce produit sera définitivement retiré de votre catalogue. Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setProcessingId(id);
     try {
       await productService.deleteProduct(id);
       setProducts(prev => prev.filter(p => p.id !== id));
+      showToast('Produit supprimé avec succès.', 'success');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Suppression impossible.';
       setError(msg);
+      showToast(msg, 'error');
     } finally {
       setProcessingId(null);
     }
-  }, []);
+  }, [products, confirmDialog, showToast]);
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
 
