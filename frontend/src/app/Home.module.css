@@ -178,6 +178,19 @@
   border-color: var(--primary-color);
 }
 
+.reassurance {
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+  margin: -1.1rem 0 1.5rem;
+}
+
+.reassuranceLink {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .chipRow {
   display: flex;
   flex-wrap: wrap;

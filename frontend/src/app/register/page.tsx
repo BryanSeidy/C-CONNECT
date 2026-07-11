@@ -28,11 +28,21 @@ function RegisterContent() {
       ? '/login'
       : `/login?redirect=${encodeURIComponent(redirect)}`;
 
+  const copy = requestedRole === 'seller'
+    ? {
+        title: 'Vendez à des acheteurs professionnels',
+        subtitle: 'Publiez votre catalogue et soyez payé en toute sécurité, dès la première commande.',
+      }
+    : {
+        title: 'Trouvez vos fournisseurs vérifiés',
+        subtitle: 'Sourcing fiable, paiement protégé en séquestre, facture automatique à chaque commande.',
+      };
+
   return (
     <AuthForm
       type="register"
-      title="Rejoindre le réseau"
-      subtitle="Connectez producteurs et acheteurs professionnels au Cameroun."
+      title={copy.title}
+      subtitle={copy.subtitle}
       submitText="Créer mon compte"
       alternateHref={alternateHref}
       initialRole={requestedRole}

@@ -76,7 +76,7 @@ const steps = [
 
 const features = [
   { title: 'Vérification KYC des entreprises', description: 'Chaque vendeur est contrôlé avant de pouvoir publier un catalogue.', Icon: ShieldCheck },
-  { title: 'Paiement en séquestre', description: 'Mobile Money ou virement professionnel, retenu jusqu’à confirmation.', Icon: Wallet },
+  { title: 'Paiement en séquestre', description: 'Mobile Money (MTN, Orange), retenu jusqu’à confirmation de réception.', Icon: Wallet },
   { title: 'Facturation automatique', description: 'Un document professionnel généré pour chaque commande conclue.', Icon: FileText },
   { title: 'Traçabilité régionale', description: 'Origine, région et certification visibles sur chaque profil fournisseur.', Icon: Building2 },
   { title: 'Négociation intégrée', description: 'Échangez sur les prix et délais sans quitter la plateforme.', Icon: MessageSquare },
@@ -172,13 +172,19 @@ export default function HomePage() {
             </p>
             <div className={styles.actions}>
               <Link href="/register?role=buyer" className={styles.primaryCta}>
-                Demander une démonstration
+                Créer mon compte acheteur
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
               <Link href="/register?role=seller" className={styles.secondaryCta}>
                 Devenir fournisseur vérifié
               </Link>
             </div>
+            <p className={styles.reassurance}>
+              Gratuit, sans engagement — ou{' '}
+              <Link href="/marketplace" className={styles.reassuranceLink}>
+                parcourez le catalogue sans créer de compte
+              </Link>.
+            </p>
             <ul className={styles.chipRow} aria-label="Garanties de la plateforme">
               {heroChips.map(({ Icon, label }) => (
                 <li className={styles.chip} key={label}>
@@ -413,7 +419,7 @@ export default function HomePage() {
             <h3>Vous achetez pour votre entreprise</h3>
             <p>Sourcing vérifié, paiement protégé, facturation automatique.</p>
             <Link href="/register?role=buyer" className={styles.finalCtaButton}>
-              Demander une démonstration
+              Créer mon compte acheteur
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>

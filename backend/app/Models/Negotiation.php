@@ -24,6 +24,7 @@ class Negotiation extends Model
         'counter_price',
         'message',
         'status',
+        'order_id',
     ];
 
     protected $casts = [
@@ -50,10 +51,25 @@ class Negotiation extends Model
         return $this->belongsTo(SellerProfile::class, 'seller_id');
     }
 
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
     // ==================== MÉTIER ====================
 
     public function isPending(): bool
     {
         return $this->status === 'PENDING' || $this->status === 'COUNTERED';
+    }
+
+    /**
+     * Prix unitaire final à honorer si cette négociation est convertie en
+     * commande : la contre-offre du vendeur prime si elle existe, sinon le
+     * prix initialement proposé par l'acheteur.
+     */
+    public function finalPrice(): float
+    {
+        return (float) ($this->counter_price ?? $this->proposed_price);
     }
 }

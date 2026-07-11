@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { ProductCard } from '@/components/ProductCard';
 import { Footer } from '@/components/Footer';
 import { getRegionLabel } from '@/lib/regions';
+import { useAuth } from '@/hooks/useAuth';
 import styles from './CompanyProfile.module.css';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -51,6 +52,7 @@ function ProfileSkeleton() {
 export default function CompanyProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug;
+  const { user } = useAuth();
 
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -165,6 +167,9 @@ export default function CompanyProfilePage() {
             </div>
             <div className={styles.trustScore}>
               <span className={styles.trustScoreValue}>{company.trustScore}</span>
+              <div className={styles.trustScoreBar} role="progressbar" aria-valuenow={company.trustScore} aria-valuemin={0} aria-valuemax={100} aria-label="Score de confiance">
+                <div className={styles.trustScoreFill} style={{ width: `${Math.max(0, Math.min(100, company.trustScore))}%` }} />
+              </div>
               <span className={styles.trustScoreLabel}>Score de confiance / 100</span>
             </div>
           </div>
@@ -202,8 +207,18 @@ export default function CompanyProfilePage() {
         </div>
 
         <div className={styles.catalogHeader}>
-          <h2 className={styles.catalogTitle}>Catalogue</h2>
-          {!productsLoading && <span className={styles.catalogCount}>{meta.total} produit(s)</span>}
+          <div>
+            <h2 className={styles.catalogTitle}>Catalogue</h2>
+            {!productsLoading && <span className={styles.catalogCount}>{meta.total} produit(s)</span>}
+          </div>
+          {(!user || user.role === 'buyer') && (
+            <Link
+              href={user ? '/dashboard/rfqs' : `/login?redirect=${encodeURIComponent('/dashboard/rfqs')}`}
+              className={styles.rfqCta}
+            >
+              Vous ne trouvez pas ce qu&apos;il vous faut ? Publiez une demande de devis
+            </Link>
+          )}
         </div>
 
         {productsLoading && (

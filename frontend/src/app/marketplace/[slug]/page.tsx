@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Award, BadgeCheck, Loader2, MapPin, Package,
   Phone, ShieldCheck, Star, Truck, Users,
@@ -96,10 +96,16 @@ function RatingStars({ rating, count }: { rating: number; count: number }) {
 
 // ── Order form ────────────────────────────────────────────────────────────────
 
-function OrderForm({ product }: { product: Product }) {
+interface NegotiationContext {
+  id: string;
+  price: number;
+  qty: number;
+}
+
+function OrderForm({ product, negotiation }: { product: Product; negotiation?: NegotiationContext | null }) {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
-  const [qty, setQty] = useState(Math.max(1, product.stockMinimum ?? 1));
+  const [qty, setQty] = useState(negotiation?.qty ?? Math.max(1, product.stockMinimum ?? 1));
   const [showDelivery, setShowDelivery] = useState(false);
   const [ville, setVille] = useState('');
   const [adresse, setAdresse] = useState('');
@@ -107,6 +113,7 @@ function OrderForm({ product }: { product: Product }) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const unitPrice = negotiation?.price ?? product.price;
   const canOrder = isAuthenticated && user?.role === 'buyer' && product.stock > 0;
   const deliveryValid = ville.trim().length > 1 && telephone.trim().length >= 8;
 
@@ -126,6 +133,7 @@ function OrderForm({ product }: { product: Product }) {
       const res = await orderService.createOrder({
         productId: product.id,
         quantity: qty,
+        negotiationId: negotiation?.id,
         villeLivraison: ville.trim(),
         adresseLivraison: adresse.trim() || undefined,
         telephoneLivraison: telephone.trim(),
@@ -140,25 +148,32 @@ function OrderForm({ product }: { product: Product }) {
 
   return (
     <div className={styles.orderCard}>
+      {negotiation && (
+        <div className={styles.negotiatedBanner}>
+          <ShieldCheck size={14} aria-hidden="true" />
+          Prix négocié appliqué — {negotiation.price.toLocaleString('fr-FR')} XAF / {product.unite ?? 'unité'}
+        </div>
+      )}
+
       <div className={styles.priceRow}>
-        <span className={styles.price}>{product.price.toLocaleString('fr-FR')} XAF</span>
+        <span className={styles.price}>{unitPrice.toLocaleString('fr-FR')} XAF</span>
         <span className={styles.priceUnit}>/ {product.unite ?? 'unité'}</span>
       </div>
 
       <StockIndicator stock={product.stock} minimum={product.stockMinimum} />
 
-      {product.stockMinimum && product.stockMinimum > 0 && (
+      {product.stockMinimum && product.stockMinimum > 0 && !negotiation && (
         <p className={styles.minOrder}>Commande minimum : {product.stockMinimum} {product.unite ?? 'unités'}</p>
       )}
 
       <div className={styles.qtyRow}>
-        <label htmlFor="qty" className={styles.qtyLabel}>Quantité</label>
+        <label htmlFor="qty" className={styles.qtyLabel}>Quantité{negotiation ? ' (accord négocié)' : ''}</label>
         <div className={styles.qtyControl}>
           <button
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.max(product.stockMinimum ?? 1, q - 1))}
-            disabled={qty <= (product.stockMinimum ?? 1) || submitting}
+            disabled={!!negotiation || qty <= (product.stockMinimum ?? 1) || submitting}
             aria-label="Diminuer la quantité"
           >
             -
@@ -170,14 +185,14 @@ function OrderForm({ product }: { product: Product }) {
             value={qty}
             min={product.stockMinimum ?? 1}
             max={product.stock}
-            disabled={submitting}
+            disabled={!!negotiation || submitting}
             onChange={e => setQty(Math.min(product.stock, Math.max(product.stockMinimum ?? 1, parseInt(e.target.value) || 1)))}
           />
           <button
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.min(product.stock, q + 1))}
-            disabled={qty >= product.stock || submitting}
+            disabled={!!negotiation || qty >= product.stock || submitting}
             aria-label="Augmenter la quantité"
           >
             +
@@ -187,7 +202,7 @@ function OrderForm({ product }: { product: Product }) {
 
       <div className={styles.totalRow}>
         <span>Total estimé</span>
-        <strong>{(product.price * qty).toLocaleString('fr-FR')} XAF</strong>
+        <strong>{(unitPrice * qty).toLocaleString('fr-FR')} XAF</strong>
       </div>
 
       {canOrder && showDelivery && (
@@ -267,7 +282,7 @@ function OrderForm({ product }: { product: Product }) {
             ) : (
               <>
                 <ShieldCheck size={16} aria-hidden="true" />
-                Confirmer et payer {(product.price * qty).toLocaleString('fr-FR')} XAF
+                Confirmer et payer {(unitPrice * qty).toLocaleString('fr-FR')} XAF
               </>
             )}
           </Button>
@@ -317,6 +332,16 @@ function MobileStickyBar({ product }: { product: Product }) {
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? '';
+  const searchParams = useSearchParams();
+
+  const negotiationId = searchParams.get('negotiation');
+  const negotiation = negotiationId
+    ? {
+        id: negotiationId,
+        price: parseFloat(searchParams.get('price') ?? '0'),
+        qty: parseInt(searchParams.get('qty') ?? '1', 10),
+      }
+    : null;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -463,7 +488,7 @@ export default function ProductDetailPage() {
 
             {/* Colonne commande */}
             <div className={styles.sideCol} id="order-panel">
-              <OrderForm product={product} />
+              <OrderForm product={product} negotiation={negotiation} />
             </div>
           </div>
 

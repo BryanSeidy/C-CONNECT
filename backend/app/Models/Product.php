@@ -98,6 +98,19 @@ class Product extends Model
     // ==================== RELATIONS ====================
 
     /**
+     * Route model binding : accepte le slug OU l'id numérique dans {product}.
+     * Sans ce override, Laravel ne résout {product} que par id (clé
+     * primaire), et la fiche produit — accédée par slug depuis
+     * ProductCard/marketplace, le chemin normal — renvoyait 404 à chaque
+     * fois. Même bug, même fix que Company::resolveRouteBinding().
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? $this->where('id', $value)->firstOrFail();
+    }
+
+    /**
      * Le vendeur propriétaire du produit.
      */
     public function seller(): BelongsTo
