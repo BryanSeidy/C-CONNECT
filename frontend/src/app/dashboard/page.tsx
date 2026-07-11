@@ -14,6 +14,7 @@ import { adminService } from '@/services/admin';
 import type { AdminStats as AdminStatsData } from '@/services/admin';
 import { Order, Rfq, RecurringOrder, Dispute, Product, Company } from '@/types';
 import { KpiCard } from '@/components/ui/KpiCard';
+import { OnboardingStepper } from '@/components/ui/OnboardingStepper';
 import { Badge } from '@/components/ui/Badge';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
 import { DonutChartCard, DistributionDatum } from '@/components/dashboard/DonutChartCard';
@@ -98,9 +99,22 @@ function OnboardingChecklist({ company, productCount }: { company: Company | nul
   const remaining = steps.filter(s => !s.done).length;
   if (remaining === 0) return null; // onboarding terminé : ne pas encombrer l'écran
 
+  const stepperSteps = [
+    { label: 'Inscription', done: true },
+    { label: 'Profil', done: steps[0].done },
+    { label: 'Produit', done: steps[1].done },
+    { label: 'Vérifié', done: steps[2].done },
+    { label: 'Terminé', done: remaining === 0 },
+  ];
+
   return (
     <section className={styles.panel} style={{ marginBottom: '1.5rem' }}>
-      <div className={styles.panelHead}>
+      <OnboardingStepper
+        title="Vous y êtes presque"
+        subtitle="Un profil complet inspire confiance et convertit davantage d'acheteurs."
+        steps={stepperSteps}
+      />
+      <div className={styles.panelHead} style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
         <h2>Finaliser votre profil vendeur</h2>
         <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           {steps.length - remaining}/{steps.length} étape(s) complétée(s)
