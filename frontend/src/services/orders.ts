@@ -67,6 +67,7 @@ export const orderService = {
   createOrder: async (orderData: {
     productId: number | string;
     quantity: number;
+    negotiationId?: number | string;
     villeLivraison?: string;
     adresseLivraison?: string;
     telephoneLivraison?: string;
@@ -74,6 +75,7 @@ export const orderService = {
     const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
       product_id: orderData.productId,
       quantity: orderData.quantity,
+      negotiation_id: orderData.negotiationId,
       ville_livraison: orderData.villeLivraison,
       adresse_livraison: orderData.adresseLivraison,
       telephone_livraison: orderData.telephoneLivraison,

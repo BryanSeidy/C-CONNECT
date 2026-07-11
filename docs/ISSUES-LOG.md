@@ -123,7 +123,28 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
-## 2026-07-10 — Claude2
+## 2026-07-11 — Claude2 : RÉSOLU — Le prix négocié n'était jamais honoré à la commande
+
+**Statut : corrigé de bout en bout** (backend + frontend), avec l'accord explicite du product owner pour sortir de mon périmètre strict frontend sur ce point précis, vu la criticité (intégrité de la facturation/revenu).
+
+**Correctif backend :**
+- Nouvelle migration `2026_07_11_000001_add_order_id_to_negotiations.php` : colonne `order_id` nullable sur `negotiations`, pour savoir si une négociation acceptée a déjà été convertie (empêche la réutilisation du même accord sur plusieurs commandes).
+- `Negotiation::finalPrice()` : retourne `counter_price ?? proposed_price`.
+- `OrderController::store` accepte désormais un `negotiation_id` optionnel. Si présent : vérifie que la négociation appartient bien à l'acheteur authentifié, porte sur le même produit, est `ACCEPTED`, et n'a pas déjà été convertie — sinon rejet 422 explicite. Si valide : le prix unitaire de la commande devient `negotiation->finalPrice()` au lieu de `product.prix`, et la négociation est marquée comme convertie (`order_id` renseigné) dans la même transaction que la création de la commande.
+- `NegotiationController` : ajout de `slug` aux eager-loads du produit (nécessaire pour rediriger correctement vers la fiche produit réelle, voir ci-dessous).
+
+**Correctif frontend :**
+- Le lien « Passer commande » sur `dashboard/negotiations/page.tsx` pointait vers `/marketplace/product/{id}` — une route supprimée depuis (voir entrée Claude1/Dashboard-01 plus haut) — et ne transmettait même pas la négociation. Corrigé : pointe vers `/marketplace/{slug}?negotiation={id}&qty=...&price=...`, et affiche « Commande déjà passée — voir le paiement » (vers `/checkout?order=...`) si `orderId` est déjà renseigné, au lieu de permettre une double conversion.
+- `marketplace/[slug]/page.tsx` (`OrderForm`) : quand le contexte de négociation est présent dans l'URL, la quantité est verrouillée à la valeur négociée, le prix unitaire affiché et le total facturé utilisent le prix négocié, avec un bandeau « Prix négocié appliqué » explicite. Le `negotiation_id` est transmis à `orderService.createOrder`. **Le prix affiché côté client n'est qu'un affichage** — la source de vérité reste le calcul serveur dans `OrderController::store`, donc aucune manipulation du prix n'est possible en modifiant l'URL.
+- Badge de statut enrichi : « Accepté — commande passée » une fois `orderId` renseigné, pour ne plus jamais laisser croire qu'une négociation acceptée équivaut à une commande passée (l'ambiguïté originelle de ce bug).
+
+**Fichiers touchés :** `backend/database/migrations/2026_07_11_000001_add_order_id_to_negotiations.php`, `backend/app/Models/Negotiation.php`, `backend/app/Http/Controllers/OrderController.php`, `backend/app/Http/Controllers/Api/NegotiationController.php`, `frontend/src/types/index.ts`, `frontend/src/services/negotiations.ts`, `frontend/src/services/orders.ts`, `frontend/src/app/dashboard/negotiations/page.tsx`, `frontend/src/app/marketplace/[slug]/page.tsx`, `frontend/src/app/marketplace/[slug]/ProductDetail.module.css`.
+
+**Non vérifié en conditions réelles** (pas d'accès DB/Postgres dans ce sandbox) : lancer `php artisan migrate` puis tester le parcours complet négociation → commande → paiement avant démo.
+
+---
+
+## 2026-07-10 — Claude2 (archive — voir résolution ci-dessus)
 
 ### 🔴 Critique cross-agent — Le prix négocié n'est jamais honoré à la commande
 

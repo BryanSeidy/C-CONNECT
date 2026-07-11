@@ -43,6 +43,7 @@ class OrderController extends Controller
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity' => ['required', 'integer', 'min:1'],
+            'negotiation_id' => ['nullable', 'integer', 'exists:negotiations,id'],
             'adresse_livraison' => ['nullable', 'string', 'max:500'],
             'ville_livraison' => ['nullable', 'string', 'max:100'],
             'telephone_livraison' => ['nullable', 'string', 'max:20'],
@@ -67,7 +68,32 @@ class OrderController extends Controller
                     throw new \DomainException('Stock insuffisant pour la quantité demandée.');
                 }
 
-                $montantTotal = (float) $product->prix * $validated['quantity'];
+                // Honorer un prix négocié accepté, s'il en existe un valide pour
+                // cet acheteur/produit — sinon retomber sur le prix catalogue.
+                $negotiation = null;
+                $prixUnitaire = (float) $product->prix;
+
+                if (!empty($validated['negotiation_id'])) {
+                    $negotiation = \App\Models\Negotiation::lockForUpdate()
+                        ->where('id', $validated['negotiation_id'])
+                        ->where('buyer_id', $buyer->id)
+                        ->where('product_id', $product->id)
+                        ->first();
+
+                    if (!$negotiation) {
+                        throw new \DomainException('Négociation introuvable pour ce produit et cet acheteur.');
+                    }
+                    if ($negotiation->status !== 'ACCEPTED') {
+                        throw new \DomainException('Cette négociation n\'a pas été acceptée par le vendeur.');
+                    }
+                    if ($negotiation->order_id !== null) {
+                        throw new \DomainException('Cette négociation a déjà été convertie en commande.');
+                    }
+
+                    $prixUnitaire = $negotiation->finalPrice();
+                }
+
+                $montantTotal = $prixUnitaire * $validated['quantity'];
                 $financials = Order::computeFinancials($montantTotal);
 
                 $order = Order::create([
@@ -85,9 +111,13 @@ class OrderController extends Controller
                     'product_id' => $product->id,
                     'seller_id' => $product->seller_id,
                     'quantite' => $validated['quantity'],
-                    'prix_unitaire' => $product->prix,
+                    'prix_unitaire' => $prixUnitaire,
                     'sous_total' => $montantTotal,
                 ]);
+
+                if ($negotiation) {
+                    $negotiation->update(['order_id' => $order->id]);
+                }
 
                 // Réserver atomiquement le stock dans la même transaction
                 $product->reserverStock($validated['quantity']);

@@ -17,8 +17,10 @@ function normalizeNegotiation(raw: RawNegotiation): Negotiation {
     counterPrice: raw.counter_price != null ? toNumber(raw.counter_price) : null,
     message: raw.message ?? null,
     status: raw.status,
+    orderId: raw.order_id ?? null,
     product: {
       id: raw.product?.id ?? raw.product_id,
+      slug: raw.product?.slug ?? '',
       name: raw.product?.nom ?? '',
       category: raw.product?.category?.nom ?? '',
       price: toNumber(raw.product?.prix),

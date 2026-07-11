@@ -87,10 +87,12 @@ function DashboardNegotiationsContent() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, orderId?: number | null) => {
     switch (status) {
       case 'ACCEPTED':
-        return <Badge variant="success">Accepté</Badge>;
+        return orderId
+          ? <Badge variant="success">Accepté — commande passée</Badge>
+          : <Badge variant="success">Accepté</Badge>;
       case 'DECLINED':
         return <Badge variant="error">Décliné</Badge>;
       case 'COUNTERED':
@@ -153,7 +155,7 @@ function DashboardNegotiationsContent() {
                           #{neg.id.toString().padStart(4, '0')} — {neg.product.category}
                         </div>
                       </div>
-                      {getStatusBadge(neg.status)}
+                      {getStatusBadge(neg.status, neg.orderId)}
                     </div>
 
                     {/* Partie adverse */}
@@ -236,11 +238,22 @@ function DashboardNegotiationsContent() {
                       )}
 
                       {user?.role === 'buyer' && neg.status === 'ACCEPTED' && (
-                        <Link href={`/marketplace/${neg.productId}`} style={{ width: '100%' }}>
-                          <Button variant="primary" size="sm" style={{ width: '100%' }}>
-                            Passer commande
-                          </Button>
-                        </Link>
+                        neg.orderId ? (
+                          <Link href={`/checkout?order=${neg.orderId}`} style={{ width: '100%' }}>
+                            <Button variant="ghost" size="sm" style={{ width: '100%' }}>
+                              Commande déjà passée — voir le paiement
+                            </Button>
+                          </Link>
+                        ) : neg.product.slug ? (
+                          <Link
+                            href={`/marketplace/${neg.product.slug}?negotiation=${neg.id}&qty=${neg.quantity}&price=${neg.counterPrice ?? neg.proposedPrice}`}
+                            style={{ width: '100%' }}
+                          >
+                            <Button variant="primary" size="sm" style={{ width: '100%' }}>
+                              Passer commande au prix négocié
+                            </Button>
+                          </Link>
+                        ) : null
                       )}
                     </div>
 
