@@ -189,6 +189,28 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ---
 
+---
+
+## 2026-07-10 (suite 3) — Claude1 (Dashboard-01)
+
+### 🔴 CRITIQUE — La fiche produit renvoyait 404 pour (quasiment) tout accès normal depuis la marketplace
+
+**C'est probablement le bug le plus grave trouvé cette session.** `Product` a une vraie colonne `slug` (unique, auto-générée), et `ProductCard` lie systématiquement vers `/marketplace/${product.slug || product.id}`. Mais `ProductController::show(Product $product)` utilise le binding Laravel implicite **par défaut**, qui ne résout `{product}` que par la clé primaire `id` (un simple entier auto-incrémenté) — aucun `resolveRouteBinding()`/`getRouteKeyName()` ne l'overridait. Résultat : chaque clic sur une carte produit envoyait au backend un slug texte (`tomates-fraiches-ab12cd`) contre une colonne `id` numérique → aucune ligne trouvée → 404 sur la quasi-totalité des accès à une fiche produit, le cœur du tunnel d'achat.
+
+**Exactement le même bug, avec le même correctif, que j'avais déjà trouvé et corrigé sur `Company`** un peu plus tôt dans la session (`entreprises/[slug]`) — je n'avais pas pensé à vérifier si `Product` avait le même problème à ce moment-là.
+
+**Correctif** (`app/Models/Product.php`) : ajout de `resolveRouteBinding()` acceptant slug OU id, identique au pattern déjà utilisé sur `Company`.
+
+**Effet de bord découvert en corrigeant** : le lien "Passer commande" sur `dashboard/negotiations` pointait vers `/marketplace/product/${neg.productId}` — la route morte que j'avais supprimée dans un commit précédent. Corrigé vers `/marketplace/${neg.productId}` (fonctionne maintenant grâce au fix ci-dessus, qui accepte aussi l'id numérique).
+
+**Règle pour la suite :** toute entité avec une colonne `slug` distincte de `id` **doit** avoir un `resolveRouteBinding()` explicite si elle est censée être accessible par slug via une route API — le binding implicite de Laravel ne le devine jamais tout seul. À vérifier sur toute future entité "publique" (RFQ ? Category ?).
+
+**Bonus dans le même commit :** conversion de `dashboard/negotiations` d'un tableau HTML à 8 colonnes (illisible et cassé sur mobile, `overflow-x: auto` en seul filet de sécurité) vers une liste de cartes empilables, cohérente avec le reste du dashboard et mobile-first par construction.
+
+**Fichiers touchés :** `backend/app/Models/Product.php`, `frontend/src/app/dashboard/negotiations/page.tsx`.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```

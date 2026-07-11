@@ -69,7 +69,7 @@ The delivered logo's icon colors (mint green `#46F78D`, blue `#0298C6`, yellow `
 - [x] `services/auth.ts` / backend `/auth/*` routes verified in sync (both use the `auth` prefix: `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`) — resolved by commit `4814f36`, this note was stale.
 - [ ] Run `php artisan migrate` against a real Postgres instance and verify the B2B migrations (companies, rfqs, rfq_bids, recurring_orders, disputes, inventory, order lifecycle enum rename) apply cleanly — could not run migrations in the sandbox (no DB, no Composer/Packagist network access).
 - [ ] Continue typed API response contracts across remaining dashboard, negotiations, and reviews modules.
-- [ ] Complete migration from localStorage bearer-token fallback to httpOnly Sanctum cookie sessions once backend cookie mode is enabled.
+- [x] ~~Complete migration from localStorage bearer-token fallback to httpOnly Sanctum cookie sessions once backend cookie mode is enabled.~~ Superseded: the team deliberately moved the *opposite* direction — pure Bearer token (Sanctum personal access token), no cookies at all. See `docs/auth-contract.md` §1. This line was stale and contradicted the current architecture; removed to avoid misleading whoever picks it up next.
 - [ ] Add automated frontend tests for auth, marketplace filtering, protected dashboard routing, RFQ bidding, and order lifecycle transitions.
 - [ ] Add backend feature tests for auth, product CRUD, order lifecycle, escrow release, RFQ bidding, dispute resolution, and payment webhooks.
 

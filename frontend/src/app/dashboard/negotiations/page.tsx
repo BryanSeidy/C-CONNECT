@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { negotiationService } from '@/services/negotiations';
@@ -126,192 +125,170 @@ function DashboardNegotiationsContent() {
           ) : negotiations.length === 0 ? (
             <EmptyState icon={Handshake} message="Aucune négociation ou demande de devis en cours." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Numéro</TableHead>
-                  <TableHead>Produit</TableHead>
-                  <TableHead>{user?.role === 'seller' ? 'Acheteur' : 'Vendeur'}</TableHead>
-                  <TableHead>Quantité</TableHead>
-                  <TableHead>Prix Proposé (U)</TableHead>
-                  <TableHead>Total Négocié</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead style={{ textAlign: 'right' }}>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {negotiations.map((neg) => {
-                  const otherParty = user?.role === 'seller' ? neg.buyer : neg.seller;
-                  const finalUnitPrice = neg.status === 'COUNTERED' ? (neg.counterPrice ?? neg.proposedPrice) : neg.proposedPrice;
-                  const originalTotal = neg.product.price * neg.quantity;
-                  const negotiatedTotal = finalUnitPrice * neg.quantity;
-                  const savings = originalTotal - negotiatedTotal;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {negotiations.map((neg) => {
+                const otherParty = user?.role === 'seller' ? neg.buyer : neg.seller;
+                const finalUnitPrice = neg.status === 'COUNTERED' ? (neg.counterPrice ?? neg.proposedPrice) : neg.proposedPrice;
+                const originalTotal = neg.product.price * neg.quantity;
+                const negotiatedTotal = finalUnitPrice * neg.quantity;
+                const savings = originalTotal - negotiatedTotal;
 
-                  return (
-                    <React.Fragment key={neg.id}>
-                      <TableRow style={{ verticalAlign: 'middle' }}>
-                        <TableCell style={{ fontWeight: 600 }}>#{neg.id.toString().padStart(4, '0')}</TableCell>
-                        <TableCell>
-                          <div style={{ fontWeight: 500 }}>{neg.product.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Catégorie : {neg.product.category}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontWeight: 500 }}>{otherParty?.companyName || otherParty?.fullName || '—'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12} aria-hidden="true" /> {getRegionLabel(otherParty?.country)}</div>
-                        </TableCell>
-                        <TableCell>{neg.quantity} unités</TableCell>
-                        <TableCell>
-                          <div style={{ fontWeight: 600 }}>{finalUnitPrice.toLocaleString()} FCFA</div>
-                          {neg.status === 'COUNTERED' && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
-                              {neg.proposedPrice.toLocaleString()} FCFA
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{negotiatedTotal.toLocaleString()} FCFA</div>
-                          {savings > 0 && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 500 }}>
-                              Économie : -{savings.toLocaleString()} FCFA
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(neg.status)}</TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                            {/* Seller Actions for PENDING */}
-                            {user?.role === 'seller' && neg.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleAction(neg.id, 'ACCEPTED')}
-                                  isLoading={submittingAction === neg.id}
-                                >
-                                  Accepter
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setActiveCounterId(activeCounterId === neg.id ? null : neg.id);
-                                    setCounterPrice(neg.proposedPrice);
-                                    setCounterMessage('');
-                                  }}
-                                >
-                                  Contre-proposer
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  style={{ color: 'var(--error)' }}
-                                  onClick={() => handleAction(neg.id, 'DECLINED')}
-                                  isLoading={submittingAction === neg.id}
-                                >
-                                  Décliner
-                                </Button>
-                              </>
-                            )}
+                return (
+                  <div
+                    key={neg.id}
+                    style={{
+                      border: '1px solid var(--border-subtle, var(--border-color))',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '1rem 1.25rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    {/* En-tête : produit + statut */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{neg.product.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          #{neg.id.toString().padStart(4, '0')} — {neg.product.category}
+                        </div>
+                      </div>
+                      {getStatusBadge(neg.status)}
+                    </div>
 
-                            {/* Buyer Actions for COUNTERED */}
-                            {user?.role === 'buyer' && neg.status === 'COUNTERED' && (
-                              <>
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleAction(neg.id, 'ACCEPTED')}
-                                  isLoading={submittingAction === neg.id}
-                                >
-                                  Accepter le contre-tarif
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  style={{ color: 'var(--error)' }}
-                                  onClick={() => handleAction(neg.id, 'DECLINED')}
-                                  isLoading={submittingAction === neg.id}
-                                >
-                                  Décliner
-                                </Button>
-                              </>
-                            )}
+                    {/* Partie adverse */}
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>
+                        {otherParty?.companyName || otherParty?.fullName || '—'}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                        <MapPin size={12} aria-hidden="true" /> {getRegionLabel(otherParty?.country)}
+                      </span>
+                    </div>
 
-                            {/* Buyer: continuer le tunnel vers la commande une fois l'accord trouvé */}
-                            {user?.role === 'buyer' && neg.status === 'ACCEPTED' && (
-                              <Link href={`/marketplace/product/${neg.productId}`}>
-                                <Button variant="primary" size="sm">
-                                  Passer commande
-                                </Button>
-                              </Link>
-                            )}
+                    {/* Quantité / prix / total — grille responsive */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem', padding: '0.75rem 0', borderTop: '1px dashed var(--border-color)', borderBottom: '1px dashed var(--border-color)' }}>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Quantité</div>
+                        <div style={{ fontWeight: 600 }}>{neg.quantity} unités</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Prix unitaire</div>
+                        <div style={{ fontWeight: 600 }}>{finalUnitPrice.toLocaleString()} FCFA</div>
+                        {neg.status === 'COUNTERED' && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                            {neg.proposedPrice.toLocaleString()} FCFA
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total négocié</div>
+                        <div style={{ fontWeight: 700, color: 'var(--primary-color)' }}>{negotiatedTotal.toLocaleString()} FCFA</div>
+                        {savings > 0 && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 500 }}>
+                            -{savings.toLocaleString()} FCFA
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                      {/* Comment / Message Row */}
-                      {neg.message && (
-                        <TableRow style={{ backgroundColor: '#F8FAFC' }}>
-                          <TableCell colSpan={8} style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 1.5rem' }}>
-                            <MessageSquare size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} /> <strong>Message de {neg.buyerId === user?.id ? 'vous' : 'l\'acheteur'} :</strong> &quot;{neg.message}&quot;
-                          </TableCell>
-                        </TableRow>
+                    {/* Message */}
+                    {neg.message && (
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', background: '#F8FAFC', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.75rem' }}>
+                        <MessageSquare size={13} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '0.35rem' }} />
+                        <strong>{neg.buyerId === user?.id ? 'Vous' : "L'acheteur"} :</strong> &quot;{neg.message}&quot;
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {user?.role === 'seller' && neg.status === 'PENDING' && (
+                        <>
+                          <Button variant="primary" size="sm" onClick={() => handleAction(neg.id, 'ACCEPTED')} isLoading={submittingAction === neg.id}>
+                            Accepter
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActiveCounterId(activeCounterId === neg.id ? null : neg.id);
+                              setCounterPrice(neg.proposedPrice);
+                              setCounterMessage('');
+                            }}
+                          >
+                            Contre-proposer
+                          </Button>
+                          <Button variant="ghost" size="sm" style={{ color: 'var(--error)' }} onClick={() => handleAction(neg.id, 'DECLINED')} isLoading={submittingAction === neg.id}>
+                            Décliner
+                          </Button>
+                        </>
                       )}
 
-                      {/* Counter Proposal Form (Seller only) */}
-                      {activeCounterId === neg.id && (
-                        <TableRow style={{ backgroundColor: '#FFFDF5' }}>
-                          <TableCell colSpan={8} style={{ padding: '1rem 1.5rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '600px' }}>
-                              <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#D97706' }}>
-                                Formuler une contre-proposition
-                              </h4>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
-                                <div>
-                                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                                    Nouveau Prix Unitaire (FCFA)
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={counterPrice}
-                                    onChange={(e) => setCounterPrice(Number(e.target.value))}
-                                    style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                  />
-                                </div>
-                                <div>
-                                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                                    Message d&apos;accompagnement
-                                  </label>
-                                  <input
-                                    type="text"
-                                    placeholder="Expliquez ce tarif (ex: qualité supérieure, frais logistiques...)"
-                                    value={counterMessage}
-                                    onChange={(e) => setCounterMessage(e.target.value)}
-                                    style={{ width: '100%', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                  />
-                                </div>
-                              </div>
-                              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                <Button size="sm" variant="outline" onClick={() => setActiveCounterId(null)}>
-                                  Annuler
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="primary"
-                                  onClick={() => handleCounterSubmit(neg.id)}
-                                  isLoading={submittingAction === neg.id}
-                                >
-                                  Envoyer la contre-proposition
-                                </Button>
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                      {user?.role === 'buyer' && neg.status === 'COUNTERED' && (
+                        <>
+                          <Button variant="primary" size="sm" onClick={() => handleAction(neg.id, 'ACCEPTED')} isLoading={submittingAction === neg.id}>
+                            Accepter le contre-tarif
+                          </Button>
+                          <Button variant="ghost" size="sm" style={{ color: 'var(--error)' }} onClick={() => handleAction(neg.id, 'DECLINED')} isLoading={submittingAction === neg.id}>
+                            Décliner
+                          </Button>
+                        </>
                       )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
+
+                      {user?.role === 'buyer' && neg.status === 'ACCEPTED' && (
+                        <Link href={`/marketplace/${neg.productId}`} style={{ width: '100%' }}>
+                          <Button variant="primary" size="sm" style={{ width: '100%' }}>
+                            Passer commande
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Formulaire de contre-proposition */}
+                    {activeCounterId === neg.id && (
+                      <div style={{ background: '#FFFDF5', border: '1px solid #FDE68A', borderRadius: 'var(--radius-sm)', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#D97706' }}>
+                          Formuler une contre-proposition
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                              Nouveau prix unitaire (FCFA)
+                            </label>
+                            <input
+                              type="number"
+                              value={counterPrice}
+                              onChange={(e) => setCounterPrice(Number(e.target.value))}
+                              style={{ width: '100%', padding: '8px 10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '1rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                              Message d&apos;accompagnement
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Expliquez ce tarif (ex : qualité supérieure, frais logistiques…)"
+                              value={counterMessage}
+                              onChange={(e) => setCounterMessage(e.target.value)}
+                              style={{ width: '100%', padding: '8px 10px', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '1rem' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          <Button size="sm" variant="outline" onClick={() => setActiveCounterId(null)}>
+                            Annuler
+                          </Button>
+                          <Button size="sm" variant="primary" onClick={() => handleCounterSubmit(neg.id)} isLoading={submittingAction === neg.id}>
+                            Envoyer la contre-proposition
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>

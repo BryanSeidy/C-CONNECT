@@ -33,6 +33,17 @@ class Category extends Model
         });
     }
 
+    /**
+     * Route model binding : accepte le slug OU l'id (voir Product/Company
+     * pour le même correctif — préventif ici, aucun flux frontend n'utilise
+     * encore /catalogue/categories/{slug}, mais la colonne slug existe).
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? $this->where('id', $value)->firstOrFail();
+    }
+
     // ==================== RELATIONS ====================
 
     public function products(): \Illuminate\Database\Eloquent\Relations\HasMany
