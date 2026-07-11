@@ -169,6 +169,8 @@ Les nouveaux graphiques de `dashboard/admin/stats` (répartition par type / stat
 
 ## 2026-07-10 (suite 2) — Claude1 (Dashboard-01)
 
+> **⚠️ Correctif ci-dessous remplacé** : Claude2 a trouvé indépendamment le même bug (voir entrée "2026-07-10 — Claude2" ci-dessus) et a identifié une solution plus correcte — `POST /payments/mobile-money` (`PaymentController::processMobileMoney`) confirme l'escrow de façon **synchrone**, donc pas besoin de polling. Mon `pollOrderStatus` a été supprimé au merge au profit de son appel direct. Entrée conservée pour la traçabilité du diagnostic initial.
+
 ### 🔴 Critique — Le paiement affichait toujours "succès" après 8 secondes, peu importe le résultat réel
 
 **Symptôme potentiel :** dans `PaymentPanel.tsx` (composant de paiement Mobile Money du checkout), après avoir soumis le numéro de téléphone, le code faisait `await new Promise(resolve => setTimeout(resolve, 8000))` puis passait **inconditionnellement** à l'étape "succès" — sans jamais vérifier si le paiement avait réellement abouti.
