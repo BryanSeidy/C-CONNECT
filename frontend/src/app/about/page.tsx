@@ -8,7 +8,7 @@ export default function AboutPage() {
     <div style={{ background: 'var(--bg-app)', minHeight: '100vh' }}>
       {/* Hero Section */}
       <section style={{ 
-        padding: '6rem 2rem', 
+        padding: 'clamp(3rem, 10vw, 6rem) clamp(1.25rem, 4vw, 2rem)', 
         textAlign: 'center', 
         background: 'linear-gradient(135deg, var(--primary-color) 0%, #185E6A 100%)',
         color: 'white'
@@ -26,15 +26,15 @@ export default function AboutPage() {
             Bâtir le futur B2B du Cameroun
           </h1>
           <p style={{ fontSize: '1.25rem', opacity: 0.9, lineHeight: 1.6, maxWidth: '700px', margin: '0 auto' }}>
-            C-CONNECT est la première marketplace B2B nationale dédiée à la transformation numérique du commerce entre les 10 régions du pays.
+            C-CONNECT est une marketplace B2B nationale dédiée à la transformation numérique du commerce entre les 10 régions du pays.
           </p>
         </div>
       </section>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1100px', margin: '-4rem auto 4rem', padding: '0 2rem' }}>
+      <div style={{ maxWidth: '1100px', margin: 'clamp(-4rem, -6vw, -2.5rem) auto 4rem', padding: '0 clamp(1rem, 4vw, 2rem)' }}>
         <Card glass style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-          <CardContent style={{ padding: '4rem', display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+          <CardContent style={{ padding: 'clamp(1.5rem, 6vw, 4rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(2rem, 6vw, 4rem)' }}>
             
             {/* Our Story */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
@@ -61,16 +61,16 @@ export default function AboutPage() {
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Régions</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--secondary-color)' }}>24/7</div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Disponibilité</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--secondary-color)' }}>&lt;24h</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Réponse aux litiges</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--secondary-color)' }}>100%</div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Sécurisé</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Paiements en séquestre</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--secondary-color)' }}>0</div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Fraude</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--secondary-color)' }}>KYC</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Vérification obligatoire</div>
                 </div>
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function AboutPage() {
               <h2 style={{ fontSize: '2rem', color: 'var(--primary-color)', marginBottom: '2.5rem', textAlign: 'center' }}>Nos Valeurs Fondamentales</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                 {[
-                  { icon: <ShieldCheck size={24} />, title: 'Confiance', desc: 'Sécurité garantie via Escrow' },
+                  { icon: <ShieldCheck size={24} />, title: 'Confiance', desc: 'Sécurité garantie via séquestre' },
                   { icon: <Zap size={24} />, title: 'Agilité', desc: 'Transactions rapides et fluides' },
                   { icon: <Users size={24} />, title: 'Impact', desc: 'Soutien aux producteurs locaux' },
                   { icon: <BadgeCheck size={24} />, title: 'Excellence', desc: 'Service client et support technique' },
