@@ -103,7 +103,7 @@ export const ProductCard = ({ product }: { product: Product }) => {
         </div>
 
         <Link 
-          href={`/marketplace/${product.id || product.slug}`}
+          href={`/marketplace/${product.slug || product.id}`}
           className={styles.productLink}
         >
           Voir les détails
