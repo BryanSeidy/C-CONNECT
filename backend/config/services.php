@@ -65,13 +65,15 @@ return [
     ],
 
     /*
-     * Assistant IA C-Connect (voir App\Http\Controllers\Api\AssistantController).
-     * Sans clé configurée, l'endpoint répond avec un message explicatif au
-     * lieu de planter — le widget frontend reste utilisable/démontrable
-     * même sans clé API en environnement de dev.
+     * Anthropic (IA) — config partagée pour toute fonctionnalité IA de
+     * C-Connect : recherche marketplace en langage naturel (AiClient +
+     * SmartSearchController), assistant contextuel et amélioration de texte
+     * (AssistantController). Sans ANTHROPIC_API_KEY en .env, chaque
+     * fonctionnalité se désactive proprement (isConfigured() / message
+     * explicatif) plutôt que de planter — jamais un prérequis.
      */
     'anthropic' => [
-        'api_key' => env('ANTHROPIC_API_KEY'),
+        'api_key' => env('ANTHROPIC_API_KEY', ''),
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
     ],
 

@@ -53,6 +53,13 @@ Route::prefix('catalogue')->name('catalogue.')->group(function (): void {
             'show'  => 'products.show',
         ]);
 
+    // Recherche marketplace en langage naturel (IA) — publique, comme le
+    // reste du catalogue. Se dégrade proprement si l'IA n'est pas configurée.
+    // Throttle : chaque appel coûte un appel API IA réel, endpoint public.
+    Route::post('search/smart', [\App\Http\Controllers\SmartSearchController::class, 'parse'])
+        ->middleware('throttle:20,1')
+        ->name('search.smart');
+
     Route::apiResource('companies', CompanyController::class)
         ->only(['index', 'show'])
         ->names([
