@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Award, BadgeCheck, Loader2, MapPin, Package,
-  Phone, ShieldCheck, Star, Truck, Users,
+  Phone, ShieldCheck, ShoppingCart, Star, Truck, Users,
 } from 'lucide-react';
 import { productService } from '@/services/products';
 import { orderService } from '@/services/orders';
@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { getRegionLabel } from '@/lib/regions';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/ui/ToastProvider';
 import styles from './ProductDetail.module.css';
 
 // ── Skeleton ─────────────────────────────────────────────────────────────────
@@ -105,6 +107,8 @@ interface NegotiationContext {
 function OrderForm({ product, negotiation }: { product: Product; negotiation?: NegotiationContext | null }) {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const { addItem } = useCart();
+  const { showToast } = useToast();
   const [qty, setQty] = useState(negotiation?.qty ?? Math.max(1, product.stockMinimum ?? 1));
   const [showDelivery, setShowDelivery] = useState(false);
   const [ville, setVille] = useState('');
@@ -262,10 +266,36 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
 
       {canOrder ? (
         !showDelivery ? (
-          <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={handleStartOrder}>
-            <ShieldCheck size={16} aria-hidden="true" />
-            Commander avec paiement sécurisé
-          </Button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={handleStartOrder}>
+              <ShieldCheck size={16} aria-hidden="true" />
+              Commander avec paiement sécurisé
+            </Button>
+            {!negotiation && (
+              <Button
+                variant="outline"
+                size="lg"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  addItem({
+                    productId: Number(product.id),
+                    slug: product.slug,
+                    name: product.name,
+                    price: product.price,
+                    unite: product.unite,
+                    imageUrl: product.imageUrl,
+                    stock: product.stock,
+                    sellerId: Number(product.producerId),
+                    sellerName: product.producer?.companyName || product.producer?.fullName || 'Fournisseur',
+                  }, qty);
+                  showToast(`« ${product.name} » ajouté au panier.`, 'success');
+                }}
+              >
+                <ShoppingCart size={16} aria-hidden="true" />
+                Ajouter au panier
+              </Button>
+            )}
+          </div>
         ) : (
           <Button
             variant="primary"

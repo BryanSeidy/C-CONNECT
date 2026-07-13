@@ -40,15 +40,40 @@ class OrderController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'product_id' => ['required', 'integer', 'exists:products,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
-            'negotiation_id' => ['nullable', 'integer', 'exists:negotiations,id'],
-            'adresse_livraison' => ['nullable', 'string', 'max:500'],
-            'ville_livraison' => ['nullable', 'string', 'max:100'],
-            'telephone_livraison' => ['nullable', 'string', 'max:20'],
-            'notes_livraison' => ['nullable', 'string', 'max:1000'],
-        ]);
+        // Deux formes acceptées : l'historique mono-produit (product_id +
+        // quantity, éventuellement negotiation_id), ou un panier multi-
+        // articles (items[]) — utilisé par le panier frontend. Les deux
+        // aboutissent à la même logique de création ci-dessous.
+        $isCart = $request->has('items');
+
+        $validated = $isCart
+            ? $request->validate([
+                'items' => ['required', 'array', 'min:1', 'max:50'],
+                'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1'],
+                'items.*.negotiation_id' => ['nullable', 'integer', 'exists:negotiations,id'],
+                'adresse_livraison' => ['nullable', 'string', 'max:500'],
+                'ville_livraison' => ['nullable', 'string', 'max:100'],
+                'telephone_livraison' => ['nullable', 'string', 'max:20'],
+                'notes_livraison' => ['nullable', 'string', 'max:1000'],
+            ])
+            : $request->validate([
+                'product_id' => ['required', 'integer', 'exists:products,id'],
+                'quantity' => ['required', 'integer', 'min:1'],
+                'negotiation_id' => ['nullable', 'integer', 'exists:negotiations,id'],
+                'adresse_livraison' => ['nullable', 'string', 'max:500'],
+                'ville_livraison' => ['nullable', 'string', 'max:100'],
+                'telephone_livraison' => ['nullable', 'string', 'max:20'],
+                'notes_livraison' => ['nullable', 'string', 'max:1000'],
+            ]);
+
+        $itemsInput = $isCart
+            ? $validated['items']
+            : [[
+                'product_id' => $validated['product_id'],
+                'quantity' => $validated['quantity'],
+                'negotiation_id' => $validated['negotiation_id'] ?? null,
+            ]];
 
         $buyer = $request->user();
 
@@ -57,48 +82,79 @@ class OrderController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($validated, $buyer) {
-                // Verrouiller le produit pour éviter la sur-réservation concurrente
-                $product = Product::lockForUpdate()->findOrFail($validated['product_id']);
+            $order = DB::transaction(function () use ($itemsInput, $validated, $buyer) {
+                // Verrouiller les produits dans un ordre stable (tri par id)
+                // pour éviter les deadlocks si deux paniers se recoupent.
+                $productIds = collect($itemsInput)->pluck('product_id')->unique()->sort()->values();
+                $products = Product::whereIn('id', $productIds)->lockForUpdate()->get()->keyBy('id');
 
-                if ($product->statut !== 'active') {
-                    throw new \DomainException('Ce produit n\'est plus disponible.');
-                }
-                if ($product->stock_disponible < $validated['quantity']) {
-                    throw new \DomainException('Stock insuffisant pour la quantité demandée.');
-                }
+                $sellerId = null;
+                $lineItems = [];
+                $montantTotal = 0.0;
 
-                // Honorer un prix négocié accepté, s'il en existe un valide pour
-                // cet acheteur/produit — sinon retomber sur le prix catalogue.
-                $negotiation = null;
-                $prixUnitaire = (float) $product->prix;
-
-                if (!empty($validated['negotiation_id'])) {
-                    $negotiation = \App\Models\Negotiation::lockForUpdate()
-                        ->where('id', $validated['negotiation_id'])
-                        ->where('buyer_id', $buyer->id)
-                        ->where('product_id', $product->id)
-                        ->first();
-
-                    if (!$negotiation) {
-                        throw new \DomainException('Négociation introuvable pour ce produit et cet acheteur.');
+                foreach ($itemsInput as $line) {
+                    $product = $products->get($line['product_id']);
+                    if (!$product) {
+                        throw new \DomainException('Un des produits du panier est introuvable.');
                     }
-                    if ($negotiation->status !== 'ACCEPTED') {
-                        throw new \DomainException('Cette négociation n\'a pas été acceptée par le vendeur.');
+                    if ($product->statut !== 'active') {
+                        throw new \DomainException("Le produit « {$product->nom} » n'est plus disponible.");
                     }
-                    if ($negotiation->order_id !== null) {
-                        throw new \DomainException('Cette négociation a déjà été convertie en commande.');
+                    if ($product->stock_disponible < $line['quantity']) {
+                        throw new \DomainException("Stock insuffisant pour « {$product->nom} ».");
                     }
 
-                    $prixUnitaire = $negotiation->finalPrice();
+                    if ($sellerId === null) {
+                        $sellerId = $product->seller_id;
+                    } elseif ($sellerId !== $product->seller_id) {
+                        throw new \DomainException(
+                            'Votre panier contient des produits de plusieurs fournisseurs différents. ' .
+                            'Chaque commande C-Connect ne peut concerner qu\'un seul fournisseur à la fois — ' .
+                            'validez vos articles fournisseur par fournisseur.'
+                        );
+                    }
+
+                    // Honorer un prix négocié accepté pour cette ligne, s'il y en a un.
+                    $negotiation = null;
+                    $prixUnitaire = (float) $product->prix;
+
+                    if (!empty($line['negotiation_id'])) {
+                        $negotiation = \App\Models\Negotiation::lockForUpdate()
+                            ->where('id', $line['negotiation_id'])
+                            ->where('buyer_id', $buyer->id)
+                            ->where('product_id', $product->id)
+                            ->first();
+
+                        if (!$negotiation) {
+                            throw new \DomainException('Négociation introuvable pour ce produit et cet acheteur.');
+                        }
+                        if ($negotiation->status !== 'ACCEPTED') {
+                            throw new \DomainException('Cette négociation n\'a pas été acceptée par le vendeur.');
+                        }
+                        if ($negotiation->order_id !== null) {
+                            throw new \DomainException('Cette négociation a déjà été convertie en commande.');
+                        }
+
+                        $prixUnitaire = $negotiation->finalPrice();
+                    }
+
+                    $sousTotal = $prixUnitaire * $line['quantity'];
+                    $montantTotal += $sousTotal;
+
+                    $lineItems[] = [
+                        'product' => $product,
+                        'quantity' => $line['quantity'],
+                        'prixUnitaire' => $prixUnitaire,
+                        'sousTotal' => $sousTotal,
+                        'negotiation' => $negotiation,
+                    ];
                 }
 
-                $montantTotal = $prixUnitaire * $validated['quantity'];
                 $financials = Order::computeFinancials($montantTotal);
 
                 $order = Order::create([
                     'buyer_id' => $buyer->id,
-                    'seller_id' => $product->seller_id,
+                    'seller_id' => $sellerId,
                     ...$financials,
                     'escrow_status' => Order::STATUS_PENDING,
                     'adresse_livraison' => $validated['adresse_livraison'] ?? null,
@@ -106,21 +162,22 @@ class OrderController extends Controller
                     'telephone_livraison' => $validated['telephone_livraison'] ?? null,
                 ]);
 
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'seller_id' => $product->seller_id,
-                    'quantite' => $validated['quantity'],
-                    'prix_unitaire' => $prixUnitaire,
-                    'sous_total' => $montantTotal,
-                ]);
+                foreach ($lineItems as $line) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $line['product']->id,
+                        'seller_id' => $line['product']->seller_id,
+                        'quantite' => $line['quantity'],
+                        'prix_unitaire' => $line['prixUnitaire'],
+                        'sous_total' => $line['sousTotal'],
+                    ]);
 
-                if ($negotiation) {
-                    $negotiation->update(['order_id' => $order->id]);
+                    if ($line['negotiation']) {
+                        $line['negotiation']->update(['order_id' => $order->id]);
+                    }
+
+                    $line['product']->reserverStock($line['quantity']);
                 }
-
-                // Réserver atomiquement le stock dans la même transaction
-                $product->reserverStock($validated['quantity']);
 
                 return $order;
             });

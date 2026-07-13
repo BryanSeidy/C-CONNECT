@@ -83,6 +83,30 @@ export const orderService = {
     return { ...res, data: normalizeOrder(res.data) };
   },
 
+  /**
+   * Crée une commande à partir de plusieurs articles du panier — tous doivent
+   * appartenir au même vendeur (le backend rejette sinon avec un message
+   * explicite). Le panier frontend groupe déjà par vendeur avant d'appeler
+   * ceci une fois par groupe.
+   */
+  createOrderFromCart: async (cartData: {
+    items: Array<{ productId: number | string; quantity: number; negotiationId?: number | string }>;
+    villeLivraison?: string;
+    adresseLivraison?: string;
+    telephoneLivraison?: string;
+  }): Promise<ApiEnvelope<Order>> => {
+    const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
+      items: cartData.items.map((i) => ({
+        product_id: i.productId,
+        quantity: i.quantity,
+        negotiation_id: i.negotiationId,
+      })),
+      ville_livraison: cartData.villeLivraison,
+      adresse_livraison: cartData.adresseLivraison,
+      telephone_livraison: cartData.telephoneLivraison,
+    });
+    return { ...res, data: normalizeOrder(res.data) };
+  },
   releaseFunds: async (orderId: number | string): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<{ order: RawOrder }>>(`/orders/${orderId}/release-funds`);
     return { ...res, data: normalizeOrder(res.data.order) };
