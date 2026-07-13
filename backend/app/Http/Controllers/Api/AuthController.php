@@ -21,7 +21,12 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            // 'email:rfc,dns' exige une résolution DNS réelle au moment de la
+            // validation — indisponible en environnement de test/CI hors-ligne,
+            // et peu fiable même en production (DNS split-horizon, latence,
+            // domaines pro valides mais mal configurés). 'rfc' seul suffit à
+            // valider la syntaxe sans dépendance réseau.
+            'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
             // Sécurité : l'inscription publique ne doit JAMAIS permettre de
             // créer un compte admin. Un admin ne peut être créé que par un

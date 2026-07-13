@@ -6,11 +6,28 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Les routes auth sont throttle:6,1 (protection brute-force en
+        // production). RefreshDatabase réinitialise la DB entre tests mais
+        // PAS le cache du rate limiter — PHPUnit exécute toute la classe
+        // dans le même process, donc les ~8 requêtes de cette suite vers
+        // /auth/register et /auth/login épuisaient la limite et faisaient
+        // échouer les derniers tests avec un 429 inattendu au lieu du
+        // statut réellement testé. Désactivé uniquement pour cette suite —
+        // le comportement de throttle réel n'est pas ce qu'on teste ici.
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     public function test_a_buyer_can_register_and_receives_a_token_and_user(): void
     {
@@ -87,7 +104,7 @@ class AuthTest extends TestCase
     {
         User::factory()->create([
             'email' => 'buyer@example.cm',
-            'password' => 'Password@123!',
+            'password' => Hash::make('Password@123!'),
         ]);
 
         $response = $this->postJson('/api/auth/login', [
@@ -103,7 +120,7 @@ class AuthTest extends TestCase
     {
         User::factory()->create([
             'email' => 'buyer2@example.cm',
-            'password' => 'Password@123!',
+            'password' => Hash::make('Password@123!'),
         ]);
 
         $response = $this->postJson('/api/auth/login', [
