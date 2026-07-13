@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { rfqService } from '@/services/rfqs';
+import { assistantService } from '@/services/assistant';
 import { Rfq, RfqBid } from '@/types';
 import { REGION_OPTIONS } from '@/lib/regions';
 import { extractApiError } from '@/lib/errors';
-import { CheckCircle2, ClipboardList, Plus, ShieldCheck, X, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Loader2, Plus, ShieldCheck, Sparkles, X, XCircle } from 'lucide-react';
 
 const RFQ_STATUS_LABELS: Record<Rfq['statut'], string> = {
   active: 'Ouverte aux offres',
@@ -48,6 +49,20 @@ export default function DashboardRfqs() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const [improvingDescription, setImprovingDescription] = useState(false);
+
+  const handleImproveDescription = async () => {
+    if (form.description.trim().length < 5 || improvingDescription) return;
+    setImprovingDescription(true);
+    try {
+      const improved = await assistantService.improveText(form.description.trim(), 'rfq_requirements');
+      setForm((f) => ({ ...f, description: improved }));
+    } catch {
+      // Échec silencieux — le texte original reste inchangé.
+    } finally {
+      setImprovingDescription(false);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
   const [bidForms, setBidForms] = useState<Record<string, { prix: string; quantite: string; message: string }>>({});
   const [actionId, setActionId] = useState<string | null>(null);
@@ -183,9 +198,31 @@ export default function DashboardRfqs() {
                 required
               />
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.4rem', color: 'var(--text-main)' }}>
-                  Description du besoin
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-main)' }}>
+                    Description du besoin
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleImproveDescription}
+                    disabled={form.description.trim().length < 5 || improvingDescription}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                      padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600,
+                      color: 'var(--primary-color)', background: 'var(--c-green-50, #F5FAF7)',
+                      border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-full, 999px)',
+                      cursor: form.description.trim().length < 5 || improvingDescription ? 'not-allowed' : 'pointer',
+                      opacity: form.description.trim().length < 5 || improvingDescription ? 0.5 : 1,
+                    }}
+                  >
+                    {improvingDescription ? (
+                      <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+                    ) : (
+                      <Sparkles size={13} aria-hidden="true" />
+                    )}
+                    Améliorer avec l&apos;IA
+                  </button>
+                </div>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}

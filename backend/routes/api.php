@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\RecurringOrderController;
 use App\Http\Controllers\Api\RfqController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AssistantController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -234,6 +235,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // --- Routes réservées aux vendeurs ---
     Route::prefix('seller')->name('seller.')->middleware('seller')->group(function (): void {
         Route::get('/gamification', [GamificationController::class, 'show'])->name('gamification');
+    });
+
+    // --- Assistant IA (chat contextuel + amélioration de texte) ---
+    // Throttle dédié : appels payants côté Anthropic, à maîtriser indépendamment
+    // du throttle générique des autres routes.
+    Route::prefix('assistant')->name('assistant.')->middleware('throttle:20,1')->group(function (): void {
+        Route::post('/chat', [AssistantController::class, 'chat'])->name('chat');
+        Route::post('/improve-text', [AssistantController::class, 'improveText'])->name('improve-text');
     });
 
     // --- Routes réservées aux administrateurs ---

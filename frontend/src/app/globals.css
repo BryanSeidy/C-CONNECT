@@ -130,6 +130,13 @@ a { color: inherit; }
 /* ── Selection ── */
 ::selection { background: var(--c-green-100); }
 
+/* ── Global spin utility — for inline style={{ animation: 'spin ...' }}
+   references (CSS-module-scoped @keyframes aren't visible inline). ── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Reduced motion — accessibility ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -45,4 +45,15 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL',),
     ],
 
+    /*
+     * Assistant IA C-Connect (voir App\Http\Controllers\Api\AssistantController).
+     * Sans clé configurée, l'endpoint répond avec un message explicatif au
+     * lieu de planter — le widget frontend reste utilisable/démontrable
+     * même sans clé API en environnement de dev.
+     */
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+    ],
+
 ];

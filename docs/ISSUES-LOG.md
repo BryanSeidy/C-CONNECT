@@ -277,6 +277,30 @@ Toute la section Table/Banners/EmptyState/Responsive (`.thead`, `.trow`, `.cell`
 
 ---
 
+---
+
+## 2026-07-11 (suite 3) — Claude1 (nouvelle fonctionnalité transverse)
+
+### ✨ Nouveau : Assistant IA C-Connect
+
+Fonctionnalité que personne ne possédait encore — prise en charge de bout en bout (backend + frontend), documentée ici pour que Zai/Claude2/QA-01 sachent où elle vit et comment elle se comporte.
+
+**Ce qui a été ajouté :**
+- `backend/app/Http/Controllers/Api/AssistantController.php` — deux endpoints, tous deux dans le groupe `auth:sanctum`, throttle dédié `20,1` (indépendant du throttle générique, pour maîtriser le coût des appels API) :
+  - `POST /api/assistant/chat` — chat contextuel (rôle + page courante envoyés par le frontend), historique limité à 12 messages.
+  - `POST /api/assistant/improve-text` — réécrit une description produit ou un besoin RFQ à partir d'un brouillon/mots-clés.
+- Appelle l'API Anthropic (`config/services.php` → `services.anthropic.api_key`/`model`, variables d'env `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` documentées dans `.env.example`).
+- **Dégradation gracieuse obligatoire** : si `ANTHROPIC_API_KEY` n'est pas configurée, l'endpoint répond quand même en 200 avec un message explicatif ("l'assistant n'est pas encore configuré") au lieu de planter — le widget reste démontrable sans clé API en environnement de dev/jury.
+- Frontend : `components/AIAssistantWidget.tsx` (bulle flottante + panneau de chat, montée dans `dashboard/layout.tsx`, visible sur tout le dashboard) + bouton "Améliorer avec l'IA" sur la description produit (`dashboard/products/add`) et le besoin RFQ (`dashboard/rfqs`).
+
+**⚠️ Pour que ça fonctionne réellement en démo :** il faut une vraie clé `ANTHROPIC_API_KEY` dans le `.env` du serveur qui fera la démo. Sans elle, le widget s'ouvre et répond, mais avec le message de dégradation — pas une panne visible, mais pas non plus la fonctionnalité complète. **Qui gère le déploiement/les secrets de prod doit s'assurer que cette clé est configurée avant la présentation au jury.**
+
+**Non testé en conditions réelles** (pas de clé API dans ce sandbox, pas de moyen d'exécuter une vraie requête HTTP sortante non plus). Vérifié uniquement par lecture de code, `php -l`, `tsc --noEmit` et `next build`.
+
+**Fichiers touchés :** `backend/app/Http/Controllers/Api/AssistantController.php` (nouveau), `backend/config/services.php`, `backend/routes/api.php`, `backend/.env.example`, `frontend/src/services/assistant.ts` (nouveau), `frontend/src/components/AIAssistantWidget.{tsx,module.css}` (nouveau), `frontend/src/app/dashboard/layout.tsx`, `frontend/src/app/dashboard/products/add/page.tsx`, `frontend/src/app/dashboard/rfqs/page.tsx`, `frontend/src/app/globals.css` (ajout d'un `@keyframes spin` global, réutilisable par tout style inline).
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```

@@ -1,0 +1,170 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Assistant IA C-Connect.
+ *
+ * Deux usages :
+ *  - Chat contextuel (widget flottant du dashboard) : POST /assistant/chat
+ *  - Amélioration de texte (description produit/RFQ) : POST /assistant/improve-text
+ *
+ * Le rôle et la page courante de l'utilisateur sont envoyés par le frontend
+ * pour contextualiser les réponses (un acheteur et un vendeur n'ont pas les
+ * mêmes questions typiques).
+ *
+ * Dégradation gracieuse : si ANTHROPIC_API_KEY n'est pas configurée (ex. en
+ * dev local sans clé), l'endpoint répond 200 avec un message explicatif
+ * plutôt que de planter — le widget reste démontrable.
+ */
+class AssistantController extends Controller
+{
+    private const MAX_HISTORY_MESSAGES = 12;
+    private const MAX_MESSAGE_LENGTH = 2000;
+
+    public function chat(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:' . self::MAX_MESSAGE_LENGTH],
+            'context' => ['sometimes', 'nullable', 'string', 'max:200'],
+            'history' => ['sometimes', 'array', 'max:' . self::MAX_HISTORY_MESSAGES],
+            'history.*.role' => ['required_with:history', 'string', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:' . self::MAX_MESSAGE_LENGTH],
+        ]);
+
+        $user = $request->user();
+        $systemPrompt = $this->buildSystemPrompt($user?->role, $validated['context'] ?? null);
+
+        $messages = array_map(
+            static fn (array $m) => ['role' => $m['role'], 'content' => $m['content']],
+            $validated['history'] ?? []
+        );
+        $messages[] = ['role' => 'user', 'content' => $validated['message']];
+
+        $reply = $this->callAnthropic($systemPrompt, $messages, 600);
+
+        return response()->json(['data' => ['reply' => $reply]]);
+    }
+
+    /**
+     * Réécrit/améliore un texte court (description produit, besoin RFQ...)
+     * à partir de quelques mots-clés ou d'un brouillon — pensé pour des
+     * utilisateurs peu à l'aise à l'écrit, conformément au public cible du
+     * produit (littératie numérique limitée, cf. HUMAN_CENTERED_UX.md).
+     */
+    public function improveText(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'text' => ['required', 'string', 'max:' . self::MAX_MESSAGE_LENGTH],
+            'kind' => ['required', 'string', 'in:product_description,rfq_requirements'],
+        ]);
+
+        $instructions = match ($validated['kind']) {
+            'product_description' => "Tu es un rédacteur commercial expert pour une marketplace B2B camerounaise. "
+                . "Réécris la description produit suivante pour qu'elle soit professionnelle, claire et vendeuse, "
+                . "en 2 à 4 phrases courtes. Garde toutes les informations factuelles (quantités, qualité, origine) "
+                . "données par le vendeur — n'invente aucun fait, aucun chiffre, aucune certification. "
+                . "Réponds uniquement avec le texte amélioré, sans commentaire ni guillemets.",
+            'rfq_requirements' => "Tu es un assistant d'achat B2B expert. Réécris ce besoin d'approvisionnement "
+                . "pour qu'il soit précis et complet pour des fournisseurs (quantité, qualité attendue, délai si "
+                . "mentionné). Garde toutes les informations factuelles données — n'invente rien. Réponds "
+                . "uniquement avec le texte amélioré, sans commentaire ni guillemets.",
+        };
+
+        $improved = $this->callAnthropic($instructions, [
+            ['role' => 'user', 'content' => $validated['text']],
+        ], 300);
+
+        return response()->json(['data' => ['improved' => trim($improved)]]);
+    }
+
+    private function buildSystemPrompt(?string $role, ?string $context): string
+    {
+        $roleContext = match ($role) {
+            'seller' => "L'utilisateur est un VENDEUR (producteur, coopérative, fabricant, PME) sur C-Connect.",
+            'buyer' => "L'utilisateur est un ACHETEUR B2B (restaurant, hôtel, supermarché, grossiste...) sur C-Connect.",
+            'admin' => "L'utilisateur est un ADMINISTRATEUR de la plateforme C-Connect.",
+            default => "L'utilisateur découvre C-Connect.",
+        };
+
+        $pageContext = $context ? "Page actuelle : {$context}." : '';
+
+        return <<<PROMPT
+Tu es l'Assistant C-Connect, l'assistant intégré de C-Connect — une plateforme B2B de sourcing et
+d'approvisionnement professionnel qui connecte producteurs, coopératives et fabricants camerounais avec
+des restaurants, hôtels, supermarchés et autres acheteurs professionnels.
+
+Fonctionnalités clés de la plateforme que tu peux expliquer : profils entreprise vérifiés (RCCM/NIU),
+paiement en séquestre (l'argent n'est libéré au vendeur qu'après confirmation de réception par l'acheteur),
+appels d'offres (RFQ), négociation de prix, commandes récurrentes, gestion de litiges, Mobile Money
+(Orange Money / MTN MoMo).
+
+{$roleContext} {$pageContext}
+
+Règles :
+- Réponds en français, de façon concise (3-5 phrases maximum sauf si on te demande plus de détails).
+- Sois concret et pratique — évite le jargon technique inutile, le public cible a une littératie
+  numérique parfois limitée.
+- Si la question ne concerne pas C-Connect ou le commerce B2B, recentre poliment la conversation.
+- Ne donne jamais de conseil financier, juridique ou fiscal définitif — oriente vers un professionnel
+  pour ces sujets.
+- N'invente jamais de fonctionnalité qui n'existe pas sur la plateforme.
+PROMPT;
+    }
+
+    /**
+     * Appelle l'API Anthropic. Retourne un message explicatif (pas d'erreur
+     * HTTP) si la clé n'est pas configurée ou si l'appel échoue, pour que le
+     * widget frontend reste toujours utilisable/démontrable.
+     */
+    private function callAnthropic(string $systemPrompt, array $messages, int $maxTokens): string
+    {
+        $apiKey = config('services.anthropic.api_key');
+
+        if (!$apiKey) {
+            return "L'assistant IA n'est pas encore configuré sur cet environnement "
+                . "(clé ANTHROPIC_API_KEY manquante côté serveur). Contactez l'équipe technique.";
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])
+                ->timeout(20)
+                ->post('https://api.anthropic.com/v1/messages', [
+                    'model' => config('services.anthropic.model'),
+                    'max_tokens' => $maxTokens,
+                    'system' => $systemPrompt,
+                    'messages' => $messages,
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('Assistant IA : appel Anthropic échoué', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return "Désolé, l'assistant IA rencontre un problème temporaire. Réessayez dans un instant.";
+            }
+
+            $text = collect($response->json('content', []))
+                ->firstWhere('type', 'text')['text'] ?? null;
+
+            return $text ?? "Désolé, je n'ai pas pu générer de réponse. Réessayez.";
+        } catch (\Throwable $e) {
+            Log::error('Assistant IA : exception lors de l\'appel Anthropic', ['error' => $e->getMessage()]);
+
+            return "Désolé, l'assistant IA est momentanément indisponible. Réessayez dans un instant.";
+        }
+    }
+}

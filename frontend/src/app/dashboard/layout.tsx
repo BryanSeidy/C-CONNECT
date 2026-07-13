@@ -6,6 +6,7 @@ import { Bell, Loader2, Menu, Search, ShieldOff } from 'lucide-react';
 import Link from 'next/link';
 import { Sidebar } from '@/components/Sidebar';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
+import { AIAssistantWidget } from '@/components/AIAssistantWidget';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Layout.module.css';
 
@@ -204,6 +205,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isForbidden ? <ForbiddenNotice /> : children}
         </main>
       </div>
+
+      <AIAssistantWidget />
     </div>
   );
 }
