@@ -39,6 +39,25 @@ return [
         'secret' => env('CCONNECT_WEBHOOK_SECRET', 'local-cconnect-webhook-secret'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Orange Money Core API (OM-CORE 1.0.2)
+    |--------------------------------------------------------------------------
+    | Identifiants obtenus via le portail développeur Orange (apiis.orange.cm).
+    | Flux Merchant Payment : /mp/init -> /mp/pay -> /mp/paymentstatus.
+    | En sandbox : https://api-s1.orange.cm
+    | En production : même host (à confirmer après activation).
+    */
+    'orange_money' => [
+        'base_url' => env('ORANGE_MONEY_BASE_URL', 'https://api-s1.orange.cm'),
+        'auth_token' => env('ORANGE_MONEY_AUTH_TOKEN', ''),
+        'consumer_key' => env('ORANGE_MONEY_CONSUMER_KEY', ''),
+        'consumer_secret' => env('ORANGE_MONEY_CONSUMER_SECRET', ''),
+        'channel_msisdn' => env('ORANGE_MONEY_CHANNEL_MSISDN', ''),
+        'pin' => env('ORANGE_MONEY_PIN', ''),
+        'mode' => env('ORANGE_MONEY_MODE', 'sandbox'), // sandbox|production
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID',),
         'client_secret' => env('GOOGLE_CLIENT_SECRET',),
