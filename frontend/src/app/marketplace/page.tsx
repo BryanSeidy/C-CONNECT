@@ -5,7 +5,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Footer } from '@/components/Footer';
-import { productService } from '@/services/products';
+import { productService, ProductSort } from '@/services/products';
 import { PaginationMeta, Product } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from './Marketplace.module.css';
@@ -27,6 +27,7 @@ export default function MarketplacePage() {
   const [cooperativeOnly, setCooperativeOnly] = useState(false);
   const [womenLedOnly, setWomenLedOnly] = useState(false);
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [sort, setSort] = useState<ProductSort>('recent');
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const debouncedSearch = useDebounce(search, 400);
@@ -43,6 +44,7 @@ export default function MarketplacePage() {
         cooperative: cooperativeOnly || undefined,
         womenLed: womenLedOnly || undefined,
         availableOnly: availableOnly || undefined,
+        sort,
         page,
         pageSize: PAGE_SIZE
       });
@@ -55,7 +57,7 @@ export default function MarketplacePage() {
     } finally {
       setLoading(false);
     }
-  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, page]);
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort, page]);
 
   useEffect(() => {
     fetchProducts();
@@ -63,7 +65,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly]);
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort]);
 
   const skeletonItems = useMemo(() => Array.from({ length: 6 }, (_, idx) => idx), []);
   const hasPreviousPage = page > 1;
@@ -112,6 +114,16 @@ export default function MarketplacePage() {
                 {CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
+              </select>
+              <select
+                className={styles.select}
+                value={sort}
+                onChange={(e) => setSort(e.target.value as ProductSort)}
+                aria-label="Trier les produits"
+              >
+                <option value="recent">Plus récents</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
               </select>
             </div>
           </div>

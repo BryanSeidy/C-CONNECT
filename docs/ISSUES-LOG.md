@@ -409,3 +409,18 @@ Ajout de `NegotiationOrderTest` (6 tests, tous passants) qui valide le correctif
 **Total tests backend métier : 47 tests passants** (7 suites).
 
 **Fichiers touchés :** `backend/tests/Feature/NegotiationOrderTest.php`, `backend/database/factories/NegotiationFactory.php`.
+
+---
+
+## 2026-07-11 — Claude2 : Système de panier + tri catalogue
+
+**Décision d'architecture (panier) :** `Order.seller_id` est singulier — une commande C-Connect ne concerne qu'un seul fournisseur (cohérent avec l'escrow/commission calculés par commande). `OrderController::store` acceptait déjà `product_id`+`quantity` (un seul article). Plutôt que de créer une commande par article du panier (ce qu'aurait fait un panier purement frontend sans y toucher), j'ai étendu `store()` pour accepter un tableau `items[]` — `OrderItem` était déjà conçu pour porter plusieurs lignes par commande (`belongsTo` simple, pas de contrainte d'unicité sur `order_id`), donc c'est une extension du modèle existant, pas un contournement. Le panier frontend groupe par `sellerId` et appelle l'endpoint une fois par groupe ; si jamais des IDs de produits de vendeurs différents sont envoyés dans un même appel, le backend rejette explicitement (422) plutôt que de mal attribuer la commande.
+
+Rétrocompatible : l'appel mono-produit historique (`marketplace/[slug]` → achat direct, y compris le flux prix négocié) continue de fonctionner sans changement.
+
+**Livré :**
+- Backend : `OrderController::store` accepte `items[]` (multi-articles, même vendeur), verrouille tous les produits dans un ordre stable (tri par id) pour éviter les deadlocks si deux paniers se recoupent. `ProductController::index` accepte `sort=price_asc|price_desc|recent`.
+- Frontend : `context/CartContext.tsx` (persistant localStorage, groupé par vendeur), icône panier + badge dans `Navbar`, page `/cart` (formulaire de livraison partagé, une commande par groupe-vendeur), bouton "Ajouter au panier" sur `ProductCard` et la fiche produit. Tri par prix ajouté à la marketplace (la recherche était déjà debouncée par une session précédente).
+- Les articles issus d'une négociation acceptée (`negotiationId` sur la ligne) gardent leur prix/quantité verrouillés dans le panier — pas de fusion avec une éventuelle ligne catalogue du même produit.
+
+**Non vérifié en conditions réelles** (pas d'accès DB dans ce sandbox) : tester un panier multi-vendeurs de bout en bout, et confirmer qu'aucun autre agent n'a un flux de checkout qui suppose encore un article unique par commande.

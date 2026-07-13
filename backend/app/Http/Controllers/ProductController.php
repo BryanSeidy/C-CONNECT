@@ -79,7 +79,15 @@ class ProductController extends Controller
 
         $pageSize  = min((int) $request->input('pageSize', 12), 50);
         $page      = max((int) $request->input('page', 1), 1);
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($pageSize, ['*'], 'page', $page);
+
+        $sort = $request->input('sort', 'recent');
+        $query = match ($sort) {
+            'price_asc'  => $query->orderBy('prix', 'asc'),
+            'price_desc' => $query->orderBy('prix', 'desc'),
+            default      => $query->orderBy('created_at', 'desc'),
+        };
+
+        $paginated = $query->paginate($pageSize, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,

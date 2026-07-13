@@ -2,15 +2,38 @@ import Link from 'next/link';
 import { Product } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import styles from './ProductCard.module.css';
 import { getRegionLabel } from '@/lib/regions';
-import { MapPin, ShieldCheck, Star } from 'lucide-react';
+import { MapPin, ShieldCheck, ShoppingCart, Star } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export const ProductCard = ({ product }: { product: Product }) => {
   const ratings = product.reviews?.map((r) => r.rating) || [];
   const avgRating = ratings.length > 0 ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1) : null;
   const vendorName = product.producer?.companyName || product.producer?.fullName || 'Producteur Cameroun';
   const isVerified = product.producer?.isVerified;
+  const { addItem, isInCart } = useCart();
+  const { showToast } = useToast();
+  const inCart = isInCart(Number(product.id));
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      productId: Number(product.id),
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      unite: product.unite,
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      sellerId: Number(product.producerId),
+      sellerName: vendorName,
+    });
+    showToast(`« ${product.name} » ajouté au panier.`, 'success');
+  };
 
   return (
     <Card style={{ cursor: 'pointer', transition: 'all 0.3s ease', overflow: 'hidden' }}>
@@ -102,12 +125,25 @@ export const ProductCard = ({ product }: { product: Product }) => {
           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>FCFA</span>
         </div>
 
-        <Link 
-          href={`/marketplace/${product.slug || product.id}`}
-          className={styles.productLink}
-        >
-          Voir les détails
-        </Link>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+          <Link
+            href={`/marketplace/${product.slug || product.id}`}
+            className={styles.productLink}
+            style={{ flex: 1 }}
+          >
+            Voir les détails
+          </Link>
+          <Button
+            variant={inCart ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={handleAddToCart}
+            disabled={product.stock === 0}
+            aria-label={`Ajouter ${product.name} au panier`}
+            title="Ajouter au panier"
+          >
+            <ShoppingCart size={16} aria-hidden="true" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
