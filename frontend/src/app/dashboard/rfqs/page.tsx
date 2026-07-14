@@ -66,6 +66,8 @@ export default function DashboardRfqs() {
   const [submitting, setSubmitting] = useState(false);
   const [bidForms, setBidForms] = useState<Record<string, { prix: string; quantite: string; message: string }>>({});
   const [actionId, setActionId] = useState<string | null>(null);
+  const [comparingRfqId, setComparingRfqId] = useState<string | null>(null);
+  const [comparisons, setComparisons] = useState<Record<string, string>>({});
 
   const fetchRfqs = useCallback(async () => {
     setLoading(true);
@@ -153,6 +155,20 @@ export default function DashboardRfqs() {
       setError(extractApiError(err, 'Action impossible.'));
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleCompareBids = async (rfqId: string) => {
+    setComparingRfqId(rfqId);
+    try {
+      const comparison = await rfqService.compareBids(rfqId);
+      if (comparison) {
+        setComparisons((prev) => ({ ...prev, [rfqId]: comparison }));
+      } else {
+        setError('Comparaison assistée momentanément indisponible. Comparez les offres ci-dessous manuellement.');
+      }
+    } finally {
+      setComparingRfqId(null);
     }
   };
 
@@ -382,7 +398,42 @@ export default function DashboardRfqs() {
 
                 {isBuyer && rfq.bids && rfq.bids.length > 0 && (
                   <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>Offres reçues</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>Offres reçues</h4>
+                      {rfq.bids.filter((b) => b.statut === 'en_attente').length >= 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleCompareBids(String(rfq.id))}
+                          disabled={comparingRfqId === String(rfq.id)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                            padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600,
+                            color: 'var(--primary-color)', background: 'var(--c-green-50, #F5FAF7)',
+                            border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-full, 999px)',
+                            cursor: comparingRfqId === String(rfq.id) ? 'not-allowed' : 'pointer',
+                            opacity: comparingRfqId === String(rfq.id) ? 0.6 : 1,
+                          }}
+                        >
+                          {comparingRfqId === String(rfq.id) ? (
+                            <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+                          ) : (
+                            <Sparkles size={13} aria-hidden="true" />
+                          )}
+                          Comparer les offres avec l&apos;IA
+                        </button>
+                      )}
+                    </div>
+
+                    {comparisons[String(rfq.id)] && (
+                      <div style={{
+                        display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem',
+                        background: 'var(--c-gold-100, #fdf3d8)', borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.8125rem', color: 'var(--primary-color)', lineHeight: 1.5,
+                      }}>
+                        <Sparkles size={15} aria-hidden="true" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+                        <span>{comparisons[String(rfq.id)]}</span>
+                      </div>
+                    )}
                     {rfq.bids.map((bid) => (
                       <div
                         key={bid.id}

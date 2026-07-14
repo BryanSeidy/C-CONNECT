@@ -206,6 +206,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/', [RfqController::class, 'storeBid'])->name('store');
             Route::post('/{bid}/accept', [RfqController::class, 'acceptBid'])->name('accept');
             Route::post('/{bid}/reject', [RfqController::class, 'rejectBid'])->name('reject');
+            Route::post('/compare', [RfqController::class, 'compareBids'])
+                ->middleware('throttle:15,1')
+                ->name('compare');
         });
     });
 
