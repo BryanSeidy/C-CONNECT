@@ -84,6 +84,54 @@ class AiClient
     }
 
     /**
+     * Variante multi-tour (historique de conversation) — utilisée par
+     * l'assistant contextuel (AssistantController::chat). $messages est une
+     * liste de ['role' => 'user'|'assistant', 'content' => string].
+     *
+     * @param array<int, array{role: string, content: string}> $messages
+     */
+    public function completeConversation(string $system, array $messages, int $maxTokens = 512): ?string
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => config('services.anthropic.api_key'),
+                'anthropic-version' => self::API_VERSION,
+                'content-type' => 'application/json',
+            ])
+                ->timeout(self::TIMEOUT_SECONDS)
+                ->post(self::API_URL, [
+                    'model' => config('services.anthropic.model', self::DEFAULT_MODEL),
+                    'max_tokens' => $maxTokens,
+                    'system' => $system,
+                    'messages' => $messages,
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('AiClient: réponse non-2xx de l\'API Anthropic (conversation)', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return null;
+            }
+
+            $textBlocks = collect($response->json('content', []))
+                ->where('type', 'text')
+                ->pluck('text');
+
+            return $textBlocks->isNotEmpty() ? $textBlocks->implode("\n") : null;
+        } catch (\Throwable $e) {
+            Log::warning('AiClient: exception lors de l\'appel à l\'API Anthropic (conversation)', [
+                'message' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Variante qui demande explicitement un objet JSON en sortie et le
      * décode. Retourne null si l'IA n'est pas configurée, si l'appel échoue,
      * ou si la réponse n'est pas un JSON valide (ne jamais faire confiance

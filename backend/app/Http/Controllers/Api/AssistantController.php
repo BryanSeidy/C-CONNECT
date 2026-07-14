@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Assistant IA C-Connect.
@@ -21,14 +20,16 @@ use Illuminate\Support\Facades\Log;
  * pour contextualiser les réponses (un acheteur et un vendeur n'ont pas les
  * mêmes questions typiques).
  *
- * Dégradation gracieuse : si ANTHROPIC_API_KEY n'est pas configurée (ex. en
- * dev local sans clé), l'endpoint répond 200 avec un message explicatif
- * plutôt que de planter — le widget reste démontrable.
+ * Appels Anthropic délégués à App\Services\AiClient (partagé avec
+ * SmartSearchController) — voir AiClient pour la dégradation gracieuse sans
+ * clé configurée.
  */
 class AssistantController extends Controller
 {
     private const MAX_HISTORY_MESSAGES = 12;
     private const MAX_MESSAGE_LENGTH = 2000;
+
+    public function __construct(private readonly AiClient $ai) {}
 
     public function chat(Request $request): JsonResponse
     {
@@ -49,7 +50,8 @@ class AssistantController extends Controller
         );
         $messages[] = ['role' => 'user', 'content' => $validated['message']];
 
-        $reply = $this->callAnthropic($systemPrompt, $messages, 600);
+        $reply = $this->ai->completeConversation($systemPrompt, $messages, 600)
+            ?? $this->unavailableMessage();
 
         return response()->json(['data' => ['reply' => $reply]]);
     }
@@ -79,11 +81,18 @@ class AssistantController extends Controller
                 . "uniquement avec le texte amélioré, sans commentaire ni guillemets.",
         };
 
-        $improved = $this->callAnthropic($instructions, [
-            ['role' => 'user', 'content' => $validated['text']],
-        ], 300);
+        $improved = $this->ai->complete($instructions, $validated['text'], 300)
+            ?? $validated['text'];
 
         return response()->json(['data' => ['improved' => trim($improved)]]);
+    }
+
+    private function unavailableMessage(): string
+    {
+        return $this->ai->isConfigured()
+            ? "Désolé, l'assistant IA rencontre un problème temporaire. Réessayez dans un instant."
+            : "L'assistant IA n'est pas encore configuré sur cet environnement "
+                . "(clé ANTHROPIC_API_KEY manquante côté serveur). Contactez l'équipe technique.";
     }
 
     private function buildSystemPrompt(?string $role, ?string $context): string
@@ -120,51 +129,4 @@ Règles :
 PROMPT;
     }
 
-    /**
-     * Appelle l'API Anthropic. Retourne un message explicatif (pas d'erreur
-     * HTTP) si la clé n'est pas configurée ou si l'appel échoue, pour que le
-     * widget frontend reste toujours utilisable/démontrable.
-     */
-    private function callAnthropic(string $systemPrompt, array $messages, int $maxTokens): string
-    {
-        $apiKey = config('services.anthropic.api_key');
-
-        if (!$apiKey) {
-            return "L'assistant IA n'est pas encore configuré sur cet environnement "
-                . "(clé ANTHROPIC_API_KEY manquante côté serveur). Contactez l'équipe technique.";
-        }
-
-        try {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])
-                ->timeout(20)
-                ->post('https://api.anthropic.com/v1/messages', [
-                    'model' => config('services.anthropic.model'),
-                    'max_tokens' => $maxTokens,
-                    'system' => $systemPrompt,
-                    'messages' => $messages,
-                ]);
-
-            if (!$response->successful()) {
-                Log::warning('Assistant IA : appel Anthropic échoué', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return "Désolé, l'assistant IA rencontre un problème temporaire. Réessayez dans un instant.";
-            }
-
-            $text = collect($response->json('content', []))
-                ->firstWhere('type', 'text')['text'] ?? null;
-
-            return $text ?? "Désolé, je n'ai pas pu générer de réponse. Réessayez.";
-        } catch (\Throwable $e) {
-            Log::error('Assistant IA : exception lors de l\'appel Anthropic', ['error' => $e->getMessage()]);
-
-            return "Désolé, l'assistant IA est momentanément indisponible. Réessayez dans un instant.";
-        }
-    }
 }

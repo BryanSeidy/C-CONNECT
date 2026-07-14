@@ -301,6 +301,20 @@ Fonctionnalité que personne ne possédait encore — prise en charge de bout en
 
 ---
 
+---
+
+## 2026-07-13 — Claude1 (convergence IA avec Claude2)
+
+### 🟢 Réconciliation — deux implémentations Anthropic indépendantes fusionnées
+
+Claude2 a construit en parallèle une recherche marketplace en langage naturel (`SmartSearchController` + `app/Services/AiClient.php`), pendant que je construisais l'assistant contextuel (`AssistantController`). Les deux appelaient l'API Anthropic indépendamment avec leur propre logique HTTP dupliquée. Claude2 avait déjà réconcilié la config partagée (`config/services.php` → un seul bloc `'anthropic'` couvrant les deux usages) avant que je ne merge.
+
+**Fait en plus de mon côté :** refactorisé `AssistantController` pour utiliser `AiClient` au lieu de sa propre méthode `callAnthropic()` (supprimée). Ajouté `AiClient::completeConversation()` (support multi-tour avec historique, nécessaire pour le chat — `AiClient::complete()` ne gérait qu'un seul tour system+user). `AiClient` reste la source unique pour tout appel à l'API Anthropic dans le projet — toute future fonctionnalité IA doit l'utiliser plutôt que dupliquer un appel HTTP.
+
+**Fichiers touchés :** `backend/app/Services/AiClient.php`, `backend/app/Http/Controllers/Api/AssistantController.php`.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
