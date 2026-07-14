@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Rfq;
 use App\Models\RfqBid;
+use App\Services\AiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -192,16 +193,84 @@ class RfqController extends Controller
     }
 
     /**
-     * Reject a bid — buyer only.
+     * Comparaison assistée par IA des offres reçues sur un RFQ — aide
+     * l'acheteur à trancher rapidement entre plusieurs offres (prix,
+     * fournisseur vérifié, quantité, délai), sans jamais décider à sa place :
+     * l'IA met en évidence les compromis, l'acheteur reste seul décisionnaire
+     * (accept/reject restent des actions manuelles distinctes).
+     *
+     * Fonctionnalité IA "plus" — se dégrade proprement si AiClient n'est pas
+     * configuré ; la comparaison manuelle (liste des offres déjà affichée)
+     * reste pleinement fonctionnelle sans elle.
      */
-    public function rejectBid(Request $request, Rfq $rfq, RfqBid $bid): JsonResponse
+    public function compareBids(Request $request, Rfq $rfq, AiClient $ai): JsonResponse
     {
         if ($request->user()->id !== $rfq->buyer_id) {
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
-        $bid->reject();
+        $bids = $rfq->bids()->where('statut', 'en_attente')->with('seller.user:id,nom,prenom,companyName')->get();
 
-        return response()->json(['success' => true, 'data' => $bid->fresh(), 'message' => 'Offre refusée.']);
+        if ($bids->count() < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Au moins deux offres en attente sont nécessaires pour une comparaison.',
+            ]);
+        }
+
+        if (!$ai->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Comparaison assistée momentanément indisponible.',
+            ]);
+        }
+
+        $bidsList = $bids->map(function (RfqBid $bid, int $i) {
+            $sellerName = $bid->seller?->user?->companyName ?? $bid->seller?->business_name ?? 'Fournisseur ' . ($i + 1);
+            $verified = ($bid->seller?->user?->isVerified ?? false) ? 'vérifié' : 'non vérifié';
+            return sprintf(
+                "Offre %d — %s (%s) : %s XAF/unité, %s %s disponibles, livraison proposée le %s.%s",
+                $i + 1,
+                $sellerName,
+                $verified,
+                number_format((float) $bid->prix_unitaire_propose, 0, ',', ' '),
+                $bid->quantite_disponible,
+                $rfq->unite,
+                $bid->date_livraison_proposee?->format('d/m/Y') ?? 'non précisée',
+                $bid->message ? ' Message du fournisseur : ' . $bid->message : ''
+            );
+        })->implode("\n");
+
+        $system = <<<SYS
+Tu es un assistant d'achat B2B pour C-Connect, un marketplace camerounais.
+Un acheteur professionnel a reçu plusieurs offres pour un même besoin
+d'approvisionnement et doit choisir laquelle accepter.
+
+Rédige une comparaison courte (4 à 6 phrases, en français) qui :
+- met en évidence les compromis entre les offres (prix, fiabilité du
+  fournisseur, quantité, délai de livraison)
+- ne recommande JAMAIS explicitement "choisissez l'offre X" — l'acheteur
+  décide seul ; tu informes, tu ne décides pas
+- reste strictement factuelle sur les informations fournies, n'invente rien
+- ton neutre et professionnel, pas de superlatifs
+
+Réponds uniquement avec le texte de la comparaison, sans titre, sans liste à
+puces, sans markdown.
+SYS;
+
+        $user = "Besoin : {$rfq->titre} — quantité recherchée : {$rfq->quantite} {$rfq->unite}"
+            . ($rfq->budget_max ? ", budget max indicatif : " . number_format((float) $rfq->budget_max, 0, ',', ' ') . " XAF/unité" : '')
+            . ".\n\nOffres reçues :\n{$bidsList}";
+
+        $comparison = $ai->complete($system, $user, 400);
+
+        if ($comparison === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Comparaison assistée momentanément indisponible.',
+            ]);
+        }
+
+        return response()->json(['success' => true, 'data' => ['comparison' => trim($comparison)]]);
     }
 }

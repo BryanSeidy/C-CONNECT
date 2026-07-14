@@ -53,6 +53,13 @@ Route::prefix('catalogue')->name('catalogue.')->group(function (): void {
             'show'  => 'products.show',
         ]);
 
+    // Recherche marketplace en langage naturel (IA) — publique, comme le
+    // reste du catalogue. Se dégrade proprement si l'IA n'est pas configurée.
+    // Throttle : chaque appel coûte un appel API IA réel, endpoint public.
+    Route::post('search/smart', [\App\Http\Controllers\SmartSearchController::class, 'parse'])
+        ->middleware('throttle:20,1')
+        ->name('search.smart');
+
     Route::apiResource('companies', CompanyController::class)
         ->only(['index', 'show'])
         ->names([
@@ -64,7 +71,10 @@ Route::prefix('catalogue')->name('catalogue.')->group(function (): void {
 // --- Demandes de devis (RFQ) publiques ---
 Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
     Route::get('/', [RfqController::class, 'index'])->name('index');
-    Route::get('/{rfq}', [RfqController::class, 'show'])->name('show');
+    // Contrainte numérique impérative : sans elle, cette route générique
+    // intercepterait /rfqs/matches/for-seller (route authentifiée définie
+    // plus bas) en essayant de résoudre un Rfq #"matches".
+    Route::get('/{rfq}', [RfqController::class, 'show'])->where('rfq', '[0-9]+')->name('show');
 });
 
 // --- Authentification ---
@@ -191,6 +201,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // --- Demandes de devis (RFQ) ---
     Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
         Route::get('/mine/list', [RfqController::class, 'mine'])->name('mine');
+        Route::get('/matches/for-seller', [\App\Http\Controllers\RfqMatchController::class, 'forSeller'])
+            ->middleware('throttle:15,1')
+            ->name('matches.for-seller');
         Route::post('/', [RfqController::class, 'store'])->name('store');
         Route::delete('/{rfq}', [RfqController::class, 'destroy'])->name('destroy');
 
@@ -199,6 +212,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post('/', [RfqController::class, 'storeBid'])->name('store');
             Route::post('/{bid}/accept', [RfqController::class, 'acceptBid'])->name('accept');
             Route::post('/{bid}/reject', [RfqController::class, 'rejectBid'])->name('reject');
+            Route::post('/compare', [RfqController::class, 'compareBids'])
+                ->middleware('throttle:15,1')
+                ->name('compare');
         });
     });
 

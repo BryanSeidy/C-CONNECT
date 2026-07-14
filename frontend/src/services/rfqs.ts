@@ -141,6 +141,23 @@ export const rfqService = {
     const res = await apiClient.post<unknown, ApiEnvelope<RawRfqBid>>(`/rfqs/${rfqId}/bids/${bidId}/reject`);
     return { ...res, data: normalizeBid(res.data) };
   },
+
+  /**
+   * Comparaison assistée par IA des offres en attente sur un RFQ (2+
+   * nécessaires). Retourne `null` si l'IA n'est pas configurée/échoue ou
+   * s'il n'y a pas assez d'offres — l'appelant doit alors laisser l'acheteur
+   * comparer manuellement la liste déjà affichée, jamais bloquer sur ceci.
+   */
+  compareBids: async (rfqId: number | string): Promise<string | null> => {
+    try {
+      const res = await apiClient.post<unknown, { success: boolean; data?: { comparison: string }; message?: string }>(
+        `/rfqs/${rfqId}/bids/compare`
+      );
+      return res.success && res.data ? res.data.comparison : null;
+    } catch {
+      return null;
+    }
+  },
 };
 
 export { normalizeRfq, normalizeBid };

@@ -301,6 +301,20 @@ Fonctionnalité que personne ne possédait encore — prise en charge de bout en
 
 ---
 
+---
+
+## 2026-07-13 — Claude1 (convergence IA avec Claude2)
+
+### 🟢 Réconciliation — deux implémentations Anthropic indépendantes fusionnées
+
+Claude2 a construit en parallèle une recherche marketplace en langage naturel (`SmartSearchController` + `app/Services/AiClient.php`), pendant que je construisais l'assistant contextuel (`AssistantController`). Les deux appelaient l'API Anthropic indépendamment avec leur propre logique HTTP dupliquée. Claude2 avait déjà réconcilié la config partagée (`config/services.php` → un seul bloc `'anthropic'` couvrant les deux usages) avant que je ne merge.
+
+**Fait en plus de mon côté :** refactorisé `AssistantController` pour utiliser `AiClient` au lieu de sa propre méthode `callAnthropic()` (supprimée). Ajouté `AiClient::completeConversation()` (support multi-tour avec historique, nécessaire pour le chat — `AiClient::complete()` ne gérait qu'un seul tour system+user). `AiClient` reste la source unique pour tout appel à l'API Anthropic dans le projet — toute future fonctionnalité IA doit l'utiliser plutôt que dupliquer un appel HTTP.
+
+**Fichiers touchés :** `backend/app/Services/AiClient.php`, `backend/app/Http/Controllers/Api/AssistantController.php`.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```
@@ -448,3 +462,19 @@ Rétrocompatible : l'appel mono-produit historique (`marketplace/[slug]` → ach
 - Les articles issus d'une négociation acceptée (`negotiationId` sur la ligne) gardent leur prix/quantité verrouillés dans le panier — pas de fusion avec une éventuelle ligne catalogue du même produit.
 
 **Non vérifié en conditions réelles** (pas d'accès DB dans ce sandbox) : tester un panier multi-vendeurs de bout en bout, et confirmer qu'aucun autre agent n'a un flux de checkout qui suppose encore un article unique par commande.
+
+---
+
+## 2026-07-11 (suite) — Claude2 : Matching IA RFQ ↔ vendeur
+
+**Coordination :** Claude1 a construit de bout en bout l'assistant IA contextuel + amélioration de texte (description produit / RFQ) — voir son travail sur `AssistantController`. Plutôt que de dupliquer (j'avais commencé une génération de description par IA avant d'être informé, annulée), j'ai identifié un axe complémentaire non couvert : les RFQ ouvertes sont listées uniformément à tous les vendeurs, sans aucun classement par pertinence — un fournisseur peut facilement rater une opportunité pertinente noyée dans la liste.
+
+**Livré :** `RfqMatchController::forSeller` (`GET /rfqs/matches/for-seller`, vendeur uniquement, throttle 15/min) — réutilise `App\Services\AiClient` (construit par Zai pour la recherche marketplace, invitation explicite à la réutilisation dans son commentaire). Envoie à l'IA le catalogue actif du vendeur + les RFQ ouvertes (max 25), reçoit un classement JSON `{rfq_id, score 1-5, reason}` (max 5 résultats), filtré strictement contre les IDs réellement envoyés pour éviter toute donnée fabriquée. Dégradation propre : IA non configurée / vendeur sans produits / erreur → liste vide, la page RFQ fonctionne normalement sans section recommandation.
+
+**Frontend :** `services/rfqMatch.ts`, intégré dans `dashboard/rfqs/page.tsx` — les RFQ correspondantes remontent en tête de liste (triées par score) avec un badge « Recommandé pour vous — {raison} ».
+
+**Bug de routing trouvé et corrigé au passage :** `GET /rfqs/{rfq}` (public, sans contrainte) était déclaré avant `GET /rfqs/matches/for-seller` (authentifié) — Laravel aurait tenté de résoudre un `Rfq` d'ID littéral `"matches"`, interceptant silencieusement ma nouvelle route. Ajouté `->where('rfq', '[0-9]+')` sur la route publique.
+
+**Fichiers touchés :** `backend/app/Http/Controllers/RfqMatchController.php`, `backend/routes/api.php`, `frontend/src/services/rfqMatch.ts`, `frontend/src/app/dashboard/rfqs/page.tsx`.
+
+**Non vérifié en conditions réelles** (pas de clé `ANTHROPIC_API_KEY` ni de DB dans ce sandbox) : tester le classement avec de vraies données produits/RFQ avant démo.
