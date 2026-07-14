@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { rfqService } from '@/services/rfqs';
+import { rfqMatchService, RfqMatch } from '@/services/rfqMatch';
 import { assistantService } from '@/services/assistant';
 import { Rfq, RfqBid } from '@/types';
 import { REGION_OPTIONS } from '@/lib/regions';
@@ -68,6 +69,17 @@ export default function DashboardRfqs() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [comparingRfqId, setComparingRfqId] = useState<string | null>(null);
   const [comparisons, setComparisons] = useState<Record<string, string>>({});
+  const [matches, setMatches] = useState<Record<number, RfqMatch>>({});
+
+  useEffect(() => {
+    if (isBuyer) return;
+    let active = true;
+    rfqMatchService.getMatchesForSeller().then((list) => {
+      if (!active) return;
+      setMatches(Object.fromEntries(list.map((m) => [m.rfqId, m])));
+    });
+    return () => { active = false; };
+  }, [isBuyer]);
 
   const fetchRfqs = useCallback(async () => {
     setLoading(true);
@@ -367,7 +379,7 @@ export default function DashboardRfqs() {
         </Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {rfqs.map((rfq) => (
+          {[...rfqs].sort((a, b) => (matches[Number(b.id)]?.score ?? 0) - (matches[Number(a.id)]?.score ?? 0)).map((rfq) => (
             <Card key={rfq.id}>
               <CardContent style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
@@ -394,6 +406,18 @@ export default function DashboardRfqs() {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600 }}>
                     <ShieldCheck size={13} aria-hidden="true" /> Fournisseur vérifié exigé
                   </span>
+                )}
+
+                {!isBuyer && matches[Number(rfq.id)] && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    background: 'var(--c-gold-100, #fdf3d8)', color: 'var(--primary-color)',
+                    fontSize: '0.8125rem', fontWeight: 600, padding: '0.5rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                  }}>
+                    <Sparkles size={14} aria-hidden="true" />
+                    Recommandé pour vous — {matches[Number(rfq.id)].reason}
+                  </div>
                 )}
 
                 {isBuyer && rfq.bids && rfq.bids.length > 0 && (

@@ -71,7 +71,10 @@ Route::prefix('catalogue')->name('catalogue.')->group(function (): void {
 // --- Demandes de devis (RFQ) publiques ---
 Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
     Route::get('/', [RfqController::class, 'index'])->name('index');
-    Route::get('/{rfq}', [RfqController::class, 'show'])->name('show');
+    // Contrainte numérique impérative : sans elle, cette route générique
+    // intercepterait /rfqs/matches/for-seller (route authentifiée définie
+    // plus bas) en essayant de résoudre un Rfq #"matches".
+    Route::get('/{rfq}', [RfqController::class, 'show'])->where('rfq', '[0-9]+')->name('show');
 });
 
 // --- Authentification ---
@@ -198,6 +201,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // --- Demandes de devis (RFQ) ---
     Route::prefix('rfqs')->name('rfqs.')->group(function (): void {
         Route::get('/mine/list', [RfqController::class, 'mine'])->name('mine');
+        Route::get('/matches/for-seller', [\App\Http\Controllers\RfqMatchController::class, 'forSeller'])
+            ->middleware('throttle:15,1')
+            ->name('matches.for-seller');
         Route::post('/', [RfqController::class, 'store'])->name('store');
         Route::delete('/{rfq}', [RfqController::class, 'destroy'])->name('destroy');
 
