@@ -21,6 +21,7 @@ import {
 import { Footer } from '@/components/Footer';
 import { EscrowTracker } from '@/components/landing/EscrowTracker';
 import { ProductPreview } from '@/components/landing/ProductPreview';
+import { RegionSelector3D } from '@/components/landing/RegionSelector3D';
 import { FaqAccordion } from '@/components/landing/FaqAccordion';
 import styles from './Home.module.css';
 
@@ -237,6 +238,16 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* SÉLECTEUR DE RÉGIONS 3D */}
+        <section className={styles.section} style={{ paddingTop: '1.5rem' }}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionLabel}>Couverture nationale</span>
+            <h2>Des fournisseurs dans les 10 régions du Cameroun.</h2>
+            <p>Faites pivoter le sélecteur ou touchez une région pour découvrir ce qui s&apos;y trouve.</p>
+          </div>
+          <RegionSelector3D />
         </section>
 
         {/* PROBLEM / SOLUTION */}
