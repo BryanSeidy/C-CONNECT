@@ -267,6 +267,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/users', [AdminController::class, 'users'])->name('users');
         Route::get('/disputes', [AdminController::class, 'disputes'])->name('disputes');
         Route::get('/companies', [AdminController::class, 'companies'])->name('companies');
+        Route::get('/health', [AdminController::class, 'health'])->name('health');
     });
 
 }); // Fin des routes protégées

@@ -103,4 +103,86 @@ class AdminController extends Controller
             'data' => $query->map(fn ($c) => $c->append('badges')),
         ]);
     }
+
+    /**
+     * Santé système — introspection réelle (DB, cache, disque, dernières
+     * erreurs applicatives), pas de métriques simulées. Pensé pour un tableau
+     * de bord admin, pas un remplacement d'outil de supervision dédié.
+     */
+    public function health(): JsonResponse
+    {
+        $checks = [];
+
+        $dbStart = microtime(true);
+        try {
+            \Illuminate\Support\Facades\DB::connection()->getPdo();
+            $checks['database'] = ['status' => 'ok', 'latencyMs' => round((microtime(true) - $dbStart) * 1000, 1)];
+        } catch (\Throwable $e) {
+            $checks['database'] = ['status' => 'down', 'message' => $e->getMessage()];
+        }
+
+        try {
+            $cacheKey = 'health_check_' . now()->timestamp;
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, 5);
+            $checks['cache'] = ['status' => \Illuminate\Support\Facades\Cache::get($cacheKey) === true ? 'ok' : 'degraded'];
+        } catch (\Throwable $e) {
+            $checks['cache'] = ['status' => 'down', 'message' => $e->getMessage()];
+        }
+
+        $checks['ai'] = ['status' => app(\App\Services\AiClient::class)->isConfigured() ? 'ok' : 'not_configured'];
+
+        $diskFree = @disk_free_space(storage_path());
+        $diskTotal = @disk_total_space(storage_path());
+        $checks['storage'] = $diskFree !== false && $diskTotal !== false
+            ? ['status' => ($diskFree / $diskTotal) < 0.1 ? 'warning' : 'ok', 'freePercent' => round(($diskFree / $diskTotal) * 100, 1)]
+            : ['status' => 'unknown'];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'checks' => $checks,
+                'recentErrors' => $this->tailRecentErrors(),
+                'checkedAt' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Dernières lignes ERROR/WARNING du log applicatif Laravel — lecture
+     * seule, bornée en taille pour rester léger même sur un gros fichier.
+     */
+    private function tailRecentErrors(int $limit = 15): array
+    {
+        $logPath = storage_path('logs/laravel.log');
+        if (!is_file($logPath) || !is_readable($logPath)) {
+            return [];
+        }
+
+        // Ne lit que les derniers ~256 Ko du fichier pour éviter de charger
+        // un log potentiellement volumineux en mémoire.
+        $maxBytes = 262144;
+        $size = filesize($logPath);
+        $handle = fopen($logPath, 'r');
+        if ($handle === false) {
+            return [];
+        }
+        if ($size > $maxBytes) {
+            fseek($handle, -$maxBytes, SEEK_END);
+        }
+        $chunk = fread($handle, $maxBytes) ?: '';
+        fclose($handle);
+
+        preg_match_all('/^\[(?<date>[\d\-: ]+)\].*?\.(?<level>ERROR|WARNING|CRITICAL): (?<message>.+)$/m', $chunk, $matches, PREG_SET_ORDER);
+
+        return collect($matches)
+            ->reverse()
+            ->take($limit)
+            ->map(fn ($m) => [
+                'date' => $m['date'],
+                'level' => $m['level'],
+                'message' => str($m['message'])->limit(220)->toString(),
+            ])
+            ->values()
+            ->all();
+    }
 }
