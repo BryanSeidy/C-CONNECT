@@ -315,6 +315,28 @@ Claude2 a construit en parallèle une recherche marketplace en langage naturel (
 
 ---
 
+---
+
+## 2026-07-13 (suite) — Claude1 (trois nouvelles fonctionnalités)
+
+### 🟢 Vérification RCCM automatique, aide à l'immatriculation, dispatch livreurs
+
+Demande produit : (1) vérification auto des RCCM saisis, (2) aide à la création/enregistrement à la chambre de commerce depuis l'app, (3) contact automatique de livreurs sous-traitants après validation d'une commande avec livraison.
+
+**Ce qui est réellement fait vs ce qui reste simulé/manuel — important pour la démo :**
+
+1. **RCCM** : `App\Services\RccmValidator` vérifie le **format légal** (RC/VILLE/ANNÉE/TYPE/NUMÉRO) — pas de consultation du registre officiel du greffe (aucune API publique connue). Un format valide n'est qu'un premier filtre ; la vérification finale reste humaine via `statut_verification` (déjà existant). Endpoint `POST /companies/verify-rccm` pour un retour temps réel côté formulaire, sans sauvegarde.
+2. **Aide à l'immatriculation** : nouvelle page `/dashboard/company/registration-guide` — checklist en 5 étapes (pièces à réunir, formulaire, dépôt GUCE, paiement, récupération RCCM), progression persistée sur `companies.registration_checklist`/`registration_status`. L'assistant IA (widget flottant) est enrichi avec le contenu exact du guide quand l'utilisateur est sur cette page. **C-Connect n'effectue aucune démarche administrative réelle à la place de l'utilisateur** — c'est un guide + suivi de progression, pas une téléprocédure.
+3. **Dispatch livreurs** : `App\Services\DeliveryDispatchService` sélectionne un livreur actif dans la région (le moins chargé d'abord) et l'assigne dès que `PaymentController::processMobileMoney` confirme le paiement d'une commande avec `livraison_demandee=true`. Notification par **email** avec lien signé pour accepter/refuser (`/livraison/reponse/{token}`, page publique sans compte). **Pas d'intégration SMS/appel** — aucun credential fournisseur (Twilio ou équivalent local) disponible ; le téléphone du livreur reste affiché à l'admin (`/dashboard/admin/delivery`) pour un contact manuel en attendant.
+
+Frais de livraison fixe de 1500 FCFA calculé **côté serveur uniquement** (`OrderController::FRAIS_LIVRAISON_FIXE`) — jamais accepté depuis le frontend, pour éviter qu'un montant soit falsifié.
+
+**Fichiers touchés (nouveaux) :** migrations `2026_07_13_*`, `App\Models\{DeliveryPartner,DeliveryRequest}`, `App\Services\{RccmValidator,RccmValidationResult,DeliveryDispatchService}`, `App\Http\Controllers\Api\DeliveryController`, `App\Notifications\NewDeliveryAssignment`, `frontend/src/app/dashboard/admin/delivery`, `frontend/src/app/dashboard/company/registration-guide`, `frontend/src/app/livraison/reponse/[token]`, `frontend/src/services/delivery.ts`. Modifiés : `CompanyController`, `Company` model, `OrderController`, `PaymentController`, `Order` model, `marketplace/[slug]/page.tsx` (toggle livraison), `dashboard/company/page.tsx` (vérification RCCM temps réel), `AssistantController` (contexte guide), `Sidebar.tsx`.
+
+**Non vérifié en conditions réelles** — toujours pas d'accès DB/vendor dans mon sandbox. À tester avant démo : créer un livreur actif, passer une commande avec livraison, vérifier la réception de l'email d'assignation et le lien de réponse.
+
+---
+
 ## Modèle pour les prochaines entrées
 
 ```

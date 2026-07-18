@@ -52,10 +52,17 @@ class Company extends Model
         'badge_made_in_cameroon',
         'trust_score',
         'statut_verification',
+        'rccm_format_valide',
+        'rccm_verifie_le',
+        'registration_status',
+        'registration_checklist',
     ];
 
     protected $casts = [
         'certifications' => 'array',
+        'registration_checklist' => 'array',
+        'rccm_format_valide' => 'boolean',
+        'rccm_verifie_le' => 'datetime',
         'badge_entreprise_verifiee' => 'boolean',
         'badge_cooperative_verifiee' => 'boolean',
         'badge_femmes_entrepreneures' => 'boolean',

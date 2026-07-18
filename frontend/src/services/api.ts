@@ -18,6 +18,7 @@ const PUBLIC_PATTERNS: RegExp[] = [
   /^\/auth\/login$/,
   /^\/auth\/forgot-password$/,
   /^\/auth\/reset-password$/,
+  /^\/livraison\/reponse\//,
   /^\/webhooks\//,
 ];
 

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Events\OrderPlaced;
 use App\Models\Order;
+use App\Services\DeliveryDispatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentController extends Controller
 {
+    public function __construct(private readonly DeliveryDispatchService $deliveryDispatch) {}
+
     /**
      * Simule un paiement Mobile Money MTN/Orange.
      * Vérifie la propriété de la commande, simule le verrouillage de l'escrow.
@@ -66,6 +69,22 @@ class PaymentController extends Controller
         ]);
 
         event(new OrderPlaced($order));
+
+        // L'acheteur a validé sa commande (paiement confirmé) et choisi la
+        // livraison à domicile → on contacte automatiquement un livreur
+        // sous-traitant disponible. Ne bloque jamais la confirmation du
+        // paiement en cas d'échec (log seulement) — le client a déjà payé,
+        // un souci de dispatch ne doit pas se traduire par une erreur pour lui.
+        if ($order->livraison_demandee) {
+            try {
+                $this->deliveryDispatch->dispatch($order, (float) $order->frais_livraison);
+            } catch (\Throwable $e) {
+                Log::error('[Payment] Échec du dispatch livraison automatique', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,

@@ -106,6 +106,22 @@ class AssistantController extends Controller
 
         $pageContext = $context ? "Page actuelle : {$context}." : '';
 
+        $registrationGuideContext = '';
+        if ($context && str_contains($context, 'registration-guide')) {
+            $registrationGuideContext = <<<GUIDE
+
+L'utilisateur est actuellement sur le guide d'immatriculation RCCM. Les étapes qu'il voit sont :
+1. Rassembler les pièces (CNI, plan de localisation, 2 photos d'identité, justificatif d'occupation du local).
+2. Retirer et remplir le formulaire de déclaration (greffe du Tribunal de Première Instance ou GUCE).
+3. Déposer le dossier au greffe ou au GUCE (le Guichet Unique permet en principe d'obtenir RCCM + NIU + CNPS en une seule démarche).
+4. Régler les frais d'immatriculation (variable selon entreprise individuelle vs société).
+5. Récupérer le numéro RCCM et le renseigner dans le profil C-Connect au format RC/VILLE/ANNÉE/TYPE/NUMÉRO.
+
+Aide-le à comprendre ces étapes concrètement, mais rappelle que C-Connect ne peut pas effectuer la
+démarche à sa place — c'est une procédure officielle auprès du greffe/GUCE.
+GUIDE;
+        }
+
         return <<<PROMPT
 Tu es l'Assistant C-Connect, l'assistant intégré de C-Connect — une plateforme B2B de sourcing et
 d'approvisionnement professionnel qui connecte producteurs, coopératives et fabricants camerounais avec
@@ -114,9 +130,10 @@ des restaurants, hôtels, supermarchés et autres acheteurs professionnels.
 Fonctionnalités clés de la plateforme que tu peux expliquer : profils entreprise vérifiés (RCCM/NIU),
 paiement en séquestre (l'argent n'est libéré au vendeur qu'après confirmation de réception par l'acheteur),
 appels d'offres (RFQ), négociation de prix, commandes récurrentes, gestion de litiges, Mobile Money
-(Orange Money / MTN MoMo).
+(Orange Money / MTN MoMo), livraison à domicile via des livreurs sous-traitants.
 
 {$roleContext} {$pageContext}
+{$registrationGuideContext}
 
 Règles :
 - Réponds en français, de façon concise (3-5 phrases maximum sauf si on te demande plus de détails).

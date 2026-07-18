@@ -218,6 +218,8 @@ export interface Company {
   statutVerification: VerificationStatus;
   badges?: CompanyBadge[];
   createdAt?: string;
+  registrationStatus?: 'non_demarre' | 'en_cours' | 'termine';
+  registrationChecklist?: Record<string, boolean> | null;
 }
 
 export type RfqStatus = 'active' | 'en_negociation' | 'satisfaite' | 'expiree' | 'annulee';
@@ -412,6 +414,8 @@ export interface RawCompany {
   statut_verification: VerificationStatus;
   badges?: CompanyBadge[];
   created_at?: string;
+  registration_status?: 'non_demarre' | 'en_cours' | 'termine';
+  registration_checklist?: Record<string, boolean> | null;
 }
 
 export interface RawRfqBid {

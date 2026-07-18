@@ -39,6 +39,7 @@ const ADMIN_LINKS = [
   { href: '/dashboard', label: 'Vue générale', Icon: Home },
   { href: '/dashboard/admin/companies', label: 'Entreprises KYB', Icon: ShieldCheck },
   { href: '/dashboard/admin/disputes', label: 'Arbitrages', Icon: ShieldAlert },
+  { href: '/dashboard/admin/delivery', label: 'Livreurs', Icon: Truck },
   { href: '/dashboard/admin/stats', label: 'Statistiques', Icon: BarChart3 },
   { href: '/dashboard/admin/users', label: 'Utilisateurs', Icon: UserCog },
 ];

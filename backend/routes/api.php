@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\RfqController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AssistantController;
+use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -193,6 +194,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/', [CompanyController::class, 'store'])->name('store');
         Route::put('/{company}', [CompanyController::class, 'update'])->name('update');
         Route::patch('/{company}/badges', [CompanyController::class, 'updateBadges'])->name('update-badges');
+        Route::post('/verify-rccm', [CompanyController::class, 'verifyRccm'])->name('verify-rccm');
     });
 
     // --- Demandes de devis (RFQ) ---
@@ -258,8 +260,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/users', [AdminController::class, 'users'])->name('users');
         Route::get('/disputes', [AdminController::class, 'disputes'])->name('disputes');
         Route::get('/companies', [AdminController::class, 'companies'])->name('companies');
+
+        // --- Livreurs sous-traitants (dispatch de livraison) ---
+        Route::get('/delivery-partners', [DeliveryController::class, 'indexPartners'])->name('delivery-partners.index');
+        Route::post('/delivery-partners', [DeliveryController::class, 'storePartner'])->name('delivery-partners.store');
+        Route::patch('/delivery-partners/{deliveryPartner}', [DeliveryController::class, 'updatePartner'])->name('delivery-partners.update');
+        Route::get('/delivery-requests', [DeliveryController::class, 'indexRequests'])->name('delivery-requests.index');
     });
 
 }); // Fin des routes protégées
+
+// --- Réponse livreur (public, lien signé par token — pas de compte livreur) ---
+Route::prefix('livraison')->name('delivery.')->group(function (): void {
+    Route::get('/reponse/{token}', [DeliveryController::class, 'showByToken'])->name('show');
+    Route::post('/reponse/{token}', [DeliveryController::class, 'respond'])->name('respond');
+});
 
 // }); // Fin du groupe v1
