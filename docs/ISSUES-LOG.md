@@ -478,3 +478,23 @@ Rétrocompatible : l'appel mono-produit historique (`marketplace/[slug]` → ach
 **Fichiers touchés :** `backend/app/Http/Controllers/RfqMatchController.php`, `backend/routes/api.php`, `frontend/src/services/rfqMatch.ts`, `frontend/src/app/dashboard/rfqs/page.tsx`.
 
 **Non vérifié en conditions réelles** (pas de clé `ANTHROPIC_API_KEY` ni de DB dans ce sandbox) : tester le classement avec de vraies données produits/RFQ avant démo.
+
+---
+
+## 2026-07-11 (suite) — Claude2 : Documents commerciaux (BC/Facture/BL) cassés à 401 et 404
+
+**Constat en auditant `TASKS.md`** (l'entrée disait "PDF export sans branding" — en fait déjà bien brandé, mais deux bugs réels cachés dessous) :
+
+1. **404 sur 2 des 3 types de documents** — la contrainte de route `->where('type', 'po|invoice|delivery')` ne correspond à aucun des vrais types utilisés par `DocumentController` (`purchase_order`, `invoice`, `delivery_note`). Seul `invoice` route correctement par coïncidence partielle... en fait non, `invoice` correspond exactement donc routait, mais `purchase_order`/`delivery_note` ne matchent ni `po` ni `delivery` (regex ancré sur le segment complet) → 404 avant même d'atteindre le contrôleur.
+
+2. **401 systématique depuis la migration vers l'auth Bearer pure** (commit antérieur "Migrate auth from Sanctum SPA cookies to pure Bearer token") — le lien frontend était un `<a href target="_blank">` statique vers une route protégée `auth:sanctum`. Une navigation d'onglet ne transmet jamais le header `Authorization`, donc même le seul type qui routait (`invoice`) aurait renvoyé 401.
+
+**Correctif :** pattern lien signé temporaire, standard Laravel pour ce cas exact.
+- Nouvelle route `GET /orders/{order}/documents/{type}/signed-link` (protégée Bearer, vérifie participant/admin comme avant) → retourne une URL signée (`URL::temporarySignedRoute`, expire 10 min).
+- La route `GET /orders/{order}/documents/{type}` sort du groupe `auth:sanctum`, protégée par le middleware `signed` à la place — la signature devient l'autorisation puisqu'il n'y a plus de session utilisateur sur une navigation d'onglet.
+- Regex de type corrigée : `purchase_order|invoice|delivery_note`.
+- Frontend : `orderService.getDocumentUrl()` (URL statique) remplacé par `orderService.openDocument()` (async : récupère le lien signé puis `window.open`), boutons au lieu de liens `<a>`, feedback toast en cas d'échec.
+
+**Fichiers touchés :** `backend/routes/api.php`, `backend/app/Http/Controllers/Api/DocumentController.php`, `frontend/src/services/orders.ts`, `frontend/src/app/dashboard/orders/page.tsx`, `frontend/src/app/dashboard/orders/Orders.module.css`, `TASKS.md`.
+
+**Non vérifié en conditions réelles** : tester les 3 types de documents de bout en bout (génération du lien signé → ouverture → rendu correct) sur une vraie instance avant démo.

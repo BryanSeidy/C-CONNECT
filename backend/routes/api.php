@@ -242,10 +242,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // --- Documents commerciaux ---
+    // La génération du lien signé reste protégée par Bearer token (vérifie
+    // que l'utilisateur est bien partie prenante de la commande) ; la
+    // consultation du document elle-même est déplacée hors de ce groupe car
+    // une simple navigation <a href target="_blank"> ne transmet jamais le
+    // header Authorization — voir la route `signed-link` + le middleware
+    // `signed` plus bas dans ce fichier.
     Route::prefix('orders')->name('orders.')->group(function (): void {
-        Route::get('/{order}/documents/{type}', [DocumentController::class, 'show'])
-            ->name('documents.show')
-            ->where('type', 'po|invoice|delivery');
+        Route::get('/{order}/documents/{type}/signed-link', [DocumentController::class, 'signedLink'])
+            ->name('documents.signed-link')
+            ->where('type', 'purchase_order|invoice|delivery_note');
     });
 
     // --- Routes réservées aux vendeurs ---
@@ -271,5 +277,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
 }); // Fin des routes protégées
+
+// --- Consultation de document commercial via lien signé temporaire ---
+// Hors du groupe auth:sanctum : ouvert depuis un nouvel onglet du navigateur
+// (target="_blank"), qui ne transmet jamais le header Authorization d'un
+// token Bearer. L'autorisation est ici la signature elle-même (générée
+// uniquement pour un participant réel de la commande, expire après 10 min)
+// plutôt qu'une session utilisateur.
+Route::get('/orders/{order}/documents/{type}', [DocumentController::class, 'show'])
+    ->name('orders.documents.show')
+    ->middleware('signed')
+    ->where('type', 'purchase_order|invoice|delivery_note');
 
 // }); // Fin du groupe v1
