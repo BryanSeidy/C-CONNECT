@@ -20,6 +20,7 @@ class Order extends Model
         'payment_provider',
         'payment_reference',
         'transaction_reference',
+        'pay_token',
         'payment_status',
         'adresse_livraison',
         'ville_livraison',

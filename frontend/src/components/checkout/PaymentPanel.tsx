@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2, ChevronRight, Loader2,
   Phone, RefreshCw, ShieldCheck, Smartphone,
@@ -23,13 +23,31 @@ interface InitiateResponse {
   success: boolean;
   data: {
     transaction_reference: string;
+    pay_token?: string;
     amount: number;
     currency: string;
     payment_method: string;
+    mode?: 'omapi' | 'simulation';
+    status?: string;
     instructions: string;
     order_id: string;
+    poll_url?: string;
   };
 }
+
+interface StatusResponse {
+  success: boolean;
+  data: {
+    status: 'pending' | 'successful' | 'failed' | string;
+    order_status: string;
+    transaction_reference: string | null;
+    pay_token?: string | null;
+    message?: string;
+  };
+}
+
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 120_000;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -127,6 +145,18 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
   const [loading,      setLoading]      = useState(false);
   const [txRef,        setTxRef]        = useState<string | null>(null);
   const [errorMsg,     setErrorMsg]     = useState<string | null>(null);
+  const [pollHint,     setPollHint]     = useState<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartedAt = useRef<number>(0);
+
+  const stopPolling = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopPolling(), []);
 
   const validatePhone = (value: string): boolean => {
     const normalized = value.startsWith('+237') ? value : `+237${value.replace(/^0+/, '')}`;
@@ -145,6 +175,54 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
     setStep('phone');
   };
 
+  const pollOrangeStatus = (reference: string) => {
+    stopPolling();
+    pollStartedAt.current = Date.now();
+    setPollHint('En attente de la confirmation Orange Money…');
+
+    const tick = async () => {
+      if (Date.now() - pollStartedAt.current > POLL_TIMEOUT_MS) {
+        stopPolling();
+        setErrorMsg('Delai depasse. Si vous avez valide le PIN, actualisez le statut de la commande.');
+        setStep('error');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const statusRes = await apiClient.get<unknown, StatusResponse>(
+          `/payments/mobile-money/status?order_id=${encodeURIComponent(orderId)}`
+        );
+
+        const status = statusRes.data.status;
+
+        if (status === 'successful') {
+          stopPolling();
+          setTxRef(statusRes.data.transaction_reference ?? reference);
+          setStep('success');
+          setLoading(false);
+          onSuccess?.(statusRes.data.transaction_reference ?? reference);
+          return;
+        }
+
+        if (status === 'failed') {
+          stopPolling();
+          setErrorMsg('Le paiement Orange Money a ete refuse ou a echoue.');
+          setStep('error');
+          setLoading(false);
+          return;
+        }
+
+        setPollHint(statusRes.data.message ?? 'Validez le PIN sur votre telephone…');
+      } catch {
+        setPollHint('Verification en cours…');
+      }
+    };
+
+    void tick();
+    pollTimerRef.current = setInterval(() => { void tick(); }, POLL_INTERVAL_MS);
+  };
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError(null);
@@ -160,10 +238,9 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
 
     setLoading(true);
     setStep('pending_pin');
+    setPollHint(null);
 
     try {
-      // 1. Initier la transaction — enregistre la référence et affiche les
-      //    instructions de validation PIN à l'utilisateur (étape UX réelle).
       const initRes = await apiClient.post<unknown, InitiateResponse>(
         '/payments/mobile-money/initiate',
         {
@@ -175,14 +252,13 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
 
       setTxRef(initRes.data.transaction_reference);
 
-      // 2. Confirmer le paiement — endpoint de simulation dédié côté backend
-      //    (PaymentController::processMobileMoney, "conservé pour les tests
-      //    et la simulation front-end"), qui verrouille réellement l'escrow.
-      //    Sans cet appel, la commande resterait indéfiniment en statut
-      //    "pending" : /mobile-money/initiate n'attend qu'un webhook réel
-      //    d'agrégateur (Campay/NotchPay) qui n'existe pas dans cet
-      //    environnement de démo. On ne montre donc jamais un succès qui ne
-      //    reflète pas un vrai changement d'état de la commande.
+      // Orange OMAPI réel : polling /mp/paymentstatus via le backend
+      if (method === 'orange_money' && initRes.data.mode === 'omapi') {
+        pollOrangeStatus(initRes.data.transaction_reference);
+        return;
+      }
+
+      // MTN / Orange simulation : confirme via l'endpoint de simulation
       await apiClient.post('/payments/mobile-money', {
         order_id: orderId,
         phone: normalized,
@@ -191,24 +267,28 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
 
       setStep('success');
       onSuccess?.(initRes.data.transaction_reference);
+      setLoading(false);
     } catch (err: unknown) {
+      stopPolling();
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Erreur lors de l\'initiation du paiement.';
       setErrorMsg(msg);
       setStep('error');
-    } finally {
       setLoading(false);
     }
   };
 
   const reset = () => {
+    stopPolling();
     setStep('select');
     setMethod(null);
     setPhone('');
     setPhoneError(null);
     setErrorMsg(null);
     setTxRef(null);
+    setPollHint(null);
+    setLoading(false);
   };
 
   return (
@@ -311,7 +391,8 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
           </div>
           <h3 className={styles.pendingTitle}>En attente de confirmation</h3>
           <p className={styles.pendingMsg}>
-            Veuillez valider le message de debit sur votre telephone en tapant votre code PIN.
+            {pollHint
+              ?? 'Veuillez valider le message de debit sur votre telephone en tapant votre code PIN.'}
           </p>
           <div className={styles.pendingHint}>
             <span className={styles.pendingHintLabel}>Reference transaction</span>

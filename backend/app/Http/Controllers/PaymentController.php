@@ -6,24 +6,27 @@ namespace App\Http\Controllers;
 
 use App\Events\OrderPlaced;
 use App\Models\Order;
+use App\Services\OrangeMoneyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
- * PaymentController — Simulation de paiement Mobile Money.
+ * PaymentController — Simulation Mobile Money (MTN, et Orange hors OMAPI).
  *
- * En production, le vrai flux est :
- *   1. POST /api/payments/mobile-money/initiate → PaymentWebhookController::initiate
- *   2. Le provider appelle POST /api/webhooks/payments → PaymentWebhookController::__invoke
- *
- * Ce contrôleur est conservé pour les tests et la simulation front-end.
+ * Quand Orange Money est configuré (clés consumer + X-AUTH-TOKEN), le flux
+ * réel passe par PaymentWebhookController::initiate + polling /status.
+ * Ce contrôleur reste pour les tests et le fallback simulation.
  */
 class PaymentController extends Controller
 {
+    public function __construct(
+        private readonly OrangeMoneyService $orangeMoney,
+    ) {}
+
     /**
      * Simule un paiement Mobile Money MTN/Orange.
-     * Vérifie la propriété de la commande, simule le verrouillage de l'escrow.
+     * Refuse Orange si OMAPI est actif (éviter double confirmation).
      */
     public function processMobileMoney(Request $request): JsonResponse
     {
@@ -33,9 +36,18 @@ class PaymentController extends Controller
             'provider' => ['required', 'string', 'in:MTN,Orange'],
         ]);
 
+        if (
+            $validated['provider'] === 'Orange'
+            && (bool) config('services.orange_money.enabled', true)
+            && $this->orangeMoney->isConfigured()
+        ) {
+            return response()->json([
+                'message' => 'Orange Money est configure via OMAPI. Utilisez /payments/mobile-money/initiate puis pollez /status.',
+            ], 422);
+        }
+
         $order = Order::findOrFail($validated['order_id']);
 
-        // Vérifier que l'acheteur est bien le propriétaire
         if ($request->user()->id !== $order->buyer_id && !$request->user()->isAdmin()) {
             return response()->json(['message' => 'Non autorisé à payer cette commande.'], 403);
         }
@@ -46,12 +58,12 @@ class PaymentController extends Controller
             ], 422);
         }
 
-        // Simuler un paiement réussi
-        $transactionRef = 'SIM-' . strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 12));
+        $transactionRef = $order->transaction_reference
+            ?: ('SIM-'.strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 12)));
 
         $order->update([
             'escrow_status' => Order::STATUS_ESCROW_LOCKED,
-            'payment_provider' => strtolower($validated['provider']),
+            'payment_provider' => strtolower($validated['provider']) === 'orange' ? 'orange_money' : 'mtn_momo',
             'payment_reference' => $transactionRef,
             'transaction_reference' => $transactionRef,
             'payment_status' => 'paid',

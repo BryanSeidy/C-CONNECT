@@ -52,6 +52,7 @@ class PaymentEvent extends Model
     // ==================== EVENT TYPES ====================
 
     public const TYPE_INITIATION = 'initiation';
+    public const TYPE_STATUS_POLL = 'status_poll';
     public const TYPE_WEBHOOK_RECEIVED = 'webhook_received';
     public const TYPE_WEBHOOK_PROCESSED = 'webhook_processed';
     public const TYPE_WEBHOOK_IDEMPOTENT = 'webhook_idempotent';

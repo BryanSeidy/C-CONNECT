@@ -107,6 +107,9 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 // --- Webhooks (callbacks externes) ---
 Route::prefix('webhooks')->name('webhooks.')->group(function (): void {
     Route::post('/payments', PaymentWebhookController::class)->name('payments');
+    // Callback notifUrl OMAPI Orange Money (sans signature HMAC C-Connect)
+    Route::post('/payments/orange', [PaymentWebhookController::class, 'orangeNotify'])
+        ->name('payments.orange');
 });
 
 // =========================================================================
@@ -146,11 +149,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // --- Paiements ---
     Route::prefix('payments')->name('payments.')->group(function (): void {
+        // Simulation MTN (et Orange si cles OMAPI absentes)
         Route::post('/mobile-money', [PaymentController::class, 'processMobileMoney'])
             ->name('mobile-money');
-        // Initiation checkout — retourne instructions PIN a l'utilisateur
         Route::post('/mobile-money/initiate', [PaymentWebhookController::class, 'initiate'])
             ->name('mobile-money.initiate');
+        Route::get('/mobile-money/status', [PaymentWebhookController::class, 'status'])
+            ->name('mobile-money.status');
     });
 
     // --- Gestion des produits (vendeurs uniquement) ---

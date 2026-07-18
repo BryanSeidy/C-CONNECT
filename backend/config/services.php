@@ -41,21 +41,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Orange Money Core API (OM-CORE 1.0.2)
+    | Orange Money Core API (OMAPI / OM-CORE 1.0.2)
     |--------------------------------------------------------------------------
-    | Identifiants obtenus via le portail développeur Orange (apiis.orange.cm).
-    | Flux Merchant Payment : /mp/init -> /mp/pay -> /mp/paymentstatus.
-    | En sandbox : https://api-s1.orange.cm
-    | En production : même host (à confirmer après activation).
+    | Guide : docs/Guide_Utilisateur_OMAPI___SANDBOX V2.pdf (v3.0.0).
+    | Portail : https://apiis.orange.cm/store/
+    | Flux MP : POST /token → /mp/init → /mp/pay → /mp/push → /mp/paymentstatus
+    |
+    | Sandbox (valeurs publiques du guide si non surchargées) :
+    |   X-AUTH-TOKEN, channelUserMsisdn=691301143, PIN=2222
+    | Consumer key/secret : générés après souscription API sur le portail.
     */
     'orange_money' => [
         'base_url' => env('ORANGE_MONEY_BASE_URL', 'https://api-s1.orange.cm'),
-        'auth_token' => env('ORANGE_MONEY_AUTH_TOKEN', ''),
+        // X-AUTH-TOKEN (header) — valeur sandbox du guide OMAPI si absente
+        'auth_token' => env(
+            'ORANGE_MONEY_AUTH_TOKEN',
+            'UFJPVEFJU0NQVEVURVNUSU5UT006UFJPVEFJU0NQVEVURVNUSU5UT00yMDIz'
+        ),
         'consumer_key' => env('ORANGE_MONEY_CONSUMER_KEY', ''),
         'consumer_secret' => env('ORANGE_MONEY_CONSUMER_SECRET', ''),
-        'channel_msisdn' => env('ORANGE_MONEY_CHANNEL_MSISDN', ''),
-        'pin' => env('ORANGE_MONEY_PIN', ''),
+        'channel_msisdn' => env('ORANGE_MONEY_CHANNEL_MSISDN', '691301143'),
+        'pin' => env('ORANGE_MONEY_PIN', '2222'),
         'mode' => env('ORANGE_MONEY_MODE', 'sandbox'), // sandbox|production
+        // Si false, initiate Orange reste en simulation locale même avec clés.
+        'enabled' => env('ORANGE_MONEY_ENABLED', true),
     ],
 
     'google' => [
