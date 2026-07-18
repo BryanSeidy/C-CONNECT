@@ -27,6 +27,8 @@ function normalizeCompany(raw: RawCompany): Company {
     statutVerification: raw.statut_verification,
     badges: raw.badges,
     createdAt: raw.created_at,
+    registrationStatus: raw.registration_status ?? 'non_demarre',
+    registrationChecklist: raw.registration_checklist ?? null,
   };
 }
 
@@ -52,6 +54,8 @@ export interface CompanyPayload {
   niu?: string;
   description?: string;
   logoUrl?: string;
+  registrationStatus?: 'non_demarre' | 'en_cours' | 'termine';
+  registrationChecklist?: Record<string, boolean>;
 }
 
 function toPayload(data: Partial<CompanyPayload>) {
@@ -67,6 +71,8 @@ function toPayload(data: Partial<CompanyPayload>) {
     niu: data.niu,
     description: data.description,
     logo_url: data.logoUrl,
+    registration_status: data.registrationStatus,
+    registration_checklist: data.registrationChecklist,
   };
 }
 
@@ -111,6 +117,11 @@ export const companyService = {
       statut_verification: statutVerification,
     });
     return { ...res, data: normalizeCompany(res.data) };
+  },
+  /** POST /api/companies/verify-rccm — vérification de format en temps réel, sans sauvegarde. */
+  verifyRccm: async (rccm: string): Promise<{ valide: boolean; message: string }> => {
+    const res = await apiClient.post<unknown, { data: { valide: boolean; message: string } }>('/companies/verify-rccm', { rccm });
+    return res.data;
   },
 };
 

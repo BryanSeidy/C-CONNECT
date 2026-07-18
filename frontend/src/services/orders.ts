@@ -71,6 +71,7 @@ export const orderService = {
     villeLivraison?: string;
     adresseLivraison?: string;
     telephoneLivraison?: string;
+    livraisonDemandee?: boolean;
   }): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
       product_id: orderData.productId,
@@ -79,6 +80,7 @@ export const orderService = {
       ville_livraison: orderData.villeLivraison,
       adresse_livraison: orderData.adresseLivraison,
       telephone_livraison: orderData.telephoneLivraison,
+      livraison_demandee: orderData.livraisonDemandee,
     });
     return { ...res, data: normalizeOrder(res.data) };
   },
@@ -94,6 +96,7 @@ export const orderService = {
     villeLivraison?: string;
     adresseLivraison?: string;
     telephoneLivraison?: string;
+    livraisonDemandee?: boolean;
   }): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
       items: cartData.items.map((i) => ({
@@ -104,6 +107,7 @@ export const orderService = {
       ville_livraison: cartData.villeLivraison,
       adresse_livraison: cartData.adresseLivraison,
       telephone_livraison: cartData.telephoneLivraison,
+      livraison_demandee: cartData.livraisonDemandee,
     });
     return { ...res, data: normalizeOrder(res.data) };
   },

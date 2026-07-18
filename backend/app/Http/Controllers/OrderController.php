@@ -14,6 +14,15 @@ use Illuminate\Support\Facades\DB;
 class OrderController extends Controller
 {
     /**
+     * Frais de livraison fixe appliqué quand l'acheteur choisit la livraison
+     * à domicile. Calculé côté serveur uniquement — jamais accepté depuis le
+     * frontend, pour éviter qu'un montant soit falsifié côté client.
+     * TODO(Backend-01/Zai) : faire varier ce montant par région/distance une
+     * fois qu'un vrai barème logistique existe ; valeur plate pour l'instant.
+     */
+    private const FRAIS_LIVRAISON_FIXE = 1500.00;
+
+    /**
      * List all orders scoped to the authenticated user.
      * Buyers see their purchases; sellers see their sales.
      */
@@ -56,6 +65,7 @@ class OrderController extends Controller
                 'ville_livraison' => ['nullable', 'string', 'max:100'],
                 'telephone_livraison' => ['nullable', 'string', 'max:20'],
                 'notes_livraison' => ['nullable', 'string', 'max:1000'],
+                'livraison_demandee' => ['sometimes', 'boolean'],
             ])
             : $request->validate([
                 'product_id' => ['required', 'integer', 'exists:products,id'],
@@ -65,6 +75,7 @@ class OrderController extends Controller
                 'ville_livraison' => ['nullable', 'string', 'max:100'],
                 'telephone_livraison' => ['nullable', 'string', 'max:20'],
                 'notes_livraison' => ['nullable', 'string', 'max:1000'],
+                'livraison_demandee' => ['sometimes', 'boolean'],
             ]);
 
         $itemsInput = $isCart
@@ -151,15 +162,24 @@ class OrderController extends Controller
                 }
 
                 $financials = Order::computeFinancials($montantTotal);
+                $livraisonDemandee = (bool) ($validated['livraison_demandee'] ?? false);
+                $fraisLivraison = $livraisonDemandee ? self::FRAIS_LIVRAISON_FIXE : 0.0;
 
                 $order = Order::create([
                     'buyer_id' => $buyer->id,
                     'seller_id' => $sellerId,
                     ...$financials,
+                    // Les frais de livraison vont au livreur, pas au vendeur —
+                    // ajoutés au total payé par l'acheteur mais PAS à
+                    // montant_vendeur/commission_plateforme (déjà calculés
+                    // ci-dessus sur le seul sous-total produits).
+                    'montant_total' => $financials['montant_total'] + $fraisLivraison,
                     'escrow_status' => Order::STATUS_PENDING,
                     'adresse_livraison' => $validated['adresse_livraison'] ?? null,
                     'ville_livraison' => $validated['ville_livraison'] ?? null,
                     'telephone_livraison' => $validated['telephone_livraison'] ?? null,
+                    'livraison_demandee' => $livraisonDemandee,
+                    'frais_livraison' => $fraisLivraison,
                 ]);
 
                 foreach ($lineItems as $line) {

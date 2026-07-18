@@ -79,6 +79,22 @@ class PaymentController extends Controller
 
         event(new OrderPlaced($order));
 
+        // L'acheteur a validé sa commande (paiement confirmé) et choisi la
+        // livraison à domicile → on contacte automatiquement un livreur
+        // sous-traitant disponible. Ne bloque jamais la confirmation du
+        // paiement en cas d'échec (log seulement) — le client a déjà payé,
+        // un souci de dispatch ne doit pas se traduire par une erreur pour lui.
+        if ($order->livraison_demandee) {
+            try {
+                $this->deliveryDispatch->dispatch($order, (float) $order->frais_livraison);
+            } catch (\Throwable $e) {
+                Log::error('[Payment] Échec du dispatch livraison automatique', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Transaction simulée avec succès via {$validated['provider']}",

@@ -114,8 +114,11 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
   const [ville, setVille] = useState('');
   const [adresse, setAdresse] = useState('');
   const [telephone, setTelephone] = useState('');
+  const [livraisonDemandee, setLivraisonDemandee] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const DELIVERY_FEE = 1500; // doit rester cohérent avec OrderController::FRAIS_LIVRAISON_FIXE côté backend — affichage uniquement, le montant réel est toujours recalculé serveur.
 
   const unitPrice = negotiation?.price ?? product.price;
   const canOrder = isAuthenticated && user?.role === 'buyer' && product.stock > 0;
@@ -141,6 +144,7 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
         villeLivraison: ville.trim(),
         adresseLivraison: adresse.trim() || undefined,
         telephoneLivraison: telephone.trim(),
+        livraisonDemandee,
       });
       router.push(`/checkout?order=${res.data.id}`);
     } catch (err: unknown) {
@@ -206,8 +210,13 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
 
       <div className={styles.totalRow}>
         <span>Total estimé</span>
-        <strong>{(unitPrice * qty).toLocaleString('fr-FR')} XAF</strong>
+        <strong>
+          {(unitPrice * qty + (showDelivery && livraisonDemandee ? DELIVERY_FEE : 0)).toLocaleString('fr-FR')} XAF
+        </strong>
       </div>
+      {showDelivery && livraisonDemandee && (
+        <p className={styles.deliveryFeeNote}>Inclut {DELIVERY_FEE.toLocaleString('fr-FR')} XAF de frais de livraison.</p>
+      )}
 
       {canOrder && showDelivery && (
         <div className={styles.deliveryForm}>
@@ -258,6 +267,32 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
               disabled={submitting}
               rows={2}
             />
+          </div>
+
+          <div className={styles.deliveryToggleRow}>
+            <label className={styles.deliveryToggleOption}>
+              <input
+                type="radio"
+                name="delivery-mode"
+                checked={livraisonDemandee}
+                onChange={() => setLivraisonDemandee(true)}
+                disabled={submitting}
+              />
+              <span>
+                <Truck size={14} aria-hidden="true" /> Livraison à domicile
+                <strong> (+{DELIVERY_FEE.toLocaleString('fr-FR')} XAF)</strong>
+              </span>
+            </label>
+            <label className={styles.deliveryToggleOption}>
+              <input
+                type="radio"
+                name="delivery-mode"
+                checked={!livraisonDemandee}
+                onChange={() => setLivraisonDemandee(false)}
+                disabled={submitting}
+              />
+              <span>Je viendrai récupérer moi-même</span>
+            </label>
           </div>
         </div>
       )}
@@ -312,7 +347,7 @@ function OrderForm({ product, negotiation }: { product: Product; negotiation?: N
             ) : (
               <>
                 <ShieldCheck size={16} aria-hidden="true" />
-                Confirmer et payer {(unitPrice * qty).toLocaleString('fr-FR')} XAF
+                Confirmer et payer {(unitPrice * qty + (livraisonDemandee ? DELIVERY_FEE : 0)).toLocaleString('fr-FR')} XAF
               </>
             )}
           </Button>

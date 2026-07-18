@@ -51,6 +51,38 @@ const POLL_TIMEOUT_MS = 120_000;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/**
+ * Badges opérateur — texte-dans-forme aux couleurs de marque publiques
+ * (jaune MTN, orange Orange), pattern standard des pages de paiement pour
+ * indiquer un moyen de paiement sans reproduire un logo vectoriel officiel.
+ * À remplacer par les vrais assets de marque dès qu'obtenus (voir
+ * docs/payment-integration-orange-mtn.md §3).
+ */
+function MtnMomoBadge() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <circle cx="17" cy="17" r="17" fill="#FFCC00" />
+      <text x="17" y="21" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#1A1A1A" fontFamily="Arial, sans-serif">
+        MTN
+      </text>
+    </svg>
+  );
+}
+
+function OrangeMoneyBadge() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <rect x="0" y="0" width="34" height="34" rx="9" fill="#FF6600" />
+      <text x="17" y="20" textAnchor="middle" fontSize="7.5" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">
+        orange
+      </text>
+      <text x="17" y="27" textAnchor="middle" fontSize="5.5" fontWeight="600" fill="#fff" fontFamily="Arial, sans-serif" opacity="0.9">
+        money
+      </text>
+    </svg>
+  );
+}
+
 function MethodCard({
   method,
   selected,
@@ -70,16 +102,8 @@ function MethodCard({
       aria-pressed={selected}
       style={selected ? { borderColor: isMtn ? '#FCD34D' : '#FB923C' } : undefined}
     >
-      <div
-        className={styles.methodLogo}
-        style={{ background: isMtn ? 'rgba(252,211,77,0.1)' : 'rgba(251,146,60,0.1)' }}
-        aria-hidden="true"
-      >
-        <Smartphone
-          size={22}
-          strokeWidth={1.75}
-          style={{ color: isMtn ? '#B45309' : '#C2410C' }}
-        />
+      <div className={styles.methodLogo} aria-hidden="true">
+        {isMtn ? <MtnMomoBadge /> : <OrangeMoneyBadge />}
       </div>
 
       <div className={styles.methodInfo}>
@@ -386,8 +410,8 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
       {/* Step: pending PIN */}
       {step === 'pending_pin' && (
         <div className={styles.pendingState}>
-          <div className={styles.pendingIcon} aria-hidden="true">
-            <Loader2 size={28} className={styles.spinner} />
+          <div className={`${styles.pendingIcon} ${styles.phonePulse}`} aria-hidden="true">
+            <Smartphone size={26} strokeWidth={1.75} />
           </div>
           <h3 className={styles.pendingTitle}>En attente de confirmation</h3>
           <p className={styles.pendingMsg}>
