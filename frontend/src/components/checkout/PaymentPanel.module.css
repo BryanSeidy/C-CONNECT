@@ -362,6 +362,43 @@
   justify-content: center;
 }
 
+.phonePulse {
+  position: relative;
+}
+
+.phonePulse::before,
+.phonePulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--c-gold-500);
+  animation: phonePulseRing 1.8s cubic-bezier(0.2, 0.7, 0.4, 1) infinite;
+}
+
+.phonePulse::after {
+  animation-delay: 0.6s;
+}
+
+@keyframes phonePulseRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phonePulse::before,
+  .phonePulse::after {
+    animation: none;
+    display: none;
+  }
+}
+
 .pendingTitle {
   font-size: 1.0625rem;
   font-weight: 700;
