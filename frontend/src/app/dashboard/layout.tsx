@@ -24,6 +24,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/dashboard/admin/disputes':  'Arbitrages',
   '/dashboard/admin/stats':     'Statistiques',
   '/dashboard/admin/users':     'Utilisateurs',
+  '/dashboard/admin/health':    'Système',
 };
 
 const ROLE_LABELS: Record<string, string> = {

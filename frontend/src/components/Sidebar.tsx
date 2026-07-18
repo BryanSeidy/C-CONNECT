@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BarChart3, Building2, CalendarClock, ClipboardList,
+  Activity, BarChart3, Building2, CalendarClock, ClipboardList,
   HandCoins, Home, LogOut, Package, Settings,
   ShieldAlert, ShieldCheck, Truck, UserCog, X,
 } from 'lucide-react';
@@ -42,6 +42,7 @@ const ADMIN_LINKS = [
   { href: '/dashboard/admin/delivery', label: 'Livreurs', Icon: Truck },
   { href: '/dashboard/admin/stats', label: 'Statistiques', Icon: BarChart3 },
   { href: '/dashboard/admin/users', label: 'Utilisateurs', Icon: UserCog },
+  { href: '/dashboard/admin/health', label: 'Système', Icon: Activity },
 ];
 
 const BOTTOM_LINKS = [

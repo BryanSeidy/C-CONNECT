@@ -130,9 +130,18 @@ export const orderService = {
     await apiClient.delete(`/orders/${id}`);
   },
 
-  getDocumentUrl: (orderId: number | string, type: 'purchase_order' | 'invoice' | 'delivery_note'): string => {
-    const base = (apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
-    return `${base}/orders/${orderId}/documents/${type}`;
+  /**
+   * Récupère un lien signé temporaire (10 min) vers un document commercial,
+   * puis l'ouvre dans un nouvel onglet. Une simple URL statique ne
+   * fonctionnait plus depuis le passage à l'authentification Bearer pure :
+   * une navigation <a href target="_blank"> ne transmet jamais le header
+   * Authorization, donc la route protégée renvoyait toujours 401.
+   */
+  openDocument: async (orderId: number | string, type: 'purchase_order' | 'invoice' | 'delivery_note'): Promise<void> => {
+    const res = await apiClient.get<unknown, { success: boolean; data: { url: string } }>(
+      `/orders/${orderId}/documents/${type}/signed-link`
+    );
+    window.open(res.data.url, '_blank', 'noopener,noreferrer');
   },
 };
 

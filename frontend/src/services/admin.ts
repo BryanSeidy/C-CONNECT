@@ -17,6 +17,29 @@ export interface AdminUserRow {
   createdAt?: string;
 }
 
+export interface SystemCheck {
+  status: 'ok' | 'down' | 'degraded' | 'warning' | 'not_configured' | 'unknown';
+  latencyMs?: number;
+  freePercent?: number;
+  message?: string;
+}
+
+export interface SystemLogEntry {
+  date: string;
+  level: 'ERROR' | 'WARNING' | 'CRITICAL';
+  message: string;
+}
+
+export interface SystemHealth {
+  checks: {
+    database: SystemCheck;
+    cache: SystemCheck;
+    ai: SystemCheck;
+    storage: SystemCheck;
+  };
+  recentErrors: SystemLogEntry[];
+  checkedAt: string;
+}
 interface RawAdminStats {
   total_orders: number;
   total_companies: number;
@@ -88,5 +111,11 @@ export const adminService = {
       lastPage: raw.last_page ?? 1,
       total: raw.total ?? 0,
     };
+  },
+
+  /** GET /api/admin/health — admin only. Introspection système réelle. */
+  getHealth: async (): Promise<SystemHealth> => {
+    const res = await apiClient.get<unknown, { success: boolean; data: SystemHealth }>('/admin/health');
+    return res.data;
   },
 };

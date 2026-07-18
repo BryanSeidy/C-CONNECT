@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
+import { useToast } from '@/components/ui/ToastProvider';
 import styles from './Orders.module.css';
 
 type EscrowStatus = Order['escrowStatus'];
@@ -70,6 +71,8 @@ export default function DashboardOrders() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [activeFilter, setFilter] = useState<FilterKey>('all');
@@ -210,19 +213,29 @@ export default function DashboardOrders() {
                     <span className={styles.docLabel}>Documents :</span>
                     {(['purchase_order', 'invoice', 'delivery_note'] as const).map(type => {
                       const labels = { purchase_order: 'Bon de commande', invoice: 'Facture', delivery_note: 'Bon de livraison' };
+                      const docKey = `${order.id}-${type}`;
                       return (
-                        <a
+                        <button
                           key={type}
-                          href={orderService.getDocumentUrl(order.id, type)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          type="button"
                           className={styles.docLink}
                           title={labels[type]}
+                          disabled={openingDoc === docKey}
+                          onClick={async () => {
+                            setOpeningDoc(docKey);
+                            try {
+                              await orderService.openDocument(order.id, type);
+                            } catch (err) {
+                              showToast(extractApiError(err, 'Impossible d\u2019ouvrir ce document.'), 'error');
+                            } finally {
+                              setOpeningDoc(null);
+                            }
+                          }}
                         >
                           <FileText size={14} aria-hidden="true" />
                           {labels[type]}
                           <ExternalLink size={11} aria-hidden="true" />
-                        </a>
+                        </button>
                       );
                     })}
                   </div>

@@ -201,6 +201,7 @@
   align-items: center;
   gap: 0.3rem;
   font-size: 0.78rem;
+  font-family: inherit;
   font-weight: 600;
   color: var(--primary-color);
   text-decoration: none;
@@ -208,7 +209,13 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xs);
+  cursor: pointer;
   transition: background 0.12s;
+}
+
+.docLink:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .docLink:hover { background: var(--c-green-100); }
