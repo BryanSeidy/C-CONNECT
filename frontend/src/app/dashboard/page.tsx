@@ -560,7 +560,7 @@ function AdminDashboard({ loading }: { loading: boolean }) {
 // ── Root page ────────────────────────────────────────────────────────────────
 
 export default function DashboardOverview() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [rfqs, setRfqs] = useState<Rfq[]>([]);
   const [recurring, setRecurring] = useState<RecurringOrder[]>([]);
@@ -599,7 +599,12 @@ export default function DashboardOverview() {
     }
   }, [user?.role, user?.companyId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Attendre que la session Bearer soit prête — évite un premier fetch
+  // sans Authorization qui déclencherait le logout 401.
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
+    fetchAll();
+  }, [fetchAll, authLoading, isAuthenticated]);
 
   if (user?.role === 'admin') return <AdminDashboard loading={loading} />;
   if (user?.role === 'seller') return <SellerDashboard orders={orders} rfqs={rfqs} disputes={disputes} products={products} company={company} loading={loading} />;

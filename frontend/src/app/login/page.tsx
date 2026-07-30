@@ -2,10 +2,12 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { getSafeRedirect } from '@/lib/routing';
+import styles from '@/components/AuthForm.module.css';
 
 function LoginContent() {
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -15,11 +17,13 @@ function LoginContent() {
   const registered = params.get('registered') === 'true';
   const emailVerification = params.get('email_verification');
   const socialError = params.get('social_error');
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Si déjà connecté (ex: retour arrière navigateur), on renvoie directement
-  // au dashboard plutôt que de réafficher le formulaire.
+  // Déjà connecté (token + user) — renvoyer vers la destination sans
+  // réafficher le formulaire. isAuthenticated exige désormais un Bearer.
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      setIsRedirecting(true);
       router.replace(redirect);
     }
   }, [isLoading, isAuthenticated, redirect, router]);
@@ -35,6 +39,17 @@ function LoginContent() {
       ? 'Email vérifié avec succès. Vous pouvez vous connecter.'
       : undefined;
 
+  if (isLoading || isRedirecting || isAuthenticated) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.card} style={{ textAlign: 'center' }}>
+          <Loader2 size={28} className={styles.spinner} aria-hidden="true" style={{ margin: '0 auto 1rem' }} />
+          <p>Redirection…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <AuthForm
@@ -45,8 +60,11 @@ function LoginContent() {
         alternateHref={alternateHref}
         successMessage={successMessage}
         onSubmit={async (email, password) => {
+          // login() pose le token en mémoire AVANT de résoudre — le premier
+          // fetch dashboard aura donc le header Authorization.
           await login(email, password);
-          router.push(redirect);
+          setIsRedirecting(true);
+          router.replace(redirect);
         }}
       />
       {emailVerification === 'invalid' && (

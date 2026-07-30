@@ -15,11 +15,12 @@ export interface StoredSession {
  * (see setMemoryToken/getMemoryToken). This service only caches the User
  * object in localStorage for immediate UI hydration on page load (avoids a
  * layout flash while /auth/me resolves) — it never stores the token itself.
+ * A cached user without a Bearer token must NOT be treated as authenticated.
  */
 export const sessionService = {
   /**
    * Read the cached user from localStorage.
-   * Returns null token because the token lives in the httpOnly cookie.
+   * Returns null token — the Bearer lives in memory + sessionStorage (api.ts).
    */
   read(): StoredSession {
     if (typeof window === 'undefined') return { token: null, user: null };

@@ -1,11 +1,15 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { dispatchDatabaseMode, type DatabaseMode } from '@/context/DatabaseModeContext';
+import { sessionService } from '@/services/session';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/$/, '');
+
+/** Émis quand la session Bearer est invalidée (401 réel) — sync React AuthProvider. */
+export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 /**
  * Patterns de routes publiques (pas de token Bearer requis).
@@ -37,6 +41,13 @@ function isPublic(url?: string): boolean {
   return PUBLIC_PATTERNS.some((p) => p.test(path));
 }
 
+function readAuthorizationHeader(config?: InternalAxiosRequestConfig): string | undefined {
+  const raw = config?.headers?.Authorization ?? config?.headers?.authorization;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) return raw[0];
+  return undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Memory token — authentification par Bearer token uniquement (pas de cookie
 // de session). Conservé en mémoire JS + sessionStorage (jamais localStorage :
@@ -60,6 +71,15 @@ export function setMemoryToken(token: string | null): void {
 
 export function getMemoryToken(): string | null {
   return _memoryToken;
+}
+
+/** Vide token + cache user et notifie AuthProvider (utilisé sur 401 réel). */
+export function clearClientSession(): void {
+  setMemoryToken(null);
+  sessionService.clear();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -106,11 +126,26 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const config = error.config as InternalAxiosRequestConfig | undefined;
 
-    // Gestion 401
+    // Gestion 401 — ne détruire la session que si le 401 concerne la session
+    // courante. Un fetch parti sans Bearer (cache user mort, course avant login)
+    // qui revient après setMemoryToken ne doit PAS effacer le nouveau token.
     if (status === 401 && typeof window !== 'undefined') {
       const isAuthPage = /^\/(login|register|forgot-password|reset-password)/.test(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
-        setMemoryToken(null);
+        const reqAuth = readAuthorizationHeader(config);
+        const currentBearer = _memoryToken ? `Bearer ${_memoryToken}` : null;
+
+        // 401 d'une requête non authentifiée alors qu'un token existe déjà → obsolète
+        if (!reqAuth && currentBearer) {
+          return Promise.reject(error);
+        }
+
+        // 401 pour un ancien Bearer différent du token courant → obsolète
+        if (reqAuth && currentBearer && reqAuth !== currentBearer) {
+          return Promise.reject(error);
+        }
+
+        clearClientSession();
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }

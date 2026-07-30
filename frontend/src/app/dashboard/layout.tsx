@@ -81,11 +81,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // Garde d'authentification côté client — seule source de vérité fiable :
-  // le cookie de session Sanctum est httpOnly et ne prouve rien depuis
-  // l'edge (voir la suppression de middleware.ts). On attend la résolution
-  // de /auth/me (isLoading) avant de trancher, pour éviter un redirect
-  // prématuré au premier rendu.
+  // Garde d'auth côté client (Bearer en mémoire + sessionStorage).
+  // isAuthenticated = user + token — on attend isLoading pour ne pas
+  // rediriger avant la restauration de session, et on n'affiche les
+  // enfants qu'une fois authentifié pour que leur premier fetch parte
+  // avec le header Authorization.
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!isAuthenticated) {
     // Le useEffect ci-dessus déclenche déjà la redirection ; on n'affiche
-    // rien pour éviter un flash de contenu protégé.
+    // rien pour éviter un flash de contenu protégé / des fetches sans token.
     return null;
   }
 
