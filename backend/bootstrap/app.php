@@ -19,22 +19,46 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
-        // Auth par token Bearer (Sanctum) uniquement — plus de mode SPA cookie.
-        // statefulApi() posait laravel_session/XSRF-TOKEN sur toute requête
-        // stateful (même anonyme), ce qui a causé un bug de boucle de
-        // redirection sur le frontend (voir commit "Fix critical redirect
-        // loop"). Le Bearer token est plus simple à déboguer, universel côté
-        // mobile, et n'a pas besoin de config CORS/CSRF/SameSite.
-        $middleware->trustHosts(at: ['localhost', '127.0.0.1']);
+        // ---------------------------------------------------------------------
+        // CORS — Laravel 12 standard (via config/cors.php + middleware fluent)
+        // ---------------------------------------------------------------------
+        // L'authentification repose exclusivement sur un Bearer token Sanctum.
+        // Aucun cookie de session n'est en jeu côté API, donc :
+        //   • supports_credentials = false (pas de cookie cross-origin)
+        //   • allowed_origins = dynamique via FRONTEND_URL
+        //   • allowed_headers = explicites pour Bearer auth
+        // La config réelle est lue depuis config/cors.php (ci-dessous on
+        // s'assure que le middleware HandleCors est bien actif sur les routes API).
+
+        // Proxies de confiance : Hostinger / Vercel / CloudFlare / Neon.
+        // En mutualisé, on fait confiance au reverse-proxy de l'hébergeur.
+        $middleware->trustProxies(
+            at: '*',
+            headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR
+                   | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
+                   | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT
+                   | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
+        );
+
+        // Hôtes de confiance — en prod, remplacés dynamiquement par APP_URL.
+        $middleware->trustHosts(at: [
+            'localhost',
+            '127.0.0.1',
+            fn () => parse_url(config('app.url'), PHP_URL_HOST),
+        ]);
+
+        // Alias de middleware pour les routes protégées par rôle.
         $middleware->alias([
             'seller' => EnsureUserIsSeller::class,
             'admin'  => EnsureUserIsAdmin::class,
         ]);
-        $middleware->appendToGroup('api', DatabaseFailoverMiddleware::class); // Failover global sur toutes les requetes API
+
+        // Failover global sur toutes les requêtes API (bascule PostgreSQL → SQLite).
+        $middleware->appendToGroup('api', DatabaseFailoverMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn(Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })
     ->create();
