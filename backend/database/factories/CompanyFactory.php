@@ -13,18 +13,20 @@ class CompanyFactory extends Factory
 {
     public function definition(): array
     {
-        $nom = $this->faker->company();
+        // Force la résolution propre du générateur de fausses données pour Laravel 12
+        $fakerInstance = app(\Faker\Generator::class);
+        $nom = $fakerInstance->company();
 
         return [
             'nom' => $nom,
             'slug' => Str::slug($nom) . '-' . Str::random(6),
-            'type_entreprise' => $this->faker->randomElement(['cooperative', 'producteur', 'fabricant', 'pme', 'grossiste']),
-            'region' => $this->faker->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest']),
-            'ville' => $this->faker->city(),
-            'quartier' => $this->faker->streetName(),
-            'telephone' => $this->faker->phoneNumber(),
-            'email_professionnel' => $this->faker->companyEmail(),
-            'description' => $this->faker->paragraph(),
+            'type_entreprise' => $fakerInstance->randomElement(['cooperative', 'producteur', 'fabricant', 'pme', 'grossiste']),
+            'region' => $fakerInstance->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest']),
+            'ville' => $fakerInstance->city(),
+            'quartier' => $fakerInstance->streetName(),
+            'telephone' => $fakerInstance->phoneNumber(),
+            'email_professionnel' => $fakerInstance->companyEmail(),
+            'description' => $fakerInstance->paragraph(),
             'statut_verification' => 'non_verifie',
             'trust_score' => 50,
         ];
@@ -32,7 +34,7 @@ class CompanyFactory extends Factory
 
     public function verified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'statut_verification' => 'verifie',
             'badge_entreprise_verifiee' => true,
         ]);
