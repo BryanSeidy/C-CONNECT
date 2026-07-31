@@ -41,6 +41,13 @@ yarn-error.log*
 next-env.d.ts
 
 # pesonnal
+/scripts
+/docs/DESCRIPTION DU PROJET1.md
+/docs/DESIGN_SYSTEM.md
+/docs/DEVELOPMENT.md
+/docs/HUMAN_CENTERED_UX.md
+/docs/PRODUCT.md
 AGENTS.md
 CLAUDE.md
-/scripts
+*.patch
+*.bundle
