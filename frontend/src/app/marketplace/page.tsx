@@ -5,12 +5,13 @@ import { ProductCard } from '@/components/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Footer } from '@/components/Footer';
-import { productService } from '@/services/products';
+import { productService, ProductSort } from '@/services/products';
+import { smartSearchService } from '@/services/smartSearch';
 import { PaginationMeta, Product } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from './Marketplace.module.css';
 import { REGION_OPTIONS } from '@/lib/regions';
-import { AlertTriangle, PackageSearch } from 'lucide-react';
+import { AlertTriangle, PackageSearch, BadgeCheck, Users, Sprout, PackageCheck, Sparkles } from 'lucide-react';
 
 const CATEGORIES = ['Agroalimentaire', 'Transformation', 'Élevage', 'Pêche', 'Textile', 'Industrie'];
 const DEFAULT_META: PaginationMeta = { total: 0, page: 1, pageSize: 12, totalPages: 1 };
@@ -23,6 +24,15 @@ export default function MarketplacePage() {
   const [search, setSearch] = useState('');
   const [country, setCountry] = useState('');
   const [category, setCategory] = useState('');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [cooperativeOnly, setCooperativeOnly] = useState(false);
+  const [womenLedOnly, setWomenLedOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [sort, setSort] = useState<ProductSort>('recent');
+  const [smartQuery, setSmartQuery] = useState('');
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartSummary, setSmartSummary] = useState<string | null>(null);
+  const [smartUnavailable, setSmartUnavailable] = useState(false);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const debouncedSearch = useDebounce(search, 400);
@@ -35,6 +45,11 @@ export default function MarketplacePage() {
         country: country || undefined,
         category: category || undefined,
         q: debouncedSearch.trim() || undefined,
+        verified: verifiedOnly || undefined,
+        cooperative: cooperativeOnly || undefined,
+        womenLed: womenLedOnly || undefined,
+        availableOnly: availableOnly || undefined,
+        sort,
         page,
         pageSize: PAGE_SIZE
       });
@@ -47,7 +62,7 @@ export default function MarketplacePage() {
     } finally {
       setLoading(false);
     }
-  }, [country, category, debouncedSearch, page]);
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort, page]);
 
   useEffect(() => {
     fetchProducts();
@@ -55,7 +70,29 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [country, category, debouncedSearch]);
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort]);
+
+  const handleSmartSearch = async () => {
+    if (!smartQuery.trim() || smartLoading) return;
+    setSmartLoading(true);
+    setSmartSummary(null);
+    setSmartUnavailable(false);
+    try {
+      const result = await smartSearchService.parse(smartQuery.trim());
+      if (!result) {
+        setSmartUnavailable(true);
+        setSearch(smartQuery.trim());
+        return;
+      }
+      if (result.category) setCategory(result.category);
+      if (result.region) setCountry(result.region);
+      if (result.sort) setSort(result.sort);
+      setSearch(result.keywords ?? '');
+      setSmartSummary(result.summary);
+    } finally {
+      setSmartLoading(false);
+    }
+  };
 
   const skeletonItems = useMemo(() => Array.from({ length: 6 }, (_, idx) => idx), []);
   const hasPreviousPage = page > 1;
@@ -72,11 +109,36 @@ export default function MarketplacePage() {
             </p>
           </div>
 
+          <div className={styles.smartSearchBar}>
+            <Sparkles size={18} aria-hidden="true" className={styles.smartSearchIcon} />
+            <input
+              type="text"
+              className={styles.smartSearchInput}
+              placeholder="Ex : du manioc frais pas cher autour de Douala, grande quantité…"
+              value={smartQuery}
+              onChange={(e) => setSmartQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
+            />
+            <Button variant="primary" size="sm" onClick={handleSmartSearch} isLoading={smartLoading} disabled={!smartQuery.trim()}>
+              Rechercher avec l&apos;IA
+            </Button>
+          </div>
+          {smartSummary && (
+            <p className={styles.smartSearchSummary}>
+              <Sparkles size={13} aria-hidden="true" /> {smartSummary}
+            </p>
+          )}
+          {smartUnavailable && (
+            <p className={styles.smartSearchFallback}>
+              Recherche intelligente indisponible pour le moment — recherche classique utilisée à la place.
+            </p>
+          )}
+
           <div className={styles.filters}>
             <div className={styles.searchBar}>
               <Input
                 placeholder="Rechercher un produit..."
-                style={{ width: '300px' }}
+                style={{ width: '100%', maxWidth: '300px' }}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -105,7 +167,56 @@ export default function MarketplacePage() {
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
+              <select
+                className={styles.select}
+                value={sort}
+                onChange={(e) => setSort(e.target.value as ProductSort)}
+                aria-label="Trier les produits"
+              >
+                <option value="recent">Plus récents</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
+              </select>
             </div>
+          </div>
+
+          <div className={styles.trustFilters} role="group" aria-label="Critères de confiance B2B">
+            <button
+              type="button"
+              className={`${styles.trustChip} ${verifiedOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={verifiedOnly}
+              onClick={() => setVerifiedOnly((v) => !v)}
+            >
+              <BadgeCheck size={16} aria-hidden="true" />
+              Entreprises vérifiées
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${cooperativeOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={cooperativeOnly}
+              onClick={() => setCooperativeOnly((v) => !v)}
+            >
+              <Users size={16} aria-hidden="true" />
+              Coopératives
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${womenLedOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={womenLedOnly}
+              onClick={() => setWomenLedOnly((v) => !v)}
+            >
+              <Sprout size={16} aria-hidden="true" />
+              Entreprises féminines
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${availableOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={availableOnly}
+              onClick={() => setAvailableOnly((v) => !v)}
+            >
+              <PackageCheck size={16} aria-hidden="true" />
+              Disponible en stock
+            </button>
           </div>
         </div>
 

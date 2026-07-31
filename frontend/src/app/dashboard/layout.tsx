@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Bell, Menu, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Loader2, Menu, Search, ShieldOff } from 'lucide-react';
+import Link from 'next/link';
 import { Sidebar } from '@/components/Sidebar';
+import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
+import { AIAssistantWidget } from '@/components/AIAssistantWidget';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './Layout.module.css';
 
@@ -21,6 +24,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/dashboard/admin/disputes':  'Arbitrages',
   '/dashboard/admin/stats':     'Statistiques',
   '/dashboard/admin/users':     'Utilisateurs',
+  '/dashboard/admin/health':    'Système',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -29,11 +33,82 @@ const ROLE_LABELS: Record<string, string> = {
   admin:  'Administrateur',
 };
 
+function ForbiddenNotice() {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      gap: '0.75rem',
+      padding: '4rem 1.5rem',
+    }}>
+      <ShieldOff size={40} aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
+      <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--primary-color)' }}>
+        Accès réservé aux administrateurs
+      </h2>
+      <p style={{ margin: 0, color: 'var(--text-muted)', maxWidth: 400 }}>
+        Cette section est réservée à l&apos;équipe C-Connect. Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, contactez le support.
+      </p>
+      <Link
+        href="/dashboard"
+        style={{ marginTop: '0.5rem', color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+      >
+        Retour à mon tableau de bord
+      </Link>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const pageLabel = PAGE_LABELS[pathname] ?? 'Dashboard';
+
+  // Pages réellement imbriquées (2 niveaux sous /dashboard) : on affiche le
+  // niveau intermédiaire dans le fil d'Ariane, cliquable quand une page
+  // existe pour ce niveau. 'admin' n'a pas de page propre — libellé simple.
+  const parentCrumb: { label: string; href?: string } | null = (() => {
+    if (pathname === '/dashboard/products/add') {
+      return { label: PAGE_LABELS['/dashboard/products'], href: '/dashboard/products' };
+    }
+    if (pathname.startsWith('/dashboard/admin/') && pathname !== '/dashboard/admin') {
+      return { label: 'Administration' };
+    }
+    return null;
+  })();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  // Garde d'auth côté client (Bearer en mémoire + sessionStorage).
+  // isAuthenticated = user + token — on attend isLoading pour ne pas
+  // rediriger avant la restauration de session, et on n'affiche les
+  // enfants qu'une fois authentifié pour que leur premier fetch parte
+  // avec le header Authorization.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isLoading, isAuthenticated, pathname, router]);
+
+  const isAdminRoute = pathname.startsWith('/dashboard/admin');
+  const isForbidden = isAuthenticated && isAdminRoute && user?.role !== 'admin';
+
+  if (isLoading) {
+    return (
+      <div className={styles.authLoading}>
+        <Loader2 size={28} className={styles.authLoadingSpinner} aria-hidden="true" />
+        <p>Chargement de votre espace…</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Le useEffect ci-dessus déclenche déjà la redirection ; on n'affiche
+    // rien pour éviter un flash de contenu protégé / des fetches sans token.
+    return null;
+  }
 
   return (
     <div className={styles.shell}>
@@ -53,17 +128,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <span>C-Connect</span>
             <span aria-hidden="true">›</span>
+            {parentCrumb && (
+              <>
+                {parentCrumb.href ? (
+                  <Link href={parentCrumb.href} className={styles.breadcrumbLink}>
+                    {parentCrumb.label}
+                  </Link>
+                ) : (
+                  <span>{parentCrumb.label}</span>
+                )}
+                <span aria-hidden="true">›</span>
+              </>
+            )}
             <strong>{pageLabel}</strong>
           </div>
 
           <div className={styles.topbarRight}>
-            <button type="button" className={styles.iconBtn} aria-label="Recherche">
+            <button
+              type="button"
+              className={styles.iconBtn}
+              aria-label="Rechercher un produit"
+              onClick={() => router.push('/marketplace')}
+            >
               <Search size={18} aria-hidden="true" />
             </button>
-            <button type="button" className={styles.iconBtn} aria-label="Notifications">
-              <Bell size={18} aria-hidden="true" />
-              <span className={styles.notifDot} aria-hidden="true" />
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                aria-label="Notifications"
+                aria-expanded={notifOpen}
+                onClick={() => setNotifOpen((v) => !v)}
+              >
+                <Bell size={18} aria-hidden="true" />
+              </button>
+              {notifOpen && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 0.5rem)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle, #E2E8F0)',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    padding: '1rem',
+                    width: '260px',
+                    fontSize: '0.85rem',
+                    color: 'var(--text-muted)',
+                    zIndex: 20,
+                  }}
+                >
+                  Aucune notification pour le moment.
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -81,9 +201,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {children}
+          {user && !user.email_verified_at && <VerifyEmailBanner />}
+
+          {isForbidden ? <ForbiddenNotice /> : children}
         </main>
       </div>
+
+      <AIAssistantWidget />
     </div>
   );
 }

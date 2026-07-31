@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { productService, ProductMutationPayload } from '@/services/products';
+import { assistantService } from '@/services/assistant';
 import { REGION_OPTIONS } from '@/lib/regions';
+import { RoleGuard } from '@/components/RoleGuard';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Le nom du produit doit contenir au moins 2 caractères.'),
@@ -22,6 +25,14 @@ const productSchema = z.object({
 type FormFieldErrors = Partial<Record<keyof ProductMutationPayload, string>>;
 
 export default function AddProductPage() {
+  return (
+    <RoleGuard allowedRoles={['seller']}>
+      <AddProductPageContent />
+    </RoleGuard>
+  );
+}
+
+function AddProductPageContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +44,23 @@ export default function AddProductPage() {
   const [country, setCountry] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [improvingDescription, setImprovingDescription] = useState(false);
   
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
+
+  const handleImproveDescription = async () => {
+    if (description.trim().length < 5 || improvingDescription) return;
+    setImprovingDescription(true);
+    try {
+      const improved = await assistantService.improveText(description.trim(), 'product_description');
+      setDescription(improved);
+    } catch {
+      // Échec silencieux — le texte original reste inchangé, l'utilisateur
+      // peut réessayer ou continuer à écrire manuellement.
+    } finally {
+      setImprovingDescription(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,10 +169,10 @@ export default function AddProductPage() {
             </div>
 
             {/* Cameroon 10 Regions Graphical Grid Selection */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            <fieldset style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', border: 'none', padding: 0, margin: 0 }}>
+              <legend style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', padding: 0 }}>
                 Région de Production (Cameroun) <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
+              </legend>
               
               <div style={{ 
                 display: 'grid', 
@@ -160,6 +186,7 @@ export default function AddProductPage() {
                     <button
                       key={region.code}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => setCountry(region.code)}
                       style={{
                         padding: '12px 10px',
@@ -198,7 +225,7 @@ export default function AddProductPage() {
                   {fieldErrors.country}
                 </p>
               )}
-            </div>
+            </fieldset>
 
             {/* Stock */}
             <div>
@@ -215,10 +242,33 @@ export default function AddProductPage() {
             
             {/* Description */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                Description (Détails du produit, conditionnement) <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <textarea 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <label htmlFor="product-description" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                  Description (Détails du produit, conditionnement) <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleImproveDescription}
+                  disabled={description.trim().length < 5 || improvingDescription}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                    padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600,
+                    color: 'var(--primary-color)', background: 'var(--c-green-50, #F5FAF7)',
+                    border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-full, 999px)',
+                    cursor: description.trim().length < 5 || improvingDescription ? 'not-allowed' : 'pointer',
+                    opacity: description.trim().length < 5 || improvingDescription ? 0.5 : 1,
+                  }}
+                >
+                  {improvingDescription ? (
+                    <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+                  ) : (
+                    <Sparkles size={13} aria-hidden="true" />
+                  )}
+                  Améliorer avec l&apos;IA
+                </button>
+              </div>
+              <textarea
+                id="product-description"
                 required
                 placeholder="Décrivez les spécifications de votre produit (ex: poivre séché sous soleil, trié à la main)..."
                 value={description}

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BarChart3, Building2, CalendarClock, ClipboardList,
+  Activity, BarChart3, Building2, CalendarClock, ClipboardList,
   HandCoins, Home, LogOut, Package, Settings,
   ShieldAlert, ShieldCheck, Truck, UserCog, X,
 } from 'lucide-react';
@@ -17,6 +17,7 @@ import { GamificationWidget } from '@/components/GamificationWidget';
 const BUYER_LINKS = [
   { href: '/dashboard', label: 'Vue générale', Icon: Home },
   { href: '/dashboard/rfqs', label: 'Mes RFQs', Icon: ClipboardList },
+  { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
   { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
   { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
   { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
@@ -29,6 +30,7 @@ const SELLER_LINKS = [
   { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
   { href: '/dashboard/rfqs', label: 'Appels d\'offres', Icon: ClipboardList },
   { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
+  { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
   { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
   { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
 ];
@@ -37,8 +39,10 @@ const ADMIN_LINKS = [
   { href: '/dashboard', label: 'Vue générale', Icon: Home },
   { href: '/dashboard/admin/companies', label: 'Entreprises KYB', Icon: ShieldCheck },
   { href: '/dashboard/admin/disputes', label: 'Arbitrages', Icon: ShieldAlert },
+  { href: '/dashboard/admin/delivery', label: 'Livreurs', Icon: Truck },
   { href: '/dashboard/admin/stats', label: 'Statistiques', Icon: BarChart3 },
   { href: '/dashboard/admin/users', label: 'Utilisateurs', Icon: UserCog },
+  { href: '/dashboard/admin/health', label: 'Système', Icon: Activity },
 ];
 
 const BOTTOM_LINKS = [

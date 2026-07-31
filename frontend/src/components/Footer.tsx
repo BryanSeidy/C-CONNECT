@@ -36,7 +36,7 @@ export const Footer = () => {
             <h4 className={styles.linksTitle}>Légal & Aide</h4>
             <ul className={styles.list}>
               <li><Link href="/about" className={styles.link}>Mentions Légales</Link></li>
-              <li><Link href="/about" className={styles.link}>Conditions d'Escrow</Link></li>
+              <li><Link href="/about" className={styles.link}>Conditions d&apos;Escrow</Link></li>
               <li><a href="mailto:contact@c-connect.com" className={styles.link}>Support B2B</a></li>
             </ul>
           </div>

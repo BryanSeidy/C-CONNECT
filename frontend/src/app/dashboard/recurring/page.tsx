@@ -2,11 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { recurringOrderService } from '@/services/recurring';
 import { RecurringOrder } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { CalendarClock, Pause, Play, X } from 'lucide-react';
+import { RoleGuard } from '@/components/RoleGuard';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const FREQUENCY_LABELS: Record<RecurringOrder['frequence'], string> = {
   hebdomadaire: 'Chaque semaine',
@@ -22,18 +27,28 @@ const STATUS_LABELS: Record<RecurringOrder['statut'], string> = {
 };
 
 export default function DashboardRecurringOrders() {
+  return (
+    <RoleGuard allowedRoles={['buyer', 'seller']}>
+      <DashboardRecurringOrdersContent />
+    </RoleGuard>
+  );
+}
+
+function DashboardRecurringOrdersContent() {
   const [orders, setOrders] = useState<RecurringOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const res = await recurringOrderService.getRecurringOrders();
       setOrders(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les commandes recurrentes.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les commandes récurrentes.'));
     } finally {
       setLoading(false);
     }
@@ -44,12 +59,30 @@ export default function DashboardRecurringOrders() {
   }, [fetchOrders]);
 
   const changeStatus = async (id: string, statut: 'active' | 'en_pause' | 'annulee') => {
+    if (statut === 'annulee') {
+      const ok = await confirmDialog({
+        title: 'Annuler cette planification ?',
+        message: 'Plus aucune commande ne sera générée automatiquement pour ce produit. Cette action est irréversible.',
+        confirmLabel: 'Annuler la planification',
+        cancelLabel: 'Garder active',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
     setActionId(id);
     try {
       await recurringOrderService.updateStatus(id, statut);
       await fetchOrders();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Action impossible.');
+      const messages: Record<typeof statut, string> = {
+        active: 'Commande récurrente réactivée.',
+        en_pause: 'Commande récurrente mise en pause.',
+        annulee: 'Commande récurrente annulée.',
+      };
+      showToast(messages[statut], statut === 'annulee' ? 'info' : 'success');
+    } catch (err) {
+      const msg = extractApiError(err, 'Action impossible.');
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setActionId(null);
     }
@@ -76,11 +109,11 @@ export default function DashboardRecurringOrders() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
       ) : orders.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <CalendarClock size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              Aucune commande recurrente planifiee. Depuis la fiche d&apos;un produit, choisissez l&apos;option de planification.
-            </p>
+          <CardContent>
+            <EmptyState
+              icon={CalendarClock}
+              message="Aucune commande récurrente planifiée. Depuis la fiche d'un produit, choisissez l'option de planification."
+            />
           </CardContent>
         </Card>
       ) : (

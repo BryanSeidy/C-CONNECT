@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $quantite
  * @property float $prix_unitaire
  * @property float $sous_total
- * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
@@ -28,10 +27,10 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'seller_id',
         'quantite',
         'prix_unitaire',
         'sous_total',
-        'notes',
     ];
 
     protected $casts = [

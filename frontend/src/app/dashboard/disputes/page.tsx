@@ -5,8 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { disputeService } from '@/services/disputes';
 import { Dispute } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { AlertTriangle, Plus, ShieldAlert, X } from 'lucide-react';
 
 const REASON_LABELS: Record<Dispute['raison'], string> = {
@@ -46,8 +48,8 @@ function DisputesContent() {
     try {
       const res = await disputeService.getDisputes();
       setDisputes(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les litiges.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les litiges.'));
     } finally {
       setLoading(false);
     }
@@ -72,8 +74,8 @@ function DisputesContent() {
       setForm({ orderId: '', raison: 'marchandise_non_recue', description: '' });
       setShowForm(false);
       await fetchDisputes();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Impossible d'ouvrir le litige.");
+    } catch (err) {
+      setError(extractApiError(err, "Impossible d'ouvrir le litige."));
     } finally {
       setSubmitting(false);
     }
@@ -172,9 +174,8 @@ function DisputesContent() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement...</p>
       ) : disputes.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <ShieldAlert size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Aucun litige ouvert. C&apos;est bon signe.</p>
+          <CardContent>
+            <EmptyState icon={ShieldAlert} message="Aucun litige ouvert. C'est bon signe." />
           </CardContent>
         </Card>
       ) : (

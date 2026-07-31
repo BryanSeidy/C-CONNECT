@@ -2,17 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowLeft, Award, BadgeCheck, MapPin, Package,
-  ShieldCheck, Star, Truck, Users,
+  ArrowLeft, Award, BadgeCheck, Loader2, MapPin, Package,
+  Phone, ShieldCheck, ShoppingCart, Star, Truck, Users,
 } from 'lucide-react';
 import { productService } from '@/services/products';
+import { orderService } from '@/services/orders';
 import { Product } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { getRegionLabel } from '@/lib/regions';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/ui/ToastProvider';
 import styles from './ProductDetail.module.css';
 
 // ── Skeleton ─────────────────────────────────────────────────────────────────
@@ -95,33 +98,90 @@ function RatingStars({ rating, count }: { rating: number; count: number }) {
 
 // ── Order form ────────────────────────────────────────────────────────────────
 
-function OrderForm({ product }: { product: Product }) {
-  const { isAuthenticated, user } = useAuth();
-  const [qty, setQty] = useState(1);
+interface NegotiationContext {
+  id: string;
+  price: number;
+  qty: number;
+}
 
+function OrderForm({ product, negotiation }: { product: Product; negotiation?: NegotiationContext | null }) {
+  const { isAuthenticated, user } = useAuth();
+  const router = useRouter();
+  const { addItem } = useCart();
+  const { showToast } = useToast();
+  const [qty, setQty] = useState(negotiation?.qty ?? Math.max(1, product.stockMinimum ?? 1));
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [ville, setVille] = useState('');
+  const [adresse, setAdresse] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [livraisonDemandee, setLivraisonDemandee] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const DELIVERY_FEE = 1500; // doit rester cohérent avec OrderController::FRAIS_LIVRAISON_FIXE côté backend — affichage uniquement, le montant réel est toujours recalculé serveur.
+
+  const unitPrice = negotiation?.price ?? product.price;
   const canOrder = isAuthenticated && user?.role === 'buyer' && product.stock > 0;
+  const deliveryValid = ville.trim().length > 1 && telephone.trim().length >= 8;
+
+  const handleStartOrder = () => {
+    setFormError(null);
+    setShowDelivery(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!deliveryValid) {
+      setFormError('Indiquez au moins votre ville et un numéro de téléphone joignable.');
+      return;
+    }
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      const res = await orderService.createOrder({
+        productId: product.id,
+        quantity: qty,
+        negotiationId: negotiation?.id,
+        villeLivraison: ville.trim(),
+        adresseLivraison: adresse.trim() || undefined,
+        telephoneLivraison: telephone.trim(),
+        livraisonDemandee,
+      });
+      router.push(`/checkout?order=${res.data.id}`);
+    } catch (err: unknown) {
+      const anyErr = err as { response?: { data?: { message?: string } } };
+      setFormError(anyErr?.response?.data?.message ?? "Impossible de créer la commande pour le moment. Réessayez.");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className={styles.orderCard}>
+      {negotiation && (
+        <div className={styles.negotiatedBanner}>
+          <ShieldCheck size={14} aria-hidden="true" />
+          Prix négocié appliqué — {negotiation.price.toLocaleString('fr-FR')} XAF / {product.unite ?? 'unité'}
+        </div>
+      )}
+
       <div className={styles.priceRow}>
-        <span className={styles.price}>{product.price.toLocaleString('fr-FR')} XAF</span>
+        <span className={styles.price}>{unitPrice.toLocaleString('fr-FR')} XAF</span>
         <span className={styles.priceUnit}>/ {product.unite ?? 'unité'}</span>
       </div>
 
       <StockIndicator stock={product.stock} minimum={product.stockMinimum} />
 
-      {product.stockMinimum && product.stockMinimum > 0 && (
+      {product.stockMinimum && product.stockMinimum > 0 && !negotiation && (
         <p className={styles.minOrder}>Commande minimum : {product.stockMinimum} {product.unite ?? 'unités'}</p>
       )}
 
       <div className={styles.qtyRow}>
-        <label htmlFor="qty" className={styles.qtyLabel}>Quantité</label>
+        <label htmlFor="qty" className={styles.qtyLabel}>Quantité{negotiation ? ' (accord négocié)' : ''}</label>
         <div className={styles.qtyControl}>
           <button
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.max(product.stockMinimum ?? 1, q - 1))}
-            disabled={qty <= (product.stockMinimum ?? 1)}
+            disabled={!!negotiation || qty <= (product.stockMinimum ?? 1) || submitting}
             aria-label="Diminuer la quantité"
           >
             -
@@ -133,13 +193,14 @@ function OrderForm({ product }: { product: Product }) {
             value={qty}
             min={product.stockMinimum ?? 1}
             max={product.stock}
+            disabled={!!negotiation || submitting}
             onChange={e => setQty(Math.min(product.stock, Math.max(product.stockMinimum ?? 1, parseInt(e.target.value) || 1)))}
           />
           <button
             type="button"
             className={styles.qtyBtn}
             onClick={() => setQty(q => Math.min(product.stock, q + 1))}
-            disabled={qty >= product.stock}
+            disabled={!!negotiation || qty >= product.stock || submitting}
             aria-label="Augmenter la quantité"
           >
             +
@@ -149,16 +210,148 @@ function OrderForm({ product }: { product: Product }) {
 
       <div className={styles.totalRow}>
         <span>Total estimé</span>
-        <strong>{(product.price * qty).toLocaleString('fr-FR')} XAF</strong>
+        <strong>
+          {(unitPrice * qty + (showDelivery && livraisonDemandee ? DELIVERY_FEE : 0)).toLocaleString('fr-FR')} XAF
+        </strong>
       </div>
+      {showDelivery && livraisonDemandee && (
+        <p className={styles.deliveryFeeNote}>Inclut {DELIVERY_FEE.toLocaleString('fr-FR')} XAF de frais de livraison.</p>
+      )}
+
+      {canOrder && showDelivery && (
+        <div className={styles.deliveryForm}>
+          <p className={styles.deliveryTitle}>Où livrer votre commande ?</p>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="ville" className={styles.qtyLabel}>Ville *</label>
+            <div className={styles.deliveryInputWrap}>
+              <MapPin size={15} aria-hidden="true" className={styles.deliveryIcon} />
+              <input
+                id="ville"
+                type="text"
+                className={styles.deliveryInput}
+                placeholder="Ex : Douala, Yaoundé…"
+                value={ville}
+                onChange={(e) => setVille(e.target.value)}
+                disabled={submitting}
+                autoComplete="address-level2"
+              />
+            </div>
+          </div>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="telephone" className={styles.qtyLabel}>Téléphone de contact *</label>
+            <div className={styles.deliveryInputWrap}>
+              <Phone size={15} aria-hidden="true" className={styles.deliveryIcon} />
+              <input
+                id="telephone"
+                type="tel"
+                className={styles.deliveryInput}
+                placeholder="6XX XX XX XX"
+                value={telephone}
+                onChange={(e) => setTelephone(e.target.value)}
+                disabled={submitting}
+                autoComplete="tel"
+              />
+            </div>
+          </div>
+
+          <div className={styles.deliveryField}>
+            <label htmlFor="adresse" className={styles.qtyLabel}>Adresse précise (optionnel)</label>
+            <textarea
+              id="adresse"
+              className={styles.deliveryTextarea}
+              placeholder="Quartier, repère, numéro de porte…"
+              value={adresse}
+              onChange={(e) => setAdresse(e.target.value)}
+              disabled={submitting}
+              rows={2}
+            />
+          </div>
+
+          <div className={styles.deliveryToggleRow}>
+            <label className={styles.deliveryToggleOption}>
+              <input
+                type="radio"
+                name="delivery-mode"
+                checked={livraisonDemandee}
+                onChange={() => setLivraisonDemandee(true)}
+                disabled={submitting}
+              />
+              <span>
+                <Truck size={14} aria-hidden="true" /> Livraison à domicile
+                <strong> (+{DELIVERY_FEE.toLocaleString('fr-FR')} XAF)</strong>
+              </span>
+            </label>
+            <label className={styles.deliveryToggleOption}>
+              <input
+                type="radio"
+                name="delivery-mode"
+                checked={!livraisonDemandee}
+                onChange={() => setLivraisonDemandee(false)}
+                disabled={submitting}
+              />
+              <span>Je viendrai récupérer moi-même</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {formError && <p className={styles.formError}>{formError}</p>}
 
       {canOrder ? (
-        <Link href={`/dashboard/orders?product=${product.id}&qty=${qty}`}>
-          <Button variant="primary" size="lg" style={{ width: '100%' }}>
-            <ShieldCheck size={16} aria-hidden="true" />
-            Commander avec paiement sécurisé
+        !showDelivery ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={handleStartOrder}>
+              <ShieldCheck size={16} aria-hidden="true" />
+              Commander avec paiement sécurisé
+            </Button>
+            {!negotiation && (
+              <Button
+                variant="outline"
+                size="lg"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  addItem({
+                    productId: Number(product.id),
+                    slug: product.slug,
+                    name: product.name,
+                    price: product.price,
+                    unite: product.unite,
+                    imageUrl: product.imageUrl,
+                    stock: product.stock,
+                    sellerId: Number(product.producerId),
+                    sellerName: product.producer?.companyName || product.producer?.fullName || 'Fournisseur',
+                  }, qty);
+                  showToast(`« ${product.name} » ajouté au panier.`, 'success');
+                }}
+              >
+                <ShoppingCart size={16} aria-hidden="true" />
+                Ajouter au panier
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Button
+            variant="primary"
+            size="lg"
+            style={{ width: '100%' }}
+            onClick={handleConfirmOrder}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={16} aria-hidden="true" className={styles.spinIcon} />
+                Création de la commande…
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={16} aria-hidden="true" />
+                Confirmer et payer {(unitPrice * qty + (livraisonDemandee ? DELIVERY_FEE : 0)).toLocaleString('fr-FR')} XAF
+              </>
+            )}
           </Button>
-        </Link>
+        )
       ) : !isAuthenticated ? (
         <Link href={`/login?redirect=/marketplace/${product.slug}`}>
           <Button variant="secondary" size="lg" style={{ width: '100%' }}>
@@ -169,6 +362,8 @@ function OrderForm({ product }: { product: Product }) {
         <Button variant="outline" size="lg" style={{ width: '100%' }} disabled>
           Produit indisponible
         </Button>
+      ) : user?.role !== 'buyer' ? (
+        <p className={styles.sellerNotice}>Connectez-vous avec un compte acheteur pour commander ce produit.</p>
       ) : null}
 
       <p className={styles.escrowNote}>
@@ -179,11 +374,39 @@ function OrderForm({ product }: { product: Product }) {
   );
 }
 
+// ── Barre d'action mobile (sticky) ───────────────────────────────────────────
+
+function MobileStickyBar({ product }: { product: Product }) {
+  if (product.stock === 0) return null;
+  return (
+    <div className={styles.mobileStickyBar}>
+      <div className={styles.mobileStickyPrice}>
+        <span className={styles.mobileStickyAmount}>{product.price.toLocaleString('fr-FR')} XAF</span>
+        <span className={styles.mobileStickyUnit}>/ {product.unite ?? 'unité'}</span>
+      </div>
+      <a href="#order-panel" className={styles.mobileStickyBtn}>
+        <ShieldCheck size={16} aria-hidden="true" />
+        Commander
+      </a>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? '';
+  const searchParams = useSearchParams();
+
+  const negotiationId = searchParams.get('negotiation');
+  const negotiation = negotiationId
+    ? {
+        id: negotiationId,
+        price: parseFloat(searchParams.get('price') ?? '0'),
+        qty: parseInt(searchParams.get('qty') ?? '1', 10),
+      }
+    : null;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -329,10 +552,12 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Colonne commande */}
-            <div className={styles.sideCol}>
-              <OrderForm product={product} />
+            <div className={styles.sideCol} id="order-panel">
+              <OrderForm product={product} negotiation={negotiation} />
             </div>
           </div>
+
+          <MobileStickyBar product={product} />
 
           {/* Vendeur */}
           <section className={styles.sellerSection}>

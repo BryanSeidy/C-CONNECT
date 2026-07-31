@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/context/CartContext';
 import styles from './Navbar.module.css';
 
 const NAV_LINKS = [
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
+  const { itemCount } = useCart();
   const pathname = usePathname();
   const isDashboard = pathname.startsWith('/dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -57,6 +59,10 @@ export const Navbar = () => {
 
         {/* Auth — desktop */}
         <div className={styles.authGroup}>
+          <Link href="/cart" className={styles.cartLink} aria-label={`Panier${itemCount > 0 ? ` (${itemCount} article${itemCount > 1 ? 's' : ''})` : ''}`}>
+            <ShoppingCart size={20} aria-hidden="true" />
+            {itemCount > 0 && <span className={styles.cartBadge}>{itemCount > 99 ? '99+' : itemCount}</span>}
+          </Link>
           {user ? (
             <>
               <Link href="/dashboard" className={styles.dashBtn}>
@@ -101,6 +107,10 @@ export const Navbar = () => {
             ))}
           </nav>
           <div className={styles.mobileAuth}>
+            <Link href="/cart" className={styles.mobileCartLink}>
+              <ShoppingCart size={18} aria-hidden="true" />
+              Panier{itemCount > 0 ? ` (${itemCount})` : ''}
+            </Link>
             {user ? (
               <>
                 <Link href="/dashboard" className={styles.dashBtn}>Mon espace</Link>

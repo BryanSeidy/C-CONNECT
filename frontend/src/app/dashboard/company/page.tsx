@@ -9,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { companyService } from '@/services/companies';
 import { Company } from '@/types';
 import { REGION_OPTIONS } from '@/lib/regions';
-import { Building2, ShieldCheck } from 'lucide-react';
+import { extractApiError } from '@/lib/errors';
+import { Building2, ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'cooperative', label: 'Coopérative' },
@@ -48,6 +49,23 @@ export default function DashboardCompany() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
+  const [rccmCheck, setRccmCheck] = useState<{ status: 'idle' | 'checking' | 'valid' | 'invalid'; message?: string }>({ status: 'idle' });
+
+  const rccmValue = form.rccm || company?.rccm || '';
+
+  useEffect(() => {
+    if (!rccmValue || rccmValue.trim().length < 5) {
+      setRccmCheck({ status: 'idle' });
+      return;
+    }
+    setRccmCheck({ status: 'checking' });
+    const timeout = setTimeout(() => {
+      companyService.verifyRccm(rccmValue.trim())
+        .then((res) => setRccmCheck({ status: res.valide ? 'valid' : 'invalid', message: res.message }))
+        .catch(() => setRccmCheck({ status: 'idle' }));
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [rccmValue]);
 
   const fetchCompany = useCallback(async () => {
     if (!user?.companyId) {
@@ -57,8 +75,8 @@ export default function DashboardCompany() {
     try {
       const res = await companyService.getCompanyBySlugOrId(String(user.companyId));
       setCompany(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Impossible de charger le profil d'entreprise.");
+    } catch (err) {
+      setError(extractApiError(err, "Impossible de charger le profil d'entreprise."));
     } finally {
       setLoading(false);
     }
@@ -77,10 +95,10 @@ export default function DashboardCompany() {
     try {
       const res = company
         ? await companyService.updateCompany(company.id, form)
-        : await companyService.createCompany(form as any);
+        : await companyService.createCompany(form);
       setCompany(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de sauvegarder le profil.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de sauvegarder le profil.'));
     } finally {
       setSaving(false);
     }
@@ -206,12 +224,32 @@ export default function DashboardCompany() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <Input
-                label="RCCM"
-                placeholder="Registre du Commerce"
-                value={form.rccm || company?.rccm || ''}
-                onChange={(e) => setForm((f) => ({ ...f, rccm: e.target.value }))}
-              />
+              <div>
+                <Input
+                  label="RCCM"
+                  placeholder="Ex : RC/DLA/2020/B/1234"
+                  value={rccmValue}
+                  onChange={(e) => setForm((f) => ({ ...f, rccm: e.target.value }))}
+                />
+                {rccmCheck.status !== 'idle' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.35rem', fontSize: '0.75rem',
+                    color: rccmCheck.status === 'valid' ? 'var(--success)' : rccmCheck.status === 'invalid' ? 'var(--error)' : 'var(--text-muted)',
+                  }}>
+                    {rccmCheck.status === 'checking' && <><Loader2 size={12} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} /> Vérification du format…</>}
+                    {rccmCheck.status === 'valid' && <><CheckCircle2 size={12} aria-hidden="true" /> {rccmCheck.message}</>}
+                    {rccmCheck.status === 'invalid' && <><AlertCircle size={12} aria-hidden="true" /> {rccmCheck.message}</>}
+                  </div>
+                )}
+                {!company?.rccm && !form.rccm && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                    Pas encore de RCCM ?{' '}
+                    <a href="/dashboard/company/registration-guide" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>
+                      Suivez notre guide d&apos;immatriculation
+                    </a>
+                  </p>
+                )}
+              </div>
               <Input
                 label="NIU"
                 placeholder="Numéro d'Identifiant Unique"

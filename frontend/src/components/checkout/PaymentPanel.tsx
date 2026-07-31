@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2, ChevronRight, Loader2,
   Phone, RefreshCw, ShieldCheck, Smartphone,
@@ -23,15 +23,65 @@ interface InitiateResponse {
   success: boolean;
   data: {
     transaction_reference: string;
+    pay_token?: string;
     amount: number;
     currency: string;
     payment_method: string;
+    mode?: 'omapi' | 'simulation';
+    status?: string;
     instructions: string;
     order_id: string;
+    poll_url?: string;
   };
 }
 
+interface StatusResponse {
+  success: boolean;
+  data: {
+    status: 'pending' | 'successful' | 'failed' | string;
+    order_status: string;
+    transaction_reference: string | null;
+    pay_token?: string | null;
+    message?: string;
+  };
+}
+
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 120_000;
+
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+/**
+ * Badges opérateur — texte-dans-forme aux couleurs de marque publiques
+ * (jaune MTN, orange Orange), pattern standard des pages de paiement pour
+ * indiquer un moyen de paiement sans reproduire un logo vectoriel officiel.
+ * À remplacer par les vrais assets de marque dès qu'obtenus (voir
+ * docs/payment-integration-orange-mtn.md §3).
+ */
+function MtnMomoBadge() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <circle cx="17" cy="17" r="17" fill="#FFCC00" />
+      <text x="17" y="21" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#1A1A1A" fontFamily="Arial, sans-serif">
+        MTN
+      </text>
+    </svg>
+  );
+}
+
+function OrangeMoneyBadge() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <rect x="0" y="0" width="34" height="34" rx="9" fill="#FF6600" />
+      <text x="17" y="20" textAnchor="middle" fontSize="7.5" fontWeight="800" fill="#fff" fontFamily="Arial, sans-serif">
+        orange
+      </text>
+      <text x="17" y="27" textAnchor="middle" fontSize="5.5" fontWeight="600" fill="#fff" fontFamily="Arial, sans-serif" opacity="0.9">
+        money
+      </text>
+    </svg>
+  );
+}
 
 function MethodCard({
   method,
@@ -52,16 +102,8 @@ function MethodCard({
       aria-pressed={selected}
       style={selected ? { borderColor: isMtn ? '#FCD34D' : '#FB923C' } : undefined}
     >
-      <div
-        className={styles.methodLogo}
-        style={{ background: isMtn ? 'rgba(252,211,77,0.1)' : 'rgba(251,146,60,0.1)' }}
-        aria-hidden="true"
-      >
-        <Smartphone
-          size={22}
-          strokeWidth={1.75}
-          style={{ color: isMtn ? '#B45309' : '#C2410C' }}
-        />
+      <div className={styles.methodLogo} aria-hidden="true">
+        {isMtn ? <MtnMomoBadge /> : <OrangeMoneyBadge />}
       </div>
 
       <div className={styles.methodInfo}>
@@ -72,7 +114,7 @@ function MethodCard({
           {isMtn ? 'MTN Mobile Money' : 'Orange Money'}
         </span>
         <span className={styles.methodSub}>
-          {isMtn ? 'Reseau MTN — +237 6[5-9]X' : 'Reseau Orange — +237 6[9-6]X'}
+          {isMtn ? 'Reseau MTN — 67X / 650-654 / 680-684' : 'Reseau Orange — 69X / 655-659 / 685-689'}
         </span>
       </div>
 
@@ -127,6 +169,18 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
   const [loading,      setLoading]      = useState(false);
   const [txRef,        setTxRef]        = useState<string | null>(null);
   const [errorMsg,     setErrorMsg]     = useState<string | null>(null);
+  const [pollHint,     setPollHint]     = useState<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartedAt = useRef<number>(0);
+
+  const stopPolling = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopPolling(), []);
 
   const validatePhone = (value: string): boolean => {
     const normalized = value.startsWith('+237') ? value : `+237${value.replace(/^0+/, '')}`;
@@ -145,6 +199,54 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
     setStep('phone');
   };
 
+  const pollOrangeStatus = (reference: string) => {
+    stopPolling();
+    pollStartedAt.current = Date.now();
+    setPollHint('En attente de la confirmation Orange Money…');
+
+    const tick = async () => {
+      if (Date.now() - pollStartedAt.current > POLL_TIMEOUT_MS) {
+        stopPolling();
+        setErrorMsg('Delai depasse. Si vous avez valide le PIN, actualisez le statut de la commande.');
+        setStep('error');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const statusRes = await apiClient.get<unknown, StatusResponse>(
+          `/payments/mobile-money/status?order_id=${encodeURIComponent(orderId)}`
+        );
+
+        const status = statusRes.data.status;
+
+        if (status === 'successful') {
+          stopPolling();
+          setTxRef(statusRes.data.transaction_reference ?? reference);
+          setStep('success');
+          setLoading(false);
+          onSuccess?.(statusRes.data.transaction_reference ?? reference);
+          return;
+        }
+
+        if (status === 'failed') {
+          stopPolling();
+          setErrorMsg('Le paiement Orange Money a ete refuse ou a echoue.');
+          setStep('error');
+          setLoading(false);
+          return;
+        }
+
+        setPollHint(statusRes.data.message ?? 'Validez le PIN sur votre telephone…');
+      } catch {
+        setPollHint('Verification en cours…');
+      }
+    };
+
+    void tick();
+    pollTimerRef.current = setInterval(() => { void tick(); }, POLL_INTERVAL_MS);
+  };
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError(null);
@@ -160,9 +262,10 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
 
     setLoading(true);
     setStep('pending_pin');
+    setPollHint(null);
 
     try {
-      const res = await apiClient.post<unknown, InitiateResponse>(
+      const initRes = await apiClient.post<unknown, InitiateResponse>(
         '/payments/mobile-money/initiate',
         {
           order_id:       orderId,
@@ -171,32 +274,45 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
         }
       );
 
-      setTxRef(res.data.transaction_reference);
+      setTxRef(initRes.data.transaction_reference);
 
-      // Simulation : dans la vraie implementation, on attend le webhook
-      // Ici on simule un delai de traitement
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      // Orange OMAPI réel : polling /mp/paymentstatus via le backend
+      if (method === 'orange_money' && initRes.data.mode === 'omapi') {
+        pollOrangeStatus(initRes.data.transaction_reference);
+        return;
+      }
+
+      // MTN / Orange simulation : confirme via l'endpoint de simulation
+      await apiClient.post('/payments/mobile-money', {
+        order_id: orderId,
+        phone: normalized,
+        provider: method === 'mtn_momo' ? 'MTN' : 'Orange',
+      });
 
       setStep('success');
-      onSuccess?.(res.data.transaction_reference);
+      onSuccess?.(initRes.data.transaction_reference);
+      setLoading(false);
     } catch (err: unknown) {
+      stopPolling();
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Erreur lors de l\'initiation du paiement.';
       setErrorMsg(msg);
       setStep('error');
-    } finally {
       setLoading(false);
     }
   };
 
   const reset = () => {
+    stopPolling();
     setStep('select');
     setMethod(null);
     setPhone('');
     setPhoneError(null);
     setErrorMsg(null);
     setTxRef(null);
+    setPollHint(null);
+    setLoading(false);
   };
 
   return (
@@ -206,7 +322,7 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
         <ShieldCheck size={18} aria-hidden="true" className={styles.headerIcon} />
         <div>
           <h2 className={styles.title}>Activer le Sequestre</h2>
-          <p className={styles.titleSub}>Paiement securise — fonds retenus jusqu'a reception</p>
+          <p className={styles.titleSub}>Paiement securise — fonds retenus jusqu&apos;a reception</p>
         </div>
       </div>
 
@@ -278,7 +394,7 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
             <button
               type="submit"
               className={styles.ctaBtn}
-              disabled={loading || phone.length < 8}
+              disabled={loading || phone.length < 9}
             >
               {loading ? (
                 <Loader2 size={16} className={styles.spinner} aria-hidden="true" />
@@ -294,12 +410,13 @@ export function PaymentPanel({ orderId, amountXaf, onSuccess }: PaymentPanelProp
       {/* Step: pending PIN */}
       {step === 'pending_pin' && (
         <div className={styles.pendingState}>
-          <div className={styles.pendingIcon} aria-hidden="true">
-            <Loader2 size={28} className={styles.spinner} />
+          <div className={`${styles.pendingIcon} ${styles.phonePulse}`} aria-hidden="true">
+            <Smartphone size={26} strokeWidth={1.75} />
           </div>
           <h3 className={styles.pendingTitle}>En attente de confirmation</h3>
           <p className={styles.pendingMsg}>
-            Veuillez valider le message de debit sur votre telephone en tapant votre code PIN.
+            {pollHint
+              ?? 'Veuillez valider le message de debit sur votre telephone en tapant votre code PIN.'}
           </p>
           <div className={styles.pendingHint}>
             <span className={styles.pendingHintLabel}>Reference transaction</span>

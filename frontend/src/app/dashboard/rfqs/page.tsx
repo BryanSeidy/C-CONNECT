@@ -5,11 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { rfqService } from '@/services/rfqs';
+import { rfqMatchService, RfqMatch } from '@/services/rfqMatch';
+import { assistantService } from '@/services/assistant';
 import { Rfq, RfqBid } from '@/types';
-import { getRegionLabel, REGION_OPTIONS } from '@/lib/regions';
-import { CheckCircle2, ClipboardList, Plus, ShieldCheck, X, XCircle } from 'lucide-react';
+import { REGION_OPTIONS } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
+import { CheckCircle2, ClipboardList, Loader2, Plus, ShieldCheck, Sparkles, X, XCircle } from 'lucide-react';
 
 const RFQ_STATUS_LABELS: Record<Rfq['statut'], string> = {
   active: 'Ouverte aux offres',
@@ -46,9 +50,36 @@ export default function DashboardRfqs() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const [improvingDescription, setImprovingDescription] = useState(false);
+
+  const handleImproveDescription = async () => {
+    if (form.description.trim().length < 5 || improvingDescription) return;
+    setImprovingDescription(true);
+    try {
+      const improved = await assistantService.improveText(form.description.trim(), 'rfq_requirements');
+      setForm((f) => ({ ...f, description: improved }));
+    } catch {
+      // Échec silencieux — le texte original reste inchangé.
+    } finally {
+      setImprovingDescription(false);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
   const [bidForms, setBidForms] = useState<Record<string, { prix: string; quantite: string; message: string }>>({});
   const [actionId, setActionId] = useState<string | null>(null);
+  const [comparingRfqId, setComparingRfqId] = useState<string | null>(null);
+  const [comparisons, setComparisons] = useState<Record<string, string>>({});
+  const [matches, setMatches] = useState<Record<number, RfqMatch>>({});
+
+  useEffect(() => {
+    if (isBuyer) return;
+    let active = true;
+    rfqMatchService.getMatchesForSeller().then((list) => {
+      if (!active) return;
+      setMatches(Object.fromEntries(list.map((m) => [m.rfqId, m])));
+    });
+    return () => { active = false; };
+  }, [isBuyer]);
 
   const fetchRfqs = useCallback(async () => {
     setLoading(true);
@@ -61,8 +92,8 @@ export default function DashboardRfqs() {
         const res = await rfqService.getActiveRfqs();
         setRfqs(res.data.items);
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger les demandes de devis.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les demandes de devis.'));
       setRfqs([]);
     } finally {
       setLoading(false);
@@ -96,8 +127,8 @@ export default function DashboardRfqs() {
       setForm(emptyForm());
       setShowForm(false);
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de publier la demande.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de publier la demande.'));
     } finally {
       setSubmitting(false);
     }
@@ -116,8 +147,8 @@ export default function DashboardRfqs() {
       });
       setBidForms((prev) => ({ ...prev, [rfqId]: { prix: '', quantite: '', message: '' } }));
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de soumettre votre offre.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de soumettre votre offre.'));
     } finally {
       setActionId(null);
     }
@@ -132,10 +163,24 @@ export default function DashboardRfqs() {
         await rfqService.rejectBid(rfqId, bid.id);
       }
       await fetchRfqs();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Action impossible.');
+    } catch (err) {
+      setError(extractApiError(err, 'Action impossible.'));
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleCompareBids = async (rfqId: string) => {
+    setComparingRfqId(rfqId);
+    try {
+      const comparison = await rfqService.compareBids(rfqId);
+      if (comparison) {
+        setComparisons((prev) => ({ ...prev, [rfqId]: comparison }));
+      } else {
+        setError('Comparaison assistée momentanément indisponible. Comparez les offres ci-dessous manuellement.');
+      }
+    } finally {
+      setComparingRfqId(null);
     }
   };
 
@@ -181,9 +226,31 @@ export default function DashboardRfqs() {
                 required
               />
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.4rem', color: 'var(--text-main)' }}>
-                  Description du besoin
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-main)' }}>
+                    Description du besoin
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleImproveDescription}
+                    disabled={form.description.trim().length < 5 || improvingDescription}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                      padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600,
+                      color: 'var(--primary-color)', background: 'var(--c-green-50, #F5FAF7)',
+                      border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-full, 999px)',
+                      cursor: form.description.trim().length < 5 || improvingDescription ? 'not-allowed' : 'pointer',
+                      opacity: form.description.trim().length < 5 || improvingDescription ? 0.5 : 1,
+                    }}
+                  >
+                    {improvingDescription ? (
+                      <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+                    ) : (
+                      <Sparkles size={13} aria-hidden="true" />
+                    )}
+                    Améliorer avec l&apos;IA
+                  </button>
+                </div>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -303,16 +370,16 @@ export default function DashboardRfqs() {
         <p style={{ color: 'var(--text-muted)' }}>Chargement des demandes...</p>
       ) : rfqs.length === 0 ? (
         <Card>
-          <CardContent style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-            <ClipboardList size={32} aria-hidden="true" style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              {isBuyer ? "Vous n'avez publié aucune demande de devis." : 'Aucune demande active pour le moment.'}
-            </p>
+          <CardContent>
+            <EmptyState
+              icon={ClipboardList}
+              message={isBuyer ? "Vous n'avez publié aucune demande de devis." : 'Aucune demande active pour le moment.'}
+            />
           </CardContent>
         </Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {rfqs.map((rfq) => (
+          {[...rfqs].sort((a, b) => (matches[Number(b.id)]?.score ?? 0) - (matches[Number(a.id)]?.score ?? 0)).map((rfq) => (
             <Card key={rfq.id}>
               <CardContent style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
@@ -341,9 +408,56 @@ export default function DashboardRfqs() {
                   </span>
                 )}
 
+                {!isBuyer && matches[Number(rfq.id)] && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    background: 'var(--c-gold-100, #fdf3d8)', color: 'var(--primary-color)',
+                    fontSize: '0.8125rem', fontWeight: 600, padding: '0.5rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                  }}>
+                    <Sparkles size={14} aria-hidden="true" />
+                    Recommandé pour vous — {matches[Number(rfq.id)].reason}
+                  </div>
+                )}
+
                 {isBuyer && rfq.bids && rfq.bids.length > 0 && (
                   <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>Offres reçues</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>Offres reçues</h4>
+                      {rfq.bids.filter((b) => b.statut === 'en_attente').length >= 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleCompareBids(String(rfq.id))}
+                          disabled={comparingRfqId === String(rfq.id)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                            padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600,
+                            color: 'var(--primary-color)', background: 'var(--c-green-50, #F5FAF7)',
+                            border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-full, 999px)',
+                            cursor: comparingRfqId === String(rfq.id) ? 'not-allowed' : 'pointer',
+                            opacity: comparingRfqId === String(rfq.id) ? 0.6 : 1,
+                          }}
+                        >
+                          {comparingRfqId === String(rfq.id) ? (
+                            <Loader2 size={13} aria-hidden="true" style={{ animation: 'spin 0.8s linear infinite' }} />
+                          ) : (
+                            <Sparkles size={13} aria-hidden="true" />
+                          )}
+                          Comparer les offres avec l&apos;IA
+                        </button>
+                      )}
+                    </div>
+
+                    {comparisons[String(rfq.id)] && (
+                      <div style={{
+                        display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem',
+                        background: 'var(--c-gold-100, #fdf3d8)', borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.8125rem', color: 'var(--primary-color)', lineHeight: 1.5,
+                      }}>
+                        <Sparkles size={15} aria-hidden="true" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+                        <span>{comparisons[String(rfq.id)]}</span>
+                      </div>
+                    )}
                     {rfq.bids.map((bid) => (
                       <div
                         key={bid.id}

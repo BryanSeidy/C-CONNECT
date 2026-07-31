@@ -15,6 +15,7 @@ export interface User {
   country?: string | null;
   role: UserRole;
   isVerified?: boolean;
+  email_verified_at?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -87,6 +88,44 @@ export interface Product {
   reviews?: Review[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export type NegotiationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'COUNTERED';
+
+export interface Negotiation {
+  id: number;
+  productId: number;
+  buyerId: number;
+  sellerId: number;
+  quantity: number;
+  proposedPrice: number;
+  counterPrice?: number | null;
+  message?: string | null;
+  status: NegotiationStatus;
+  /** Non-null une fois convertie en commande — empêche de la réutiliser. */
+  orderId?: number | null;
+  product: { id: number; slug: string; name: string; category: string; price: number };
+  buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  /** Flattened seller *user* (backend nests it under seller.user — normalized in the service layer). */
+  seller?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  createdAt?: string;
+}
+
+export interface RawNegotiation {
+  id: number;
+  product_id: number;
+  buyer_id: number;
+  seller_id: number;
+  quantity: string | number;
+  proposed_price: string | number;
+  counter_price?: string | number | null;
+  message?: string | null;
+  status: NegotiationStatus;
+  order_id?: number | null;
+  product?: { id: number; nom: string; slug: string; prix: string | number; unite?: string; category?: { nom: string } | null } | null;
+  buyer?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null;
+  seller?: { id: number; user?: Pick<User, 'id' | 'companyName' | 'fullName' | 'country'> | null } | null;
+  created_at?: string;
 }
 
 export type EscrowStatus =
@@ -179,6 +218,8 @@ export interface Company {
   statutVerification: VerificationStatus;
   badges?: CompanyBadge[];
   createdAt?: string;
+  registrationStatus?: 'non_demarre' | 'en_cours' | 'termine';
+  registrationChecklist?: Record<string, boolean> | null;
 }
 
 export type RfqStatus = 'active' | 'en_negociation' | 'satisfaite' | 'expiree' | 'annulee';
@@ -265,6 +306,8 @@ export interface Dispute {
   statut: DisputeStatus;
   notesResolution?: string | null;
   order?: Order | null;
+  initiateur?: { id: number | string; fullName?: string | null } | null;
+  resolvedBy?: { id: number | string; fullName?: string | null } | null;
   createdAt?: string;
 }
 
@@ -371,6 +414,8 @@ export interface RawCompany {
   statut_verification: VerificationStatus;
   badges?: CompanyBadge[];
   created_at?: string;
+  registration_status?: 'non_demarre' | 'en_cours' | 'termine';
+  registration_checklist?: Record<string, boolean> | null;
 }
 
 export interface RawRfqBid {
@@ -441,6 +486,8 @@ export interface RawDispute {
   statut: DisputeStatus;
   notes_resolution?: string | null;
   order?: RawOrder | null;
+  initiateur?: { id: number; fullName?: string | null } | null;
+  resolved_by?: { id: number; fullName?: string | null } | null;
   created_at?: string;
 }
 

@@ -8,6 +8,51 @@
   width: 100%;
   overflow: hidden;
  }
+
+/* ── Variante mobile compacte ── */
+.compactTrack { display: none; width: 100%; }
+
+@media (max-width: 640px) {
+  .track { display: none; }
+  .compactTrack { display: flex; flex-direction: column; gap: 0.35rem; }
+}
+
+.compactHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.compactStepCount {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.compactStepLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7A4E00;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compactBar {
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--border-color);
+  overflow: hidden;
+}
+
+.compactBarFill {
+  height: 100%;
+  background: var(--c-gold-500, #D9A441);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
  
 .step {
    display: flex;

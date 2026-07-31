@@ -1,11 +1,16 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AxiosError } from 'axios';
 import { User } from '@/types';
 import { authService, ProfileResponse } from '@/services/auth';
 import { sessionService } from '@/services/session';
-import { setMemoryToken } from '@/services/api';
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  getMemoryToken,
+  setMemoryToken,
+} from '@/services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +39,9 @@ function extractServerError(error: unknown): string | null {
   if (typeof data.message === 'string') return data.message;
   if (typeof data.errors === 'string') return data.errors;
   if (data.errors && typeof data.errors === 'object') {
-    return Object.values(data.errors).flat().join(', ');
+    // Renvoie la première erreur pour chaque champ
+    const firstError = Object.values(data.errors)[0]?.[0];
+    if (firstError) return firstError;
   }
   return null;
 }
@@ -51,94 +58,147 @@ function normalizeProfile(response: ProfileResponse): User | null {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [hasToken, setHasToken] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // On mount: restore cached user for fast UI, then validate via /me
+  // Compteur de génération : toute réponse /auth/me obsolète (résolue après
+  // une requête plus récente, ex: refreshProfile() lancé par la page de
+  // callback OAuth pendant que cette validation initiale est encore en vol)
+  // est ignorée au lieu d'écraser un état plus frais.
+  const profileRequestId = useRef(0);
+
+  const applyToken = useCallback((token: string | null) => {
+    setMemoryToken(token);
+    setHasToken(!!token);
+  }, []);
+
+  const clearLocalAuth = useCallback(() => {
+    setMemoryToken(null);
+    setHasToken(false);
+    setUser(null);
+    sessionService.clear();
+  }, []);
+
+  // Sync si l'intercepteur Axios invalide la session (401 réel).
+  useEffect(() => {
+    const onExpired = () => {
+      setHasToken(false);
+      setUser(null);
+    };
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  // On mount: restore cached user only if a Bearer token exists. A user cache
+  // without token is a dead session — treating it as authenticated causes the
+  // /login ↔ /dashboard redirect loop (APIs leave without Authorization → 401).
   useEffect(() => {
     const restoredSession = sessionService.read();
+    const token = getMemoryToken();
 
-    // Optimistic restore from localStorage cache
+    if (!token) {
+      if (restoredSession.user) {
+        sessionService.clear();
+      }
+      setUser(null);
+      setHasToken(false);
+      setIsLoading(false);
+      return;
+    }
+
+    setHasToken(true);
     if (restoredSession.user) {
       setUser(restoredSession.user);
     }
 
-    // Validate session with the server (cookie-based)
+    const requestId = ++profileRequestId.current;
+
     authService.getProfile()
       .then((profile) => {
+        if (requestId !== profileRequestId.current) return; // réponse obsolète
         const validatedUser = normalizeProfile(profile);
         if (validatedUser) {
           setUser(validatedUser);
           sessionService.saveUser(validatedUser);
         } else {
-          // Server rejected the session
-          setUser(null);
-          sessionService.clear();
+          clearLocalAuth();
         }
       })
-      .catch(() => {
-        // Network error or 401 — clear stale local cache if no server session
-        if (!restoredSession.user) {
-          setUser(null);
+      .catch((error: unknown) => {
+        if (requestId !== profileRequestId.current) return; // réponse obsolète
+        const status = (error as AxiosError)?.response?.status;
+        // 401 : token invalide/expiré — purger toute la session locale
+        if (status === 401) {
+          clearLocalAuth();
+          return;
         }
-        // If we had a cached user but server fails, keep showing the user
-        // to avoid a jarring logout on transient network errors
+        // Erreur réseau / 5xx : garder le cache optimiste pour éviter un logout brutal
       })
       .finally(() => {
+        if (requestId !== profileRequestId.current) return;
         setIsLoading(false);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clearLocalAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password });
-      const authToken = response.data.token ?? response.data.access_token;
       const authUser = response.data.user;
+      const token = response.data.token;
 
       if (!authUser) {
         throw new Error('Réponse de connexion invalide — données utilisateur manquantes.');
       }
-
-      // Store token in memory for immediate use in this session
-      if (authToken) {
-        setMemoryToken(authToken);
+      if (!token) {
+        throw new Error('Réponse de connexion invalide — token manquant.');
       }
+
+      // Token d'abord : tout fetch suivant (dashboard) doit voir le Bearer.
+      applyToken(token);
 
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
-      sessionService.save(authToken ?? '', normalizedUser);
+      sessionService.saveUser(normalizedUser);
     } catch (error: unknown) {
       const message = extractServerError(error);
       throw new Error(message ?? 'Connexion échouée. Vérifiez vos identifiants.');
     }
-  }, []);
+  }, [applyToken]);
 
   const register = useCallback(async (email: string, password: string, fullName: string, role: string) => {
     try {
       const response = await authService.register({ email, password, fullName, role: role as 'buyer' | 'seller' });
-      const authUser = response.data.user;
-      const authToken = response.data.token ?? response.data.access_token;
+      const authUser = response.data?.user;
+      const token = response.data.token;
 
       if (!authUser) {
         throw new Error('Réponse d\'inscription invalide — données utilisateur manquantes.');
       }
-
-      if (authToken) {
-        setMemoryToken(authToken);
+      if (!token) {
+        throw new Error('Réponse d\'inscription invalide — token manquant.');
       }
+
+      applyToken(token);
 
       const normalizedUser: User = { ...authUser, fullName: authUser.fullName ?? authUser.name ?? null };
       setUser(normalizedUser);
-      sessionService.save(authToken ?? '', normalizedUser);
+      sessionService.saveUser(normalizedUser);
     } catch (error: unknown) {
       const message = extractServerError(error);
       throw new Error(message ?? 'Inscription échouée. Veuillez réessayer.');
     }
-  }, []);
+  }, [applyToken]);
 
   const refreshProfile = useCallback(async () => {
+    if (!getMemoryToken()) return;
+    // Sync React dès qu'un token est présent (ex: callback OAuth qui
+    // appelle setMemoryToken hors de ce hook avant refreshProfile).
+    setHasToken(true);
+    const requestId = ++profileRequestId.current;
     try {
       const profile = await authService.getProfile();
+      if (requestId !== profileRequestId.current) return; // une requête plus récente a pris le dessus
       const nextUser = normalizeProfile(profile);
       if (!nextUser) return;
       setUser(nextUser);
@@ -154,24 +214,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch {
       // Proceed with client-side logout even if server call fails
     } finally {
-      setMemoryToken(null);
-      setUser(null);
-      sessionService.clear();
+      clearLocalAuth();
       router.push('/login');
     }
-  }, [router]);
+  }, [router, clearLocalAuth]);
 
   const value = useMemo(
     () => ({
       user,
-      isAuthenticated: user !== null,
+      // Authentifié = profil + Bearer token. Le cache user seul ne suffit pas.
+      isAuthenticated: user !== null && hasToken,
       isLoading,
       login,
       register,
       refreshProfile,
       logout,
     }),
-    [user, isLoading, login, register, refreshProfile, logout]
+    [user, hasToken, isLoading, login, register, refreshProfile, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

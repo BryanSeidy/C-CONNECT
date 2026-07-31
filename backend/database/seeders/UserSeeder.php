@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             'prenom' => 'C-Connect',
             'email' => 'admin@cconnect.cm',
             'telephone' => '237600000000',
-            'password' => Hash::make('password'), //Admin@2026!
+            'password' => Hash::make('Admin@2026!'),
             'role' => 'admin',
             'email_verified_at' => now(),
         ]);
@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
                 'prenom' => $v['prenom'],
                 'email' => $v['email'],
                 'telephone' => $v['telephone'],
-                'password' => Hash::make('password'), //Password@123!
+                'password' => Hash::make('Password@123!'),
                 'role' => 'seller',
                 'email_verified_at' => now(),
             ]);

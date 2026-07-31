@@ -11,26 +11,40 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { InlineEdit } from '@/components/ui/InlineEdit';
-import { getRegionLabel, REGION_OPTIONS } from '@/lib/regions';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { getRegionLabel } from '@/lib/regions';
+import { RoleGuard } from '@/components/RoleGuard';
 import styles from './Products.module.css';
 
 const UNIT_OPTIONS = [
-  { value: 'kg',     label: 'kg' },
+  { value: 'kg', label: 'kg' },
   { value: 'tonnes', label: 'tonnes' },
   { value: 'litres', label: 'litres' },
-  { value: 'sacs',   label: 'sacs' },
-  { value: 'caisses',label: 'caisses' },
+  { value: 'sacs', label: 'sacs' },
+  { value: 'caisses', label: 'caisses' },
   { value: 'unites', label: 'unités' },
 ];
 
 function fmt(n: number) { return n.toLocaleString('fr-FR'); }
 
 export default function DashboardProducts() {
-  const [products,     setProducts]     = useState<Product[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState<string | null>(null);
+  return (
+    <RoleGuard allowedRoles={['seller']}>
+      <DashboardProductsContent />
+    </RoleGuard>
+  );
+}
+
+function DashboardProductsContent() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | number | null>(null);
-  const mountedRef                      = useRef(true);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
+  const mountedRef = useRef(true);
 
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -39,12 +53,16 @@ export default function DashboardProducts() {
     setError(null);
     try {
       const res = await productService.getMyProducts();
+      console.log('Type de res.data:', Array.isArray(res.data) ? '✅ tableau' : '❌ pas un tableau');
+      console.log('Nombre de produits:', res.data?.length);
+      console.log('Premier produit:', res.data?.[0]);
       if (mountedRef.current) setProducts(res.data ?? []);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Impossible de charger le catalogue.';
       if (mountedRef.current) setError(msg);
     } finally {
+      console.log('🔴 FINALLY EXÉCUTÉ - loading passe à false');
       if (mountedRef.current) setLoading(false);
     }
   }, []);
@@ -65,7 +83,7 @@ export default function DashboardProducts() {
         const updated: Product = { ...p };
         if (field === 'price') updated.price = Number(value);
         if (field === 'stock') updated.stock = Number(value);
-        if (field === 'name')  updated.name  = String(value);
+        if (field === 'name') updated.name = String(value);
         if (field === 'unite') updated.unite = String(value);
         if (field === 'isActive') updated.isActive = Boolean(value);
         return updated;
@@ -74,23 +92,34 @@ export default function DashboardProducts() {
   }, []);
 
   const remove = useCallback(async (id: string | number) => {
-    if (!confirm('Supprimer définitivement ce produit ?')) return;
+    const product = products.find(p => p.id === id);
+    const ok = await confirmDialog({
+      title: 'Supprimer ce produit ?',
+      message: product
+        ? `« ${product.name} » sera définitivement retiré de votre catalogue. Cette action est irréversible.`
+        : 'Ce produit sera définitivement retiré de votre catalogue. Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setProcessingId(id);
     try {
       await productService.deleteProduct(id);
       setProducts(prev => prev.filter(p => p.id !== id));
+      showToast('Produit supprimé avec succès.', 'success');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? 'Suppression impossible.';
       setError(msg);
+      showToast(msg, 'error');
     } finally {
       setProcessingId(null);
     }
-  }, []);
+  }, [products, confirmDialog, showToast]);
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
 
-  const active   = products.filter(p => p.isActive);
+  const active = products.filter(p => p.isActive);
   const lowStock = products.filter(p => p.stock <= (p.stockMinimum ?? 5) && p.isActive && p.stock > 0);
   const outStock = products.filter(p => p.stock === 0);
 
@@ -98,17 +127,17 @@ export default function DashboardProducts() {
     <div className={styles.page}>
       {/* KPIs */}
       <div className={styles.kpiRow}>
-        <KpiCard label="Produits actifs"    value={active.length}   icon={<Package size={20}/>}       variant="success" loading={loading} />
-        <KpiCard label="Stock bas"          value={lowStock.length} icon={<TrendingDown size={20}/>}  variant="warning" loading={loading} sub="A reapprovisionner" />
-        <KpiCard label="En rupture"         value={outStock.length} icon={<AlertTriangle size={20}/>} variant={outStock.length > 0 ? 'warning' : 'muted'} loading={loading} />
-        <KpiCard label="Total catalogue"    value={products.length} icon={<TrendingUp size={20}/>}    variant="default" loading={loading} />
+        <KpiCard label="Produits actifs" value={active.length} icon={<Package size={20} />} variant="success" loading={loading} />
+        <KpiCard label="Stock bas" value={lowStock.length} icon={<TrendingDown size={20} />} variant="warning" loading={loading} sub="A reapprovisionner" />
+        <KpiCard label="En rupture" value={outStock.length} icon={<AlertTriangle size={20} />} variant={outStock.length > 0 ? 'warning' : 'muted'} loading={loading} />
+        <KpiCard label="Total catalogue" value={products.length} icon={<TrendingUp size={20} />} variant="default" loading={loading} />
       </div>
 
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>Mon catalogue</h2>
         <p className={styles.sectionHint}>
-          Cliquez directement sur un champ pour le modifier en place.
+          Mes produits
         </p>
         <Link href="/dashboard/products/add">
           <Button variant="primary" size="md">
@@ -146,18 +175,19 @@ export default function DashboardProducts() {
         {loading ? (
           <div className={styles.emptyState}>Chargement...</div>
         ) : products.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Package size={36} aria-hidden="true" />
-            <p>Aucun produit dans votre catalogue.</p>
-            <Link href="/dashboard/products/add">
-              <Button variant="primary" size="sm">Ajouter mon premier produit</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={Package}
+            message="Aucun produit dans votre catalogue."
+            action={
+              <Link href="/dashboard/products/add">
+                <Button variant="primary" size="sm">Ajouter mon premier produit</Button>
+              </Link>
+            }
+          />
         ) : products.map(product => {
           const stockVariant = product.stock === 0
             ? 'error'
             : product.stock <= (product.stockMinimum ?? 5) ? 'warning' : 'success';
-
           return (
             <div key={product.id} className={styles.trow}>
 
@@ -256,13 +286,6 @@ export default function DashboardProducts() {
 
               {/* Actions */}
               <div className={styles.actions}>
-                <Link
-                  href={`/dashboard/products/${product.id}/edit`}
-                  className={styles.actionBtn}
-                  title="Page d'edition complete"
-                >
-                  <Package size={14} aria-hidden="true" />
-                </Link>
                 <button
                   type="button"
                   className={`${styles.actionBtn} ${styles.deleteBtn}`}

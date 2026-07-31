@@ -47,9 +47,47 @@ class ProductController extends Controller
             });
         }
 
+        // --- Critères B2B (entreprise vendeuse) ---
+        $wantsVerified   = $request->boolean('verified');
+        $wantsCooperative = $request->boolean('cooperative');
+        $wantsWomenLed   = $request->boolean('womenLed');
+
+        if ($wantsVerified || $wantsCooperative || $wantsWomenLed) {
+            $query->whereHas('seller', function ($sq) use ($wantsVerified, $wantsCooperative, $wantsWomenLed): void {
+                if ($wantsVerified) {
+                    $sq->verified();
+                }
+                if ($wantsCooperative) {
+                    $sq->where('is_cooperative', true);
+                }
+                if ($wantsWomenLed) {
+                    $sq->femaleOwned();
+                }
+            });
+        }
+
+        if ($request->boolean('availableOnly')) {
+            $query->inStock();
+        }
+
+        if ($request->filled('companyId')) {
+            $companyId = $request->input('companyId');
+            $query->whereHas('seller', function ($sq) use ($companyId): void {
+                $sq->where('company_id', $companyId);
+            });
+        }
+
         $pageSize  = min((int) $request->input('pageSize', 12), 50);
         $page      = max((int) $request->input('page', 1), 1);
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($pageSize, ['*'], 'page', $page);
+
+        $sort = $request->input('sort', 'recent');
+        $query = match ($sort) {
+            'price_asc'  => $query->orderBy('prix', 'asc'),
+            'price_desc' => $query->orderBy('prix', 'desc'),
+            default      => $query->orderBy('created_at', 'desc'),
+        };
+
+        $paginated = $query->paginate($pageSize, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
@@ -109,6 +147,7 @@ class ProductController extends Controller
 
     /**
      * Create a new product — authenticated sellers only.
+     * Requires a sellerProfile (created via registration or seller onboarding).
      */
     public function store(Request $request): JsonResponse
     {
@@ -124,13 +163,13 @@ class ProductController extends Controller
             'stockMinimum' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $user = $request->user();
-        $sellerProfile = $user->sellerProfile;
+        $sellerProfile = $request->user()->sellerProfile;
+
         if (!$sellerProfile) {
-            $sellerProfile = $user->sellerProfile()->create([
-                'business_name' => $user->fullName ?? $user->name ?? 'Coopérative locale',
-                'region' => $validated['country'],
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez avoir un profil vendeur pour publier un produit. Complétez votre inscription vendeur d\'abord.',
+            ], 403);
         }
 
         $categoryParam = $validated['category'];
@@ -144,12 +183,11 @@ class ProductController extends Controller
         }
 
         if (!$category) {
-            // Default or create fallback
             $category = \App\Models\Category::firstOrCreate([
                 'nom' => $categoryParam,
             ], [
                 'slug' => \Illuminate\Support\Str::slug($categoryParam),
-                'description' => 'Auto created category',
+                'description' => 'Catégorie créée automatiquement',
             ]);
         }
 

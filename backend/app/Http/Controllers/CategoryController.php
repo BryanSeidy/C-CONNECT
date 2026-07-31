@@ -1,62 +1,101 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class CategoryController extends Controller
+class CategoryController
 {
-    public function index()
+    /**
+     * Liste publique des catégories actives, triées par ordre.
+     */
+    public function index(): JsonResponse
     {
-        return response()->json(Category::all());
+        $categories = Category::active()->ordered()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ]);
     }
 
-    public function store(Request $request)
+    /**
+     * Créer une catégorie (admin uniquement via middleware).
+     */
+    public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'name_fr' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'icon' => 'nullable|string'
+        $validated = $request->validate([
+            'nom' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'icone' => ['nullable', 'string', 'max:255'],
         ]);
 
         $category = Category::create([
-            'name_fr' => $request->name_fr,
-            'name_en' => $request->name_en,
-            'slug' => Str::slug($request->name_fr),
-            'icon' => $request->icon
+            'nom' => $validated['nom'],
+            'slug' => Str::slug($validated['nom']),
+            'description' => $validated['description'] ?? null,
+            'icone' => $validated['icone'] ?? null,
         ]);
 
-        return response()->json($category, 201);
+        return response()->json([
+            'success' => true,
+            'data' => $category,
+            'message' => 'Catégorie créée avec succès.',
+        ], 201);
     }
 
-    public function show(Category $category)
+    /**
+     * Afficher une catégorie publique.
+     */
+    public function show(Category $category): JsonResponse
     {
-        return response()->json($category);
+        return response()->json([
+            'success' => true,
+            'data' => $category->load('products'),
+        ]);
     }
 
-    public function update(Request $request, Category $category)
+    /**
+     * Mettre à jour une catégorie (admin uniquement).
+     */
+    public function update(Request $request, Category $category): JsonResponse
     {
-        $request->validate([
-            'name_fr' => 'string|max:255',
-            'name_en' => 'string|max:255',
-            'icon' => 'nullable|string'
+        $validated = $request->validate([
+            'nom' => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'icone' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+            'order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
-        $category->update($request->all());
-        
-        if ($request->has('name_fr')) {
-            $category->slug = Str::slug($request->name_fr);
-            $category->save();
+        if (isset($validated['nom'])) {
+            $validated['slug'] = Str::slug($validated['nom']);
         }
 
-        return response()->json($category);
+        $category->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $category->fresh(),
+            'message' => 'Catégorie mise à jour.',
+        ]);
     }
 
-    public function destroy(Category $category)
+    /**
+     * Supprimer une catégorie (admin uniquement).
+     */
+    public function destroy(Category $category): JsonResponse
     {
         $category->delete();
-        return response()->json(null, 204);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Catégorie supprimée.',
+        ]);
     }
 }

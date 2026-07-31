@@ -1,6 +1,8 @@
 import { ApiEnvelope, PaginatedResult, Product, RawProduct } from '@/types';
 import { apiClient } from './api';
 
+export type ProductSort = 'recent' | 'price_asc' | 'price_desc';
+
 export interface ProductFilters {
   country?: string;
   category?: string;
@@ -8,6 +10,11 @@ export interface ProductFilters {
   page?: number;
   pageSize?: number;
   verified?: boolean;
+  cooperative?: boolean;
+  womenLed?: boolean;
+  availableOnly?: boolean;
+  companyId?: number | string;
+  sort?: ProductSort;
 }
 
 export interface ProductMutationPayload {

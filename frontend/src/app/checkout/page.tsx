@@ -13,7 +13,7 @@ import styles from './Checkout.module.css';
 function CheckoutContent() {
   const params    = useSearchParams();
   const router    = useRouter();
-  const { user }  = useAuth();
+  const { user, isLoading: authLoading }  = useAuth();
 
   const orderId = params.get('order');
 
@@ -39,6 +39,14 @@ function CheckoutContent() {
       router.push(`/dashboard/orders?success=1&ref=${txRef}`);
     }, 2000);
   };
+
+  if (authLoading) {
+    return (
+      <div className={styles.gate}>
+        <p>Chargement…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -95,19 +103,19 @@ function CheckoutContent() {
                 ))}
 
                 <div className={styles.summaryTotals}>
-                  <div className={styles.totalRow}>
-                    <span>Sous-total</span>
-                    <span>{order.montantTotal.toLocaleString('fr-FR')} FCFA</span>
-                  </div>
-                  <div className={styles.totalRow} style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                    <span>Commission C-Connect</span>
-                    <span>{order.commissionPlateforme.toLocaleString('fr-FR')} FCFA</span>
-                  </div>
                   <div className={`${styles.totalRow} ${styles.totalGrand}`}>
-                    <span>Total a regler</span>
+                    <span>Total à régler</span>
                     <strong>{order.montantTotal.toLocaleString('fr-FR')} FCFA</strong>
                   </div>
+                  <div className={styles.totalRow} style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                    <span>Dont commission C-Connect (prélevée côté fournisseur)</span>
+                    <span>{order.commissionPlateforme.toLocaleString('fr-FR')} FCFA</span>
+                  </div>
                 </div>
+
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '-0.25rem 0 0' }}>
+                  Aucun frais supplémentaire : le montant ci-dessus est exactement ce que vous payez.
+                </p>
 
                 {/* Escrow assurance */}
                 <div className={styles.escrowNote}>

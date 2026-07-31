@@ -38,6 +38,16 @@
   font-weight: 500;
 }
 
+.breadcrumbLink {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
 .menuBtn {
   display: none;
   width: 36px;
@@ -138,4 +148,42 @@
   .content { padding: 1.25rem; }
   .topbar { padding: 0 1.25rem; }
   .menuBtn { display: flex; }
+  .breadcrumb {
+    max-width: 55vw;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .breadcrumb::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* Sur très petit écran, l'ancre "C-Connect" est un chrome redondant —
+     on la masque (elle + son séparateur) pour laisser la place au fil
+     (parent › page courante). */
+  .breadcrumb span:nth-child(1),
+  .breadcrumb span:nth-child(2) {
+    display: none;
+  }
+}
+
+.authLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 100vh;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.authLoadingSpinner {
+  animation: authSpin 0.8s linear infinite;
+  color: var(--primary-color);
+}
+
+@keyframes authSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

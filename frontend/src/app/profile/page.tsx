@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import inputStyles from '@/components/ui/Input.module.css';
 import { REGION_OPTIONS } from '@/lib/regions';
+import { extractApiError } from '@/lib/errors';
 
 export default function ProfilePage() {
   const { user, refreshProfile } = useAuth();
@@ -32,8 +33,8 @@ export default function ProfilePage() {
       await authService.updateProfile({ fullName, companyName, country });
       await refreshProfile();
       setMessage('Profil mis a jour avec succes.');
-    } catch (err: any) {
-      setError(err?.message || 'Impossible de mettre a jour le profil.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de mettre à jour le profil.'));
     } finally {
       setSaving(false);
     }

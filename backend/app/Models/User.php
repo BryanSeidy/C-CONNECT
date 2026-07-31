@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -13,10 +14,10 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens; 
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $table = 'users';
 
@@ -25,14 +26,9 @@ class User extends Authenticatable
     // const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
-        'name',
         'email',
         'password',
-        'fullName',
-        'companyName',
-        'country',
         'role',
-        'isVerified',
         'nom',
         'prenom',
         'telephone',
@@ -44,12 +40,25 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['fullName'];
+
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
+            // 'password' => 'hashed',
             'role' => 'string',
         ];
+    }
+
+    /**
+     * Accesseur en lecture seule — 'nom'/'prenom' sont les vraies colonnes
+     * en base ; 'fullName' n'en est pas une (voir la table users). Utilisé
+     * par le frontend et par les endroits du backend qui veulent un nom
+     * d'affichage complet sans se soucier du découpage nom/prénom.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim(($this->prenom ?? '') . ' ' . ($this->nom ?? ''));
     }
 
     public function isBuyer(): bool

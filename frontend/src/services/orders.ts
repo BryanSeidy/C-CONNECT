@@ -22,7 +22,7 @@ function normalizeOrderItem(raw: RawOrderItem): OrderItem {
   };
 }
 
-function normalizeOrder(raw: RawOrder): Order {
+export function normalizeOrder(raw: RawOrder): Order {
   return {
     id: raw.id,
     buyerId: raw.buyer_id,
@@ -67,20 +67,50 @@ export const orderService = {
   createOrder: async (orderData: {
     productId: number | string;
     quantity: number;
+    negotiationId?: number | string;
     villeLivraison?: string;
     adresseLivraison?: string;
     telephoneLivraison?: string;
+    livraisonDemandee?: boolean;
   }): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
       product_id: orderData.productId,
       quantity: orderData.quantity,
+      negotiation_id: orderData.negotiationId,
       ville_livraison: orderData.villeLivraison,
       adresse_livraison: orderData.adresseLivraison,
       telephone_livraison: orderData.telephoneLivraison,
+      livraison_demandee: orderData.livraisonDemandee,
     });
     return { ...res, data: normalizeOrder(res.data) };
   },
 
+  /**
+   * Crée une commande à partir de plusieurs articles du panier — tous doivent
+   * appartenir au même vendeur (le backend rejette sinon avec un message
+   * explicite). Le panier frontend groupe déjà par vendeur avant d'appeler
+   * ceci une fois par groupe.
+   */
+  createOrderFromCart: async (cartData: {
+    items: Array<{ productId: number | string; quantity: number; negotiationId?: number | string }>;
+    villeLivraison?: string;
+    adresseLivraison?: string;
+    telephoneLivraison?: string;
+    livraisonDemandee?: boolean;
+  }): Promise<ApiEnvelope<Order>> => {
+    const res = await apiClient.post<unknown, ApiEnvelope<RawOrder>>('/orders', {
+      items: cartData.items.map((i) => ({
+        product_id: i.productId,
+        quantity: i.quantity,
+        negotiation_id: i.negotiationId,
+      })),
+      ville_livraison: cartData.villeLivraison,
+      adresse_livraison: cartData.adresseLivraison,
+      telephone_livraison: cartData.telephoneLivraison,
+      livraison_demandee: cartData.livraisonDemandee,
+    });
+    return { ...res, data: normalizeOrder(res.data) };
+  },
   releaseFunds: async (orderId: number | string): Promise<ApiEnvelope<Order>> => {
     const res = await apiClient.post<unknown, ApiEnvelope<{ order: RawOrder }>>(`/orders/${orderId}/release-funds`);
     return { ...res, data: normalizeOrder(res.data.order) };
@@ -100,9 +130,18 @@ export const orderService = {
     await apiClient.delete(`/orders/${id}`);
   },
 
-  getDocumentUrl: (orderId: number | string, type: 'purchase_order' | 'invoice' | 'delivery_note'): string => {
-    const base = (apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
-    return `${base}/orders/${orderId}/documents/${type}`;
+  /**
+   * Récupère un lien signé temporaire (10 min) vers un document commercial,
+   * puis l'ouvre dans un nouvel onglet. Une simple URL statique ne
+   * fonctionnait plus depuis le passage à l'authentification Bearer pure :
+   * une navigation <a href target="_blank"> ne transmet jamais le header
+   * Authorization, donc la route protégée renvoyait toujours 401.
+   */
+  openDocument: async (orderId: number | string, type: 'purchase_order' | 'invoice' | 'delivery_note'): Promise<void> => {
+    const res = await apiClient.get<unknown, { success: boolean; data: { url: string } }>(
+      `/orders/${orderId}/documents/${type}/signed-link`
+    );
+    window.open(res.data.url, '_blank', 'noopener,noreferrer');
   },
 };
 
@@ -167,9 +206,25 @@ export const paymentService = {
     };
   },
 
-  getPayments: async () => {
-    return apiClient.get('/payments');
+  /**
+   * Historique de paiements pour le buyer/seller courant.
+   *
+   * Il n'existe pas de route `/payments` dédiée côté backend, et il n'en faut
+   * pas : chaque commande porte déjà son statut d'escrow et ses montants
+   * (voir `Order.escrowStatus`/`montantTotal`). Cette fonction dérive donc
+   * l'historique de paiement à partir de `GET /orders`, déjà fonctionnel,
+   * plutôt que d'appeler un endpoint qui n'existe pas.
+   */
+  getPaymentHistory: async (): Promise<Array<Pick<Order, 'id' | 'montantTotal' | 'escrowStatus' | 'createdAt'>>> => {
+    const res = await orderService.getOrders();
+    return res.data.map((o) => ({
+      id: o.id,
+      montantTotal: o.montantTotal,
+      escrowStatus: o.escrowStatus,
+      createdAt: o.createdAt,
+    }));
   },
+
 };
 
 // ============================================================================

@@ -20,7 +20,7 @@ class RecurringOrderController extends Controller
     {
         $user = $request->user();
 
-        $query = RecurringOrder::with(['product:id,nom,prix,unite,image_url', 'buyer:id,fullName,companyName', 'seller.user:id,fullName,companyName'])
+        $query = RecurringOrder::with(['product:id,nom,prix,unite,image_url', 'buyer:id,nom,prenom', 'seller.user:id,nom,prenom'])
             ->when($user->isBuyer(), fn ($q) => $q->where('buyer_id', $user->id))
             ->when($user->isSeller() && $user->sellerProfile, fn ($q) => $q->where('seller_id', $user->sellerProfile->id))
             ->latest();
@@ -38,7 +38,7 @@ class RecurringOrderController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'product_id' => ['required', 'uuid', 'exists:products,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantite' => ['required', 'numeric', 'min:0.01'],
             'frequence' => ['required', 'string', 'in:hebdomadaire,bimensuelle,mensuelle'],
             'jour_semaine' => ['nullable', 'integer', 'min:0', 'max:6'],

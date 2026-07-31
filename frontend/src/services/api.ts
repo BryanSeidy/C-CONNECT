@@ -1,11 +1,15 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { dispatchDatabaseMode, type DatabaseMode } from '@/context/DatabaseModeContext';
+import { sessionService } from '@/services/session';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/$/, '');
+
+/** Émis quand la session Bearer est invalidée (401 réel) — sync React AuthProvider. */
+export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 /**
  * Patterns de routes publiques (pas de token Bearer requis).
@@ -16,7 +20,9 @@ const PUBLIC_PATTERNS: RegExp[] = [
   /^\/rfqs(?:\/[^/]+)?$/,
   /^\/auth\/register$/,
   /^\/auth\/login$/,
-  /^\/sanctum\/csrf-cookie$/,
+  /^\/auth\/forgot-password$/,
+  /^\/auth\/reset-password$/,
+  /^\/livraison\/reponse\//,
   /^\/webhooks\//,
 ];
 
@@ -35,24 +41,45 @@ function isPublic(url?: string): boolean {
   return PUBLIC_PATTERNS.some((p) => p.test(path));
 }
 
-function readXsrfCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
+function readAuthorizationHeader(config?: InternalAxiosRequestConfig): string | undefined {
+  const raw = config?.headers?.Authorization ?? config?.headers?.authorization;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) return raw[0];
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
-// Memory token (session-only — jamais localStorage direct)
+// Memory token — authentification par Bearer token uniquement (pas de cookie
+// de session). Conservé en mémoire JS + sessionStorage (jamais localStorage :
+// on évite qu'un token vole persister indéfiniment sur la machine).
 // ---------------------------------------------------------------------------
 
-let _memoryToken: string | null = null;
+const TOKEN_STORAGE_KEY = 'cconnect_token';
+
+let _memoryToken: string | null =
+  typeof window !== 'undefined' ? window.sessionStorage.getItem(TOKEN_STORAGE_KEY) : null;
 
 export function setMemoryToken(token: string | null): void {
   _memoryToken = token;
+  if (typeof window === 'undefined') return;
+  if (token) {
+    window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } else {
+    window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
 }
 
 export function getMemoryToken(): string | null {
   return _memoryToken;
+}
+
+/** Vide token + cache user et notifie AuthProvider (utilisé sur 401 réel). */
+export function clearClientSession(): void {
+  setMemoryToken(null);
+  sessionService.clear();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -61,8 +88,6 @@ export function getMemoryToken(): string | null {
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
-  withXSRFToken: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -72,100 +97,64 @@ export const apiClient = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Request interceptor
+// Request interceptor — attache le Bearer token sur toute route protégée
 // ---------------------------------------------------------------------------
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined' && _memoryToken && !isPublic(config.url)) {
     config.headers.Authorization = `Bearer ${_memoryToken}`;
   }
-
-  const xsrf = readXsrfCookie();
-  const method = config.method?.toLowerCase() ?? '';
-  if (xsrf && ['post', 'put', 'patch', 'delete'].includes(method)) {
-    config.headers['X-XSRF-TOKEN'] = xsrf;
-  }
-
   return config;
 });
 
 // ---------------------------------------------------------------------------
-// Response interceptor — unwrap data, retry on 419
+// Response interceptor — unwrap data, redirection sur 401
 // ---------------------------------------------------------------------------
-
-let _refreshing = false;
-let _queue: Array<() => void> = [];
-
-async function refreshCsrf(failedConfig: InternalAxiosRequestConfig): Promise<unknown> {
-  const root = API_BASE_URL.replace(/\/api\/?$/, '');
-
-  if (_refreshing) {
-    return new Promise<unknown>((resolve) => {
-      _queue.push(() => resolve(apiClient(failedConfig)));
-    });
-  }
-
-  _refreshing = true;
-  try {
-    await apiClient.get('/sanctum/csrf-cookie', { baseURL: root });
-    const xsrf = readXsrfCookie();
-    if (xsrf) failedConfig.headers['X-XSRF-TOKEN'] = xsrf;
-    _queue.forEach((cb) => cb());
-    _queue = [];
-    return apiClient(failedConfig);
-  } finally {
-    _refreshing = false;
-  }
-}
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Propager le mode base de donnees depuis le header backend
+    // Propager le mode base de données depuis le header backend
     const dbMode = response.headers['x-database-mode'] as string | undefined;
     if (dbMode === 'online' || dbMode === 'offline') {
       dispatchDatabaseMode(dbMode as DatabaseMode);
+      window.dispatchEvent(new CustomEvent('database-offline', { detail: dbMode === 'offline' }));
     }
-    return response.data;
+    return response.data;  // ← TOUJOURS retourner response.data
   },
 
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const config = error.config as InternalAxiosRequestConfig & { _csrfRetried?: boolean };
+    const config = error.config as InternalAxiosRequestConfig | undefined;
 
-    if (status === 419 && config && !config._csrfRetried) {
-      config._csrfRetried = true;
-      return refreshCsrf(config);
-    }
-
+    // Gestion 401 — ne détruire la session que si le 401 concerne la session
+    // courante. Un fetch parti sans Bearer (cache user mort, course avant login)
+    // qui revient après setMemoryToken ne doit PAS effacer le nouveau token.
     if (status === 401 && typeof window !== 'undefined') {
-      const isAuthPage = /^\/(login|register)/.test(window.location.pathname);
+      const isAuthPage = /^\/(login|register|forgot-password|reset-password)/.test(window.location.pathname);
       if (!isAuthPage && !isPublic(config?.url)) {
+        const reqAuth = readAuthorizationHeader(config);
+        const currentBearer = _memoryToken ? `Bearer ${_memoryToken}` : null;
+
+        // 401 d'une requête non authentifiée alors qu'un token existe déjà → obsolète
+        if (!reqAuth && currentBearer) {
+          return Promise.reject(error);
+        }
+
+        // 401 pour un ancien Bearer différent du token courant → obsolète
+        if (reqAuth && currentBearer && reqAuth !== currentBearer) {
+          return Promise.reject(error);
+        }
+
+        clearClientSession();
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }
 
-    return Promise.reject(error);
-  },
-);
-
-apiClient.interceptors.response.use(
-  (response) => {
-    const dbMode = response.headers['x-database-mode'];
-
-    if (dbMode === 'offline') {
-      // Déclencher un événement global ou mettre à jour un store (Zustand/Redux)
-      window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
-    } else if (dbMode === 'online') {
-      window.dispatchEvent(new CustomEvent('database-offline', { detail: false }));
-    }
-
-    return response;
-  },
-  (error) => {
-    // En cas d'erreur réseau totale (Laravel lui-même est inaccessible)
+    // Gestion erreur réseau
     if (!error.response) {
       window.dispatchEvent(new CustomEvent('database-offline', { detail: true }));
     }
+
     return Promise.reject(error);
-  }
+  },
 );

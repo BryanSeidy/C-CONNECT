@@ -57,7 +57,7 @@ class GamificationService
     {
         return DB::transaction(function () use ($sellerId, $montantTotal): GamificationStat {
             $stat = $this->lockedStat($sellerId);
-            $stat->increment('total_sales');
+            $stat->increment('total_sales_count');
 
             if ($montantTotal > 0) {
                 $stat->increment('volume_ventes', $montantTotal);
@@ -76,7 +76,7 @@ class GamificationService
             $stat = $this->lockedStat($userId);
 
             $currentRating = (float) ($stat->quality_rating ?? 0.0);
-            $salesCount    = max(1, $stat->total_sales);
+            $salesCount    = max(1, (int) ($stat->total_sales_count ?? 0));
             $updatedRating = (($currentRating * ($salesCount - 1)) + $newRating) / $salesCount;
 
             $stat->update(['quality_rating' => round($updatedRating, 2)]);
@@ -98,17 +98,19 @@ class GamificationService
             $user    = User::with('sellerProfile')->find($userId);
             $profile = $user?->sellerProfile;
 
+            $salesCount = (int) ($stat->total_sales_count ?? 0);
+
             // woman_pioneer
             if (
                 !isset($badges['woman_pioneer'])
                 && $profile?->is_female_owned
-                && $stat->total_sales >= 1
+                && $salesCount >= 1
             ) {
                 $badges['woman_pioneer'] = 1;
             }
 
             // trusted_producer
-            if (!isset($badges['trusted_producer']) && $stat->total_sales >= 10) {
+            if (!isset($badges['trusted_producer']) && $salesCount >= 10) {
                 $badges['trusted_producer'] = 1;
             }
 
@@ -118,7 +120,7 @@ class GamificationService
             }
 
             // top_seller
-            if (!isset($badges['top_seller']) && $stat->total_sales >= 50) {
+            if (!isset($badges['top_seller']) && $salesCount >= 50) {
                 $badges['top_seller'] = 1;
             }
 
@@ -126,7 +128,7 @@ class GamificationService
             if (
                 !isset($badges['quality_star'])
                 && (float) $stat->quality_rating >= 4.5
-                && $stat->total_sales >= 5
+                && $salesCount >= 5
             ) {
                 $badges['quality_star'] = 1;
             }
@@ -135,7 +137,7 @@ class GamificationService
             if (
                 !isset($badges['cooperative_hero'])
                 && $profile?->is_cooperative
-                && $stat->total_sales >= 5
+                && $salesCount >= 5
             ) {
                 $badges['cooperative_hero'] = 1;
             }

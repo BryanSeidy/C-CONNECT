@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, ExternalLink, FileText, FlagTriangleRight } from 'lucide-react';
+import { ArrowRight, ExternalLink, FileText, FlagTriangleRight, PackageSearch } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { orderService } from '@/services/orders';
 import { Order } from '@/types';
+import { extractApiError } from '@/lib/errors';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { EscrowTimeline } from '@/components/EscrowTimeline';
+import { useToast } from '@/components/ui/ToastProvider';
 import styles from './Orders.module.css';
 
 type EscrowStatus = Order['escrowStatus'];
@@ -68,6 +71,8 @@ export default function DashboardOrders() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [activeFilter, setFilter] = useState<FilterKey>('all');
@@ -79,8 +84,8 @@ export default function DashboardOrders() {
     try {
       const res = await orderService.getOrders();
       setOrders(res.data ?? []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Impossible de charger les commandes.');
+    } catch (err) {
+      setError(extractApiError(err, 'Impossible de charger les commandes.'));
     } finally {
       setLoading(false);
     }
@@ -93,8 +98,8 @@ export default function DashboardOrders() {
     try {
       await orderService.updateEscrowStatus(id, next);
       await fetchOrders();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Mise à jour impossible.');
+    } catch (err) {
+      setError(extractApiError(err, 'Mise à jour impossible.'));
     } finally {
       setProcessingId(null);
     }
@@ -142,7 +147,7 @@ export default function DashboardOrders() {
         {loading ? (
           <div className={styles.emptyState}>Chargement…</div>
         ) : displayed.length === 0 ? (
-          <div className={styles.emptyState}>Aucune commande dans cette catégorie.</div>
+          <EmptyState icon={PackageSearch} message="Aucune commande dans cette catégorie." />
         ) : displayed.map(order => {
           const sid = String(order.id);
           const isExp = expandedId === sid;
@@ -208,19 +213,29 @@ export default function DashboardOrders() {
                     <span className={styles.docLabel}>Documents :</span>
                     {(['purchase_order', 'invoice', 'delivery_note'] as const).map(type => {
                       const labels = { purchase_order: 'Bon de commande', invoice: 'Facture', delivery_note: 'Bon de livraison' };
+                      const docKey = `${order.id}-${type}`;
                       return (
-                        <a
+                        <button
                           key={type}
-                          href={orderService.getDocumentUrl(order.id, type)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          type="button"
                           className={styles.docLink}
                           title={labels[type]}
+                          disabled={openingDoc === docKey}
+                          onClick={async () => {
+                            setOpeningDoc(docKey);
+                            try {
+                              await orderService.openDocument(order.id, type);
+                            } catch (err) {
+                              showToast(extractApiError(err, 'Impossible d\u2019ouvrir ce document.'), 'error');
+                            } finally {
+                              setOpeningDoc(null);
+                            }
+                          }}
                         >
                           <FileText size={14} aria-hidden="true" />
                           {labels[type]}
                           <ExternalLink size={11} aria-hidden="true" />
-                        </a>
+                        </button>
                       );
                     })}
                   </div>

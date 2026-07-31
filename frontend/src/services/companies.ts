@@ -27,6 +27,8 @@ function normalizeCompany(raw: RawCompany): Company {
     statutVerification: raw.statut_verification,
     badges: raw.badges,
     createdAt: raw.created_at,
+    registrationStatus: raw.registration_status ?? 'non_demarre',
+    registrationChecklist: raw.registration_checklist ?? null,
   };
 }
 
@@ -37,6 +39,7 @@ export interface CompanyFilters {
   cooperatives?: boolean;
   femmes?: boolean;
   q?: string;
+  pageSize?: number;
 }
 
 export interface CompanyPayload {
@@ -51,6 +54,8 @@ export interface CompanyPayload {
   niu?: string;
   description?: string;
   logoUrl?: string;
+  registrationStatus?: 'non_demarre' | 'en_cours' | 'termine';
+  registrationChecklist?: Record<string, boolean>;
 }
 
 function toPayload(data: Partial<CompanyPayload>) {
@@ -66,13 +71,16 @@ function toPayload(data: Partial<CompanyPayload>) {
     niu: data.niu,
     description: data.description,
     logo_url: data.logoUrl,
+    registration_status: data.registrationStatus,
+    registration_checklist: data.registrationChecklist,
   };
 }
 
 export const companyService = {
+  /** GET /api/catalogue/companies — public, no auth */
   getCompanies: async (filters: CompanyFilters = {}): Promise<ApiEnvelope<PaginatedResult<Company>>> => {
     const res = await apiClient.get<unknown, ApiEnvelope<{ items: RawCompany[]; meta: PaginatedResult<Company>['meta'] }>>(
-      '/companies',
+      '/catalogue/companies',
       { params: filters }
     );
     return {
@@ -84,8 +92,9 @@ export const companyService = {
     };
   },
 
+  /** GET /api/catalogue/companies/:idOrSlug — public, no auth */
   getCompanyBySlugOrId: async (idOrSlug: string): Promise<ApiEnvelope<Company>> => {
-    const res = await apiClient.get<unknown, ApiEnvelope<RawCompany>>(`/companies/${idOrSlug}`);
+    const res = await apiClient.get<unknown, ApiEnvelope<RawCompany>>(`/catalogue/companies/${idOrSlug}`);
     return { ...res, data: normalizeCompany(res.data) };
   },
 
@@ -97,6 +106,22 @@ export const companyService = {
   updateCompany: async (id: number | string, payload: Partial<CompanyPayload>): Promise<ApiEnvelope<Company>> => {
     const res = await apiClient.put<unknown, ApiEnvelope<RawCompany>>(`/companies/${id}`, toPayload(payload));
     return { ...res, data: normalizeCompany(res.data) };
+  },
+
+  /** PATCH /api/companies/:id/badges — admin only (KYB decision). */
+  updateVerificationStatus: async (
+    id: number | string,
+    statutVerification: 'verifie' | 'rejete' | 'en_attente' | 'non_verifie'
+  ): Promise<ApiEnvelope<Company>> => {
+    const res = await apiClient.patch<unknown, ApiEnvelope<RawCompany>>(`/companies/${id}/badges`, {
+      statut_verification: statutVerification,
+    });
+    return { ...res, data: normalizeCompany(res.data) };
+  },
+  /** POST /api/companies/verify-rccm — vérification de format en temps réel, sans sauvegarde. */
+  verifyRccm: async (rccm: string): Promise<{ valide: boolean; message: string }> => {
+    const res = await apiClient.post<unknown, { data: { valide: boolean; message: string } }>('/companies/verify-rccm', { rccm });
+    return res.data;
   },
 };
 

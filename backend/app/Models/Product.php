@@ -98,6 +98,19 @@ class Product extends Model
     // ==================== RELATIONS ====================
 
     /**
+     * Route model binding : accepte le slug OU l'id numérique dans {product}.
+     * Sans ce override, Laravel ne résout {product} que par id (clé
+     * primaire), et la fiche produit — accédée par slug depuis
+     * ProductCard/marketplace, le chemin normal — renvoyait 404 à chaque
+     * fois. Même bug, même fix que Company::resolveRouteBinding().
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? $this->where('id', $value)->firstOrFail();
+    }
+
+    /**
      * Le vendeur propriétaire du produit.
      */
     public function seller(): BelongsTo
@@ -236,20 +249,37 @@ class Product extends Model
     }
 
     /**
-     * Réserver du stock pour une commande.
+     * Réserver du stock pour une commande (incrémente stock_reserve).
+     * Appelé à la création d'une commande, dans une transaction DB.
      */
     public function reserverStock(int $quantite): void
     {
         $this->increment('stock_reserve', $quantite);
-        $this->update(['disponible' => $this->getIsAvailableAttribute()]);
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
     }
 
     /**
-     * Libérer du stock réservé (annulation ou livraison confirmée).
+     * Restituer le stock réservé sans le consommer (annulation de commande).
+     * Ne décrémente jamais le stock réel, uniquement le stock_reserve.
      */
     public function libererStock(int $quantite): void
     {
-        $this->decrement('stock_reserve', min($quantite, $this->stock_reserve ?? 0));
-        $this->update(['disponible' => $this->getIsAvailableAttribute()]);
+        $reserve = (int) ($this->stock_reserve ?? 0);
+        $this->decrement('stock_reserve', min($quantite, $reserve));
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
+    }
+
+    /**
+     * Consommer définitivement le stock réservé lors d'une livraison confirmée.
+     * Décrémente à la fois stock et stock_reserve.
+     */
+    public function consommerStock(int $quantite): void
+    {
+        $this->decrement('stock', $quantite);
+        $this->decrement('stock_reserve', min($quantite, (int) ($this->stock_reserve ?? 0)));
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
     }
 }

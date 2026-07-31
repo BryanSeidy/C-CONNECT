@@ -12,7 +12,6 @@ import {
   Scale,
   ShieldCheck,
   Signal,
-  Smartphone,
   Sprout,
   Truck,
   Wallet,
@@ -22,6 +21,7 @@ import {
 import { Footer } from '@/components/Footer';
 import { EscrowTracker } from '@/components/landing/EscrowTracker';
 import { ProductPreview } from '@/components/landing/ProductPreview';
+import { RegionSelector3D } from '@/components/landing/RegionSelector3D';
 import { FaqAccordion } from '@/components/landing/FaqAccordion';
 import styles from './Home.module.css';
 
@@ -77,7 +77,7 @@ const steps = [
 
 const features = [
   { title: 'Vérification KYC des entreprises', description: 'Chaque vendeur est contrôlé avant de pouvoir publier un catalogue.', Icon: ShieldCheck },
-  { title: 'Paiement en séquestre', description: 'Mobile Money ou virement professionnel, retenu jusqu’à confirmation.', Icon: Wallet },
+  { title: 'Paiement en séquestre', description: 'Mobile Money (MTN, Orange), retenu jusqu’à confirmation de réception.', Icon: Wallet },
   { title: 'Facturation automatique', description: 'Un document professionnel généré pour chaque commande conclue.', Icon: FileText },
   { title: 'Traçabilité régionale', description: 'Origine, région et certification visibles sur chaque profil fournisseur.', Icon: Building2 },
   { title: 'Négociation intégrée', description: 'Échangez sur les prix et délais sans quitter la plateforme.', Icon: MessageSquare },
@@ -133,7 +133,11 @@ const faqItems = [
   },
   {
     question: 'Quels moyens de paiement sont acceptés ?',
-    answer: 'Le Mobile Money et le virement professionnel sont pris en charge, afin de s’adapter aussi bien aux acheteurs institutionnels qu’aux producteurs sur le terrain.',
+    answer: 'Le paiement se fait par Mobile Money (MTN Mobile Money et Orange Money), directement depuis votre téléphone au moment de la commande — aucune carte bancaire requise.',
+  },
+  {
+    question: 'C-Connect prend-il une commission ?',
+    answer: 'Une commission de 10% est prélevée côté fournisseur sur chaque commande finalisée, une fois les fonds libérés du séquestre. Ce que l’acheteur voit au paiement est le montant exact à régler, sans frais caché.',
   },
   {
     question: 'Que se passe-t-il en cas de désaccord sur une commande ?',
@@ -168,14 +172,20 @@ export default function HomePage() {
               et fabricants camerounais vérifiés — avec des fonds protégés en séquestre à chaque commande.
             </p>
             <div className={styles.actions}>
-              <Link href="/auth/register?role=buyer" className={styles.primaryCta}>
-                Demander une démonstration
+              <Link href="/register?role=buyer" className={styles.primaryCta}>
+                Créer mon compte acheteur
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <Link href="/auth/register?role=seller" className={styles.secondaryCta}>
+              <Link href="/register?role=seller" className={styles.secondaryCta}>
                 Devenir fournisseur vérifié
               </Link>
             </div>
+            <p className={styles.reassurance}>
+              Gratuit, sans engagement — ou{' '}
+              <Link href="/marketplace" className={styles.reassuranceLink}>
+                parcourez le catalogue sans créer de compte
+              </Link>.
+            </p>
             <ul className={styles.chipRow} aria-label="Garanties de la plateforme">
               {heroChips.map(({ Icon, label }) => (
                 <li className={styles.chip} key={label}>
@@ -228,6 +238,16 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* SÉLECTEUR DE RÉGIONS 3D */}
+        <section className={styles.section} style={{ paddingTop: '1.5rem' }}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionLabel}>Couverture nationale</span>
+            <h2>Des fournisseurs dans les 10 régions du Cameroun.</h2>
+            <p>Faites pivoter le sélecteur ou touchez une région pour découvrir ce qui s&apos;y trouve.</p>
+          </div>
+          <RegionSelector3D />
         </section>
 
         {/* PROBLEM / SOLUTION */}
@@ -409,8 +429,8 @@ export default function HomePage() {
             <Building2 size={22} aria-hidden="true" />
             <h3>Vous achetez pour votre entreprise</h3>
             <p>Sourcing vérifié, paiement protégé, facturation automatique.</p>
-            <Link href="/auth/register?role=buyer" className={styles.finalCtaButton}>
-              Demander une démonstration
+            <Link href="/register?role=buyer" className={styles.finalCtaButton}>
+              Créer mon compte acheteur
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
@@ -418,7 +438,7 @@ export default function HomePage() {
             <Truck size={22} aria-hidden="true" />
             <h3>Vous produisez ou fabriquez au Cameroun</h3>
             <p>Accédez à des acheteurs professionnels et soyez payé sans risque.</p>
-            <Link href="/auth/register?role=seller" className={styles.finalCtaButton} data-variant="light">
+            <Link href="/register?role=seller" className={styles.finalCtaButton} data-variant="light">
               Rejoindre C-Connect
               <ArrowRight size={16} aria-hidden="true" />
             </Link>

@@ -2,34 +2,21 @@
 
 declare(strict_types=1);
 
-use Laravel\Sanctum\Sanctum;
-
 /**
- * Sanctum — configuration pour le mode stateful (cookie SPA)
+ * Sanctum — configuration pour l'authentification par token Bearer.
  *
- * SANCTUM_STATEFUL_DOMAINS liste les domaines dont les requêtes doivent
- * être traitées comme "stateful" (session cookie plutôt que token).
- * En local : localhost:3000. En production : votre domaine sans https://.
- *
- * Note : Sanctum lit aussi FRONTEND_URL comme fallback. En définissant
- * les deux, on couvre localhost ET 127.0.0.1 sans ambiguïté.
+ * On n'utilise plus le mode stateful (cookie SPA) : 'stateful' est vide,
+ * donc EnsureFrontendRequestsAreStateful ne s'applique à aucun domaine et
+ * toute requête passe par la vérification du token API personnel envoyé
+ * dans l'en-tête Authorization: Bearer <token>.
  */
 return [
 
-    'stateful' => explode(',', env(
-        'SANCTUM_STATEFUL_DOMAINS',
-        sprintf(
-            '%s%s',
-            'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,::1',
-            Sanctum::currentApplicationUrlWithPort()
-                ? ',' . Sanctum::currentApplicationUrlWithPort()
-                : ''
-        )
-    )),
+    'stateful' => [],
 
     'guard' => ['web'],
 
-    'expiration' => null,   // null = les tokens ne périment pas (stateful SPA)
+    'expiration' => 1440, // 24h — les tokens doivent être renouvelés via un nouveau login
 
     'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 

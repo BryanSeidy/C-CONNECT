@@ -82,6 +82,10 @@
 /* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--bg-app);
@@ -91,6 +95,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -124,6 +129,13 @@ a { color: inherit; }
 
 /* ── Selection ── */
 ::selection { background: var(--c-green-100); }
+
+/* ── Global spin utility — for inline style={{ animation: 'spin ...' }}
+   references (CSS-module-scoped @keyframes aren't visible inline). ── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 /* ── Reduced motion — accessibility ── */
 @media (prefers-reduced-motion: reduce) {

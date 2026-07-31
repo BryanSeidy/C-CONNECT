@@ -1,5 +1,6 @@
 import { ApiEnvelope, Dispute, RawDispute } from '@/types';
 import { apiClient } from './api';
+import { normalizeOrder } from './orders';
 
 function normalizeDispute(raw: RawDispute): Dispute {
   return {
@@ -11,6 +12,9 @@ function normalizeDispute(raw: RawDispute): Dispute {
     preuvesUrls: raw.preuves_urls ?? null,
     statut: raw.statut,
     notesResolution: raw.notes_resolution ?? null,
+    order: raw.order ? normalizeOrder(raw.order) : null,
+    initiateur: raw.initiateur ?? null,
+    resolvedBy: raw.resolved_by ?? null,
     createdAt: raw.created_at,
   };
 }
