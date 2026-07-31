@@ -1,0 +1,199 @@
+/* C-Connect — GamificationWidget */
+
+.widget {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.widgetTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+/* ── KPI row ── */
+.kpiRow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.kpi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.kpiValue {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.kpiLabel {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kpiDivider {
+  width: 1px;
+  height: 36px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* ── Volume row ── */
+.volumeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0.75rem;
+  background: var(--c-green-50);
+  border-radius: var(--radius-sm);
+}
+
+.volumeRow svg { color: var(--primary-color); }
+
+.volumeRow strong { color: var(--primary-color); font-weight: 700; }
+
+/* ── Progress bar ── */
+.progressWrap { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+
+.progressLabel { font-weight: 600; color: var(--text-main); }
+.progressPct   { color: var(--text-muted); font-weight: 500; font-size: 0.75rem; }
+
+.track {
+  height: 6px;
+  background: var(--c-green-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--c-gold-500);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+/* ── Badges ── */
+.badgesSection { display: flex; flex-direction: column; gap: 0.65rem; }
+
+.badgesTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.badgesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid;
+  background: var(--bg-card);
+  cursor: default;
+  transition: transform 0.15s;
+}
+
+.badge:hover { transform: translateY(-1px); }
+
+.badgeDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badgeLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.noBadges {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* ── Skeleton ── */
+.skLine {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--c-green-50) 25%, var(--c-green-100) 50%, var(--c-green-50) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Compact variant ── */
+.compact {
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.compactRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.compactIcon { color: var(--c-gold-500); }
+
+.compactPoints {
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.compactSep { color: var(--border-color); }
+
+.compactBadges { color: var(--text-muted); }

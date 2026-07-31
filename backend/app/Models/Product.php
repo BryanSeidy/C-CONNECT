@@ -1,0 +1,285 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
+
+/**
+ * @property string $id
+ * @property string $seller_id
+ * @property string|null $category_id
+ * @property string $nom
+ * @property string $slug
+ * @property string|null $description
+ * @property float $prix
+ * @property int $stock
+ * @property string|null $region
+ * @property string|null $image_principale
+ * @property float $quality_rating
+ * @property int $reviews_count
+ * @property int $sales_count
+ * @property string $statut
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ *
+ * @property-read \App\Models\SellerProfile $seller
+ * @property-read \App\Models\Category|null $category
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\OrderItem[] $orderItems
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Review[] $reviews
+ * @property-read string $prix_formate
+ * @property-read bool $is_in_stock
+ * @property-read float $rating_percent
+ */
+class Product extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'seller_id',
+        'category_id',
+        'nom',
+        'slug',
+        'description',
+        'prix',
+        'prix_minimum_commande',
+        'quantite_minimum',
+        'stock',
+        'stock_reserve',
+        'stock_minimum',
+        'unite',
+        'region',
+        'image_url',
+        'image_principale',
+        'statut',
+        'disponible',
+    ];
+
+    protected $casts = [
+        'prix' => 'decimal:2',
+        'quality_rating' => 'decimal:2',
+        'stock' => 'integer',
+        'reviews_count' => 'integer',
+        'sales_count' => 'integer',
+    ];
+
+    protected $attributes = [
+        'statut' => 'pending',
+        'quality_rating' => 0.00,
+        'reviews_count' => 0,
+        'sales_count' => 0,
+    ];
+
+    /**
+     * Boot du modèle : génération automatique du slug.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Product $product): void {
+            if (empty($product->slug)) {
+                $product->slug = Str::slug($product->nom) . '-' . Str::random(6);
+            }
+        });
+
+        static::updating(function (Product $product): void {
+            if ($product->isDirty('nom') && !$product->isDirty('slug')) {
+                $product->slug = Str::slug($product->nom) . '-' . Str::random(6);
+            }
+        });
+    }
+
+    // ==================== RELATIONS ====================
+
+    /**
+     * Route model binding : accepte le slug OU l'id numérique dans {product}.
+     * Sans ce override, Laravel ne résout {product} que par id (clé
+     * primaire), et la fiche produit — accédée par slug depuis
+     * ProductCard/marketplace, le chemin normal — renvoyait 404 à chaque
+     * fois. Même bug, même fix que Company::resolveRouteBinding().
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? $this->where('id', $value)->firstOrFail();
+    }
+
+    /**
+     * Le vendeur propriétaire du produit.
+     */
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(SellerProfile::class, 'seller_id');
+    }
+
+    /**
+     * La catégorie du produit.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Les lignes de commande contenant ce produit.
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Les avis déposés sur ce produit.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    // ==================== SCOPES ====================
+
+    /**
+     * Produits actifs uniquement.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('statut', 'active');
+    }
+
+    /**
+     * Filtrer par région.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $region
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeByRegion($query, string $region)
+    {
+        return $query->where('region', $region);
+    }
+
+    /**
+     * Filtrer par catégorie.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $categoryId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeByCategory($query, string $categoryId)
+    {
+        return $query->where('category_id', $categoryId);
+    }
+
+    /**
+     * Produits en stock uniquement.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeInStock($query)
+    {
+        return $query->where('stock', '>', 0);
+    }
+
+    /**
+     * Produits les mieux notés.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeTopRated($query)
+    {
+        return $query->where('statut', 'active')
+            ->orderBy('quality_rating', 'desc');
+    }
+
+    /**
+     * Produits les plus vendus.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeBestSellers($query)
+    {
+        return $query->where('statut', 'active')
+            ->orderBy('sales_count', 'desc');
+    }
+
+    // ==================== ACCESSORS ====================
+
+    /**
+     * Prix formaté avec devise.
+     */
+    public function getPrixFormateAttribute(): string
+    {
+        return number_format($this->prix, 0, ',', ' ') . ' XAF';
+    }
+
+    /**
+     * Vérifie si le produit est en stock.
+     */
+    public function getIsInStockAttribute(): bool
+    {
+        return $this->stock > 0;
+    }
+
+    /**
+     * Vérifie si le produit est disponible (stock net > stock minimum).
+     */
+    public function getIsAvailableAttribute(): bool
+    {
+        return ($this->stock - ($this->stock_reserve ?? 0)) > ($this->stock_minimum ?? 0);
+    }
+
+    /**
+     * Stock net disponible (stock - réservé).
+     */
+    public function getStockDisponibleAttribute(): int
+    {
+        return max(0, $this->stock - ($this->stock_reserve ?? 0));
+    }
+
+    /**
+     * Réserver du stock pour une commande (incrémente stock_reserve).
+     * Appelé à la création d'une commande, dans une transaction DB.
+     */
+    public function reserverStock(int $quantite): void
+    {
+        $this->increment('stock_reserve', $quantite);
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
+    }
+
+    /**
+     * Restituer le stock réservé sans le consommer (annulation de commande).
+     * Ne décrémente jamais le stock réel, uniquement le stock_reserve.
+     */
+    public function libererStock(int $quantite): void
+    {
+        $reserve = (int) ($this->stock_reserve ?? 0);
+        $this->decrement('stock_reserve', min($quantite, $reserve));
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
+    }
+
+    /**
+     * Consommer définitivement le stock réservé lors d'une livraison confirmée.
+     * Décrémente à la fois stock et stock_reserve.
+     */
+    public function consommerStock(int $quantite): void
+    {
+        $this->decrement('stock', $quantite);
+        $this->decrement('stock_reserve', min($quantite, (int) ($this->stock_reserve ?? 0)));
+        $this->refresh();
+        $this->update(['disponible' => $this->is_available]);
+    }
+}

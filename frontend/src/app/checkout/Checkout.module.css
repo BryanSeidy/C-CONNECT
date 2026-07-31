@@ -1,0 +1,216 @@
+/* C-Connect — Checkout Page */
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.backLink:hover { opacity: 0.75; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* ── Summary card ── */
+.summaryCol { display: flex; flex-direction: column; }
+
+.summaryCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.summaryHeader {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--c-green-50);
+}
+
+.summaryTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.summaryBody {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summaryRef {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.summaryRef code {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Order items */
+.orderItem {
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orderItem:last-of-type { border-bottom: none; }
+
+.orderItemName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.orderItemMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.orderItemAmt {
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Totals */
+.summaryTotals {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--text-main);
+}
+
+.totalGrand {
+  padding-top: 0.5rem;
+  border-top: 1.5px solid var(--primary-color);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+.totalGrand strong {
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+/* Escrow note */
+.escrowNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: var(--c-green-50);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(19,53,46,0.08);
+  font-size: 0.78rem;
+  color: var(--success);
+  line-height: 1.5;
+}
+
+.escrowNote svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ── Payment col ── */
+.paymentCol { position: sticky; top: 80px; }
+
+/* ── Gate ── */
+.gate {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.loginLink {
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: none;
+  padding: 0.6rem 1.25rem;
+  border: 1.5px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.loginLink:hover { background: var(--c-green-50); }
+
+/* ── Error ── */
+.errorMsg {
+  padding: 1.5rem;
+  color: var(--error);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skLine {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--c-green-50) 25%, var(--c-green-100) 50%, var(--c-green-50) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .paymentCol { position: static; }
+}
+
+@media (max-width: 600px) {
+  .page { padding: 1.25rem 1rem 3rem; }
+}

@@ -19,6 +19,10 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'failover' => [
+        'enabled' => env('DB_FAILOVER_ENABLED', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections
@@ -35,13 +39,20 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'database' => env('DB_DATABASE', database_path('local_database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
             'journal_mode' => null,
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
+        ],
+
+        'sqlite_local' => [
+            'driver' => 'sqlite',
+            'database' => database_path('local_backup.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => true,
         ],
 
         'mysql' => [

@@ -1,0 +1,193 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  Activity, BarChart3, Building2, CalendarClock, ClipboardList,
+  HandCoins, Home, LogOut, Package, Settings,
+  ShieldAlert, ShieldCheck, Truck, UserCog, X,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import styles from './Sidebar.module.css';
+import { GamificationWidget } from '@/components/GamificationWidget';
+
+// ── Nav config par rôle ──────────────────────────────────────────────────────
+
+const BUYER_LINKS = [
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
+  { href: '/dashboard/rfqs', label: 'Mes RFQs', Icon: ClipboardList },
+  { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
+  { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+  { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
+  { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
+  { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
+];
+
+const SELLER_LINKS = [
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
+  { href: '/dashboard/products', label: 'Mes produits', Icon: Package },
+  { href: '/dashboard/orders', label: 'Commandes', Icon: Truck },
+  { href: '/dashboard/rfqs', label: 'Appels d\'offres', Icon: ClipboardList },
+  { href: '/dashboard/negotiations', label: 'Négociations', Icon: HandCoins },
+  { href: '/dashboard/recurring', label: 'Récurrentes', Icon: CalendarClock },
+  { href: '/dashboard/disputes', label: 'Litiges', Icon: ShieldAlert },
+  { href: '/dashboard/company', label: 'Mon entreprise', Icon: Building2 },
+];
+
+const ADMIN_LINKS = [
+  { href: '/dashboard', label: 'Vue générale', Icon: Home },
+  { href: '/dashboard/admin/companies', label: 'Entreprises KYB', Icon: ShieldCheck },
+  { href: '/dashboard/admin/disputes', label: 'Arbitrages', Icon: ShieldAlert },
+  { href: '/dashboard/admin/delivery', label: 'Livreurs', Icon: Truck },
+  { href: '/dashboard/admin/stats', label: 'Statistiques', Icon: BarChart3 },
+  { href: '/dashboard/admin/users', label: 'Utilisateurs', Icon: UserCog },
+  { href: '/dashboard/admin/health', label: 'Système', Icon: Activity },
+];
+
+const BOTTOM_LINKS = [
+  { href: '/profile', label: 'Paramètres', Icon: Settings },
+];
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+interface SidebarProps {
+  /** Contrôle l'ouverture du tiroir sur mobile (<=768px). Ignoré en desktop. */
+  open?: boolean;
+  /** Appelé pour fermer le tiroir mobile (backdrop, lien cliqué, bouton fermer). */
+  onClose?: () => void;
+}
+
+export const Sidebar = ({ open = false, onClose }: SidebarProps) => {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const links = user?.role === 'admin'
+    ? ADMIN_LINKS
+    : user?.role === 'seller'
+      ? SELLER_LINKS
+      : BUYER_LINKS;
+
+  const initials = (user?.fullName ?? user?.email ?? 'U')
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  return (
+    <>
+      {/* Backdrop mobile — visible uniquement quand le tiroir est ouvert */}
+      {open && (
+        <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
+      )}
+
+      <aside
+        className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}
+        aria-label="Navigation principale"
+      >
+        {/* Brand header — ancre l'identité C-Connect en haut de chaque tableau de bord */}
+        <div className={styles.brandHeader}>
+          <Link href="/" className={styles.brand} aria-label="C-Connect — Accueil">
+            <Image
+              src="/brand/icon-color.png"
+              alt=""
+              width={28}
+              height={28}
+              className={styles.brandLogo}
+            />
+            <span className={styles.brandName}>C-Connect</span>
+          </Link>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Fermer le menu"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+
+        <nav className={styles.nav}>
+          <p className={styles.sectionLabel}>Menu</p>
+          <ul className={styles.list}>
+            {links.map(({ href, label, Icon }) => {
+              const exact = href === '/dashboard';
+              const active = exact ? pathname === href : pathname.startsWith(href);
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`${styles.link} ${active ? styles.active : ''}`}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={onClose}
+                  >
+                    <Icon size={17} className={styles.icon} aria-hidden="true" />
+                    {label}
+                    {user?.role === 'admin' && label === 'Arbitrages' && (
+                      <span className={styles.rolePill} style={{ background: 'rgba(192,57,43,0.2)', color: '#E57373' }}>!</span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className={styles.divider} aria-hidden="true" />
+
+          <ul className={styles.list}>
+            {BOTTOM_LINKS.map(({ href, label, Icon }) => {
+              const active = pathname === href;
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`${styles.link} ${active ? styles.active : ''}`}
+                    onClick={onClose}
+                  >
+                    <Icon size={17} className={styles.icon} aria-hidden="true" />
+                    {label}
+                  </Link>
+                </li>
+              );
+            })}
+            <li>
+              <button
+                type="button"
+                onClick={logout}
+                className={styles.link}
+                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '0.875rem' }}
+              >
+                <LogOut size={17} className={styles.icon} aria-hidden="true" />
+                Déconnexion
+              </button>
+            </li>
+          </ul>
+        </nav>
+
+        {/* Gamification — visible uniquement pour les sellers */}
+        {user?.role === 'seller' && (
+          <div style={{ padding: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <GamificationWidget compact />
+          </div>
+        )}
+
+        {/* User footer */}
+        <footer className={styles.footer}>
+          <div className={styles.userCard}>
+            <div className={styles.avatar} aria-hidden="true">{initials}</div>
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>{user?.fullName ?? user?.email}</span>
+              <span className={styles.userRole}>{user?.role}</span>
+            </div>
+            {user?.role && (
+              <span className={`${styles.rolePill} ${user.role === 'admin' ? styles.rolePillAdmin : ''}`}>
+                {user.role}
+              </span>
+            )}
+          </div>
+        </footer>
+      </aside>
+    </>
+  );
+};

@@ -1,0 +1,288 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class ProductController extends Controller
+{
+    /**
+     * Public catalogue — no authentication required.
+     * Supports keyword search, region filter, category filter and pagination.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = Product::query()
+            ->with(['seller.user', 'category'])
+            ->where('statut', 'active');
+
+        if ($request->filled('country')) {
+            $query->where('region', $request->input('country'));
+        }
+
+        if ($request->filled('category')) {
+            $categoryParam = $request->input('category');
+            $query->where(function ($q) use ($categoryParam): void {
+                if (\Illuminate\Support\Str::isUuid($categoryParam)) {
+                    $q->where('category_id', $categoryParam);
+                } else {
+                    $q->whereHas('category', function ($cq) use ($categoryParam): void {
+                        $cq->where('nom', 'like', '%' . $categoryParam . '%')
+                           ->orWhere('slug', $categoryParam);
+                    });
+                }
+            });
+        }
+
+        if ($request->filled('q')) {
+            $searchTerm = '%' . $request->input('q') . '%';
+            $query->where(function ($q) use ($searchTerm): void {
+                $q->where('nom', 'like', $searchTerm)
+                  ->orWhere('description', 'like', $searchTerm);
+            });
+        }
+
+        // --- Critères B2B (entreprise vendeuse) ---
+        $wantsVerified   = $request->boolean('verified');
+        $wantsCooperative = $request->boolean('cooperative');
+        $wantsWomenLed   = $request->boolean('womenLed');
+
+        if ($wantsVerified || $wantsCooperative || $wantsWomenLed) {
+            $query->whereHas('seller', function ($sq) use ($wantsVerified, $wantsCooperative, $wantsWomenLed): void {
+                if ($wantsVerified) {
+                    $sq->verified();
+                }
+                if ($wantsCooperative) {
+                    $sq->where('is_cooperative', true);
+                }
+                if ($wantsWomenLed) {
+                    $sq->femaleOwned();
+                }
+            });
+        }
+
+        if ($request->boolean('availableOnly')) {
+            $query->inStock();
+        }
+
+        if ($request->filled('companyId')) {
+            $companyId = $request->input('companyId');
+            $query->whereHas('seller', function ($sq) use ($companyId): void {
+                $sq->where('company_id', $companyId);
+            });
+        }
+
+        $pageSize  = min((int) $request->input('pageSize', 12), 50);
+        $page      = max((int) $request->input('page', 1), 1);
+
+        $sort = $request->input('sort', 'recent');
+        $query = match ($sort) {
+            'price_asc'  => $query->orderBy('prix', 'asc'),
+            'price_desc' => $query->orderBy('prix', 'desc'),
+            default      => $query->orderBy('created_at', 'desc'),
+        };
+
+        $paginated = $query->paginate($pageSize, ['*'], 'page', $page);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'items' => $paginated->items(),
+                'meta'  => [
+                    'total'      => $paginated->total(),
+                    'page'       => $paginated->currentPage(),
+                    'pageSize'   => $paginated->perPage(),
+                    'totalPages' => $paginated->lastPage(),
+                ],
+            ],
+            'message' => 'Products retrieved successfully.',
+        ]);
+    }
+
+    /**
+     * Récupère les produits du vendeur authentifié.
+     */
+    public function myProducts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $sellerProfile = $user->sellerProfile;
+
+        if (!$sellerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez avoir un profil vendeur.'
+            ], 403);
+        }
+
+        $products = Product::where('seller_id', $sellerProfile->id)
+            ->with(['category', 'seller.user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+            'message' => $products->isEmpty()
+                ? 'Aucun produit pour le moment.'
+                : 'Produits récupérés avec succès.'
+        ], 200);
+    }
+
+    /**
+     * Display a single product — public.
+     */
+    public function show(Product $product): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data'    => $product->load(['seller.user', 'category']),
+            'message' => 'Product retrieved successfully.',
+        ]);
+    }
+
+    /**
+     * Create a new product — authenticated sellers only.
+     * Requires a sellerProfile (created via registration or seller onboarding).
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'price'       => ['required', 'numeric', 'min:0'],
+            'stock'       => ['required', 'integer', 'min:0'],
+            'country'     => ['required', 'string', 'max:100'],
+            'category'    => ['required', 'string', 'max:100'],
+            'imageUrl'    => ['nullable', 'url', 'max:2048'],
+            'unite'       => ['nullable', 'string', 'in:kg,tonnes,litres,sacs,caisses,unites'],
+            'stockMinimum' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $sellerProfile = $request->user()->sellerProfile;
+
+        if (!$sellerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous devez avoir un profil vendeur pour publier un produit. Complétez votre inscription vendeur d\'abord.',
+            ], 403);
+        }
+
+        $categoryParam = $validated['category'];
+        $category = null;
+        if (\Illuminate\Support\Str::isUuid($categoryParam)) {
+            $category = \App\Models\Category::find($categoryParam);
+        } else {
+            $category = \App\Models\Category::where('nom', $categoryParam)
+                ->orWhere('slug', \Illuminate\Support\Str::slug($categoryParam))
+                ->first();
+        }
+
+        if (!$category) {
+            $category = \App\Models\Category::firstOrCreate([
+                'nom' => $categoryParam,
+            ], [
+                'slug' => \Illuminate\Support\Str::slug($categoryParam),
+                'description' => 'Catégorie créée automatiquement',
+            ]);
+        }
+
+        $product = Product::create([
+            'seller_id' => $sellerProfile->id,
+            'category_id' => $category->id,
+            'nom' => $validated['name'],
+            'description' => $validated['description'],
+            'prix' => $validated['price'],
+            'stock' => $validated['stock'],
+            'stock_minimum' => $validated['stockMinimum'] ?? 5,
+            'unite' => $validated['unite'] ?? 'kg',
+            'region' => $validated['country'],
+            'image_url' => $validated['imageUrl'] ?? null,
+            'statut' => 'active',
+            'disponible' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $product->load(['seller.user', 'category']),
+            'message' => 'Product created successfully.',
+        ], 201);
+    }
+
+    /**
+     * Update a product — authenticated seller who owns the product.
+     */
+    public function update(Request $request, Product $product): JsonResponse
+    {
+        $user = $request->user();
+        $sellerProfile = $user->sellerProfile;
+
+        if ((!$sellerProfile || $sellerProfile->id !== $product->seller_id) && !$user->isAdmin()) {
+            return response()->json(['message' => 'Not authorized to update this product.'], 403);
+        }
+
+        $validated = $request->validate([
+            'name'        => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'string'],
+            'price'       => ['sometimes', 'numeric', 'min:0'],
+            'stock'       => ['sometimes', 'integer', 'min:0'],
+            'country'     => ['sometimes', 'string', 'max:100'],
+            'category'    => ['sometimes', 'string', 'max:100'],
+            'imageUrl'    => ['nullable', 'url', 'max:2048'],
+            'isActive'    => ['sometimes', 'boolean'],
+        ]);
+
+        $updateData = [];
+        if (isset($validated['name'])) $updateData['nom'] = $validated['name'];
+        if (isset($validated['description'])) $updateData['description'] = $validated['description'];
+        if (isset($validated['price'])) $updateData['prix'] = $validated['price'];
+        if (isset($validated['stock'])) $updateData['stock'] = $validated['stock'];
+        if (isset($validated['country'])) $updateData['region'] = $validated['country'];
+        if (isset($validated['imageUrl'])) $updateData['image_url'] = $validated['imageUrl'];
+        if (isset($validated['isActive'])) $updateData['statut'] = $validated['isActive'] ? 'active' : 'disabled';
+
+        if (isset($validated['category'])) {
+            $categoryParam = $validated['category'];
+            $category = null;
+            if (\Illuminate\Support\Str::isUuid($categoryParam)) {
+                $category = \App\Models\Category::find($categoryParam);
+            } else {
+                $category = \App\Models\Category::where('nom', $categoryParam)
+                    ->orWhere('slug', \Illuminate\Support\Str::slug($categoryParam))
+                    ->first();
+            }
+            if ($category) {
+                $updateData['category_id'] = $category->id;
+            }
+        }
+
+        $product->update($updateData);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $product->fresh()->load(['seller.user', 'category']),
+            'message' => 'Product updated successfully.',
+        ]);
+    }
+
+    /**
+     * Delete a product — owner or admin only.
+     */
+    public function destroy(Request $request, Product $product): JsonResponse
+    {
+        $user = $request->user();
+        $sellerProfile = $user->sellerProfile;
+
+        if ((!$sellerProfile || $sellerProfile->id !== $product->seller_id) && !$user->isAdmin()) {
+            return response()->json(['message' => 'Not authorized to delete this product.'], 403);
+        }
+
+        $product->delete();
+
+        return response()->json(['message' => 'Product deleted successfully.']);
+    }
+}

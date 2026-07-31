@@ -1,0 +1,70 @@
+# ==============================================================================
+# C-Connect API — .dockerignore
+# ==============================================================================
+# Exclut les fichiers inutiles du contexte de build Docker
+# pour accélérer le build et réduire la taille de l'image.
+# ==============================================================================
+
+# Dépendances (installées dans le container)
+vendor/
+node_modules/
+
+# Environnement local
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE / Éditeurs
+.vscode/
+.idea/
+.cursor/
+.claude/
+*.swp
+*.swo
+
+# Docker (éviter l'inclusion récursive)
+docker-compose*.yml
+Dockerfile
+
+# Tests & CI
+tests/
+.phpunit.result.cache
+phpunit.xml
+
+# Documentation
+*.md
+docs/
+
+# Fichiers de debug/scripts temporaires
+*.php.bak
+align-schema.php
+check-product-columns.php
+check-user-columns.php
+create-admin.php
+db-test.php
+deploy-métier-schema.php
+e2e-test.php
+final-infra-setup.php
+fix-user-schema.php
+force-fix-user.php
+seed-roles.php
+setup-auth-core.php
+test-product-query.php
+neondb
+
+# Storage (sera créé dans le container)
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# Ne pas ignorer les .gitkeep
+!storage/logs/.gitkeep
+!storage/framework/cache/.gitkeep
+!storage/framework/sessions/.gitkeep
+!storage/framework/views/.gitkeep

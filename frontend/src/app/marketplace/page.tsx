@@ -1,0 +1,285 @@
+'use client';
+
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { ProductCard } from '@/components/ProductCard';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Footer } from '@/components/Footer';
+import { productService, ProductSort } from '@/services/products';
+import { smartSearchService } from '@/services/smartSearch';
+import { PaginationMeta, Product } from '@/types';
+import { useDebounce } from '@/hooks/useDebounce';
+import styles from './Marketplace.module.css';
+import { REGION_OPTIONS } from '@/lib/regions';
+import { AlertTriangle, PackageSearch, BadgeCheck, Users, Sprout, PackageCheck, Sparkles } from 'lucide-react';
+
+const CATEGORIES = ['Agroalimentaire', 'Transformation', 'Élevage', 'Pêche', 'Textile', 'Industrie'];
+const DEFAULT_META: PaginationMeta = { total: 0, page: 1, pageSize: 12, totalPages: 1 };
+const PAGE_SIZE = 12;
+
+export default function MarketplacePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [country, setCountry] = useState('');
+  const [category, setCategory] = useState('');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [cooperativeOnly, setCooperativeOnly] = useState(false);
+  const [womenLedOnly, setWomenLedOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [sort, setSort] = useState<ProductSort>('recent');
+  const [smartQuery, setSmartQuery] = useState('');
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartSummary, setSmartSummary] = useState<string | null>(null);
+  const [smartUnavailable, setSmartUnavailable] = useState(false);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
+  const debouncedSearch = useDebounce(search, 400);
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await productService.getProducts({
+        country: country || undefined,
+        category: category || undefined,
+        q: debouncedSearch.trim() || undefined,
+        verified: verifiedOnly || undefined,
+        cooperative: cooperativeOnly || undefined,
+        womenLed: womenLedOnly || undefined,
+        availableOnly: availableOnly || undefined,
+        sort,
+        page,
+        pageSize: PAGE_SIZE
+      });
+      setProducts(res?.data?.items || []);
+      setMeta(res?.data?.meta || DEFAULT_META);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Impossible de charger les produits');
+      setProducts([]);
+      setMeta(DEFAULT_META);
+    } finally {
+      setLoading(false);
+    }
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort, page]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [country, category, debouncedSearch, verifiedOnly, cooperativeOnly, womenLedOnly, availableOnly, sort]);
+
+  const handleSmartSearch = async () => {
+    if (!smartQuery.trim() || smartLoading) return;
+    setSmartLoading(true);
+    setSmartSummary(null);
+    setSmartUnavailable(false);
+    try {
+      const result = await smartSearchService.parse(smartQuery.trim());
+      if (!result) {
+        setSmartUnavailable(true);
+        setSearch(smartQuery.trim());
+        return;
+      }
+      if (result.category) setCategory(result.category);
+      if (result.region) setCountry(result.region);
+      if (result.sort) setSort(result.sort);
+      setSearch(result.keywords ?? '');
+      setSmartSummary(result.summary);
+    } finally {
+      setSmartLoading(false);
+    }
+  };
+
+  const skeletonItems = useMemo(() => Array.from({ length: 6 }, (_, idx) => idx), []);
+  const hasPreviousPage = page > 1;
+  const hasNextPage = page < meta.totalPages;
+
+  return (
+    <>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div className={styles.titleArea}>
+            <h1 className={styles.title}>Marketplace National</h1>
+            <p className={styles.subtitle}>
+              Découvrez les meilleurs produits agricoles et industriels des 10 régions du Cameroun
+            </p>
+          </div>
+
+          <div className={styles.smartSearchBar}>
+            <Sparkles size={18} aria-hidden="true" className={styles.smartSearchIcon} />
+            <input
+              type="text"
+              className={styles.smartSearchInput}
+              placeholder="Ex : du manioc frais pas cher autour de Douala, grande quantité…"
+              value={smartQuery}
+              onChange={(e) => setSmartQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
+            />
+            <Button variant="primary" size="sm" onClick={handleSmartSearch} isLoading={smartLoading} disabled={!smartQuery.trim()}>
+              Rechercher avec l&apos;IA
+            </Button>
+          </div>
+          {smartSummary && (
+            <p className={styles.smartSearchSummary}>
+              <Sparkles size={13} aria-hidden="true" /> {smartSummary}
+            </p>
+          )}
+          {smartUnavailable && (
+            <p className={styles.smartSearchFallback}>
+              Recherche intelligente indisponible pour le moment — recherche classique utilisée à la place.
+            </p>
+          )}
+
+          <div className={styles.filters}>
+            <div className={styles.searchBar}>
+              <Input
+                placeholder="Rechercher un produit..."
+                style={{ width: '100%', maxWidth: '300px' }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Button variant="primary" onClick={fetchProducts} isLoading={loading}>
+                Actualiser
+              </Button>
+            </div>
+            <div className={styles.selectGroup}>
+              <select
+                className={styles.select}
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              >
+                <option value="">Toutes les régions</option>
+                {REGION_OPTIONS.map(c => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <select
+                className={styles.select}
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">Toutes catégories</option>
+                {CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <select
+                className={styles.select}
+                value={sort}
+                onChange={(e) => setSort(e.target.value as ProductSort)}
+                aria-label="Trier les produits"
+              >
+                <option value="recent">Plus récents</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.trustFilters} role="group" aria-label="Critères de confiance B2B">
+            <button
+              type="button"
+              className={`${styles.trustChip} ${verifiedOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={verifiedOnly}
+              onClick={() => setVerifiedOnly((v) => !v)}
+            >
+              <BadgeCheck size={16} aria-hidden="true" />
+              Entreprises vérifiées
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${cooperativeOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={cooperativeOnly}
+              onClick={() => setCooperativeOnly((v) => !v)}
+            >
+              <Users size={16} aria-hidden="true" />
+              Coopératives
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${womenLedOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={womenLedOnly}
+              onClick={() => setWomenLedOnly((v) => !v)}
+            >
+              <Sprout size={16} aria-hidden="true" />
+              Entreprises féminines
+            </button>
+            <button
+              type="button"
+              className={`${styles.trustChip} ${availableOnly ? styles.trustChipActive : ''}`}
+              aria-pressed={availableOnly}
+              onClick={() => setAvailableOnly((v) => !v)}
+            >
+              <PackageCheck size={16} aria-hidden="true" />
+              Disponible en stock
+            </button>
+          </div>
+        </div>
+
+        {/* États */}
+        {loading && (
+          <div className={styles.grid}>
+            {skeletonItems.map((item) => (
+              <div key={item} className={styles.skeletonCard}>
+                <div className={styles.skeletonImage} />
+                <div className={styles.skeletonLineLg} />
+                <div className={styles.skeletonLineMd} />
+                <div className={styles.skeletonLineSm} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className={styles.errorBox}>
+            <AlertTriangle size={32} color="#dc2626" aria-hidden="true" style={{ marginBottom: '1rem' }} />
+            <p style={{ color: '#dc2626', marginBottom: '0.5rem' }}>{error}</p>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+              Vérifiez votre connexion ou réessayez dans quelques secondes.
+            </p>
+            <Button variant="outline" onClick={fetchProducts}>
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+            <PackageSearch size={44} aria-hidden="true" style={{ marginBottom: '1rem' }} />
+            <p style={{ fontSize: '1.125rem', fontWeight: 600 }}>Aucun produit trouvé</p>
+            <p style={{ marginTop: '0.5rem' }}>Essayez de modifier vos filtres de recherche.</p>
+          </div>
+        )}
+
+        {!loading && !error && products.length > 0 && (
+          <>
+            <div className={styles.resultsInfo}>
+              <span>{meta.total} produit(s) trouvé(s)</span>
+              <span>
+                Page {meta.page} / {meta.totalPages}
+              </span>
+            </div>
+            <div className={styles.grid}>
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            <div className={styles.pagination}>
+              <Button variant="outline" onClick={() => setPage((p) => p - 1)} disabled={!hasPreviousPage}>
+                Précédent
+              </Button>
+              <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={!hasNextPage}>
+                Suivant
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+      <Footer />
+    </>
+  );
+}

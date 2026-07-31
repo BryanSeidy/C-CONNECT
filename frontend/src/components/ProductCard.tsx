@@ -1,0 +1,151 @@
+import Link from 'next/link';
+import { Product } from '@/types';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import styles from './ProductCard.module.css';
+import { getRegionLabel } from '@/lib/regions';
+import { MapPin, ShieldCheck, ShoppingCart, Star } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { useToast } from '@/components/ui/ToastProvider';
+
+export const ProductCard = ({ product }: { product: Product }) => {
+  const ratings = product.reviews?.map((r) => r.rating) || [];
+  const avgRating = ratings.length > 0 ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1) : null;
+  const vendorName = product.producer?.companyName || product.producer?.fullName || 'Producteur Cameroun';
+  const isVerified = product.producer?.isVerified;
+  const { addItem, isInCart } = useCart();
+  const { showToast } = useToast();
+  const inCart = isInCart(Number(product.id));
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      productId: Number(product.id),
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      unite: product.unite,
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      sellerId: Number(product.producerId),
+      sellerName: vendorName,
+    });
+    showToast(`« ${product.name} » ajouté au panier.`, 'success');
+  };
+
+  return (
+    <Card style={{ cursor: 'pointer', transition: 'all 0.3s ease', overflow: 'hidden' }}>
+      <div style={{
+        width: '100%',
+        height: '200px',
+        backgroundColor: '#F1F5F9',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--text-muted)',
+        position: 'relative'
+      }}>
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundImage: 'linear-gradient(135deg, #0A2E36 0%, #175F6D 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '1.5rem',
+            letterSpacing: '1px'
+          }}>
+            {product.name.slice(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+      
+      <CardContent style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--primary-color)', margin: 0, lineHeight: 1.2 }}>
+            {product.name}
+          </h3>
+          <Badge variant={product.stock > 0 ? "success" : "error"}>
+            {product.stock > 0 ? `${product.stock} dispo` : "Rupture"}
+          </Badge>
+        </div>
+
+        {/* Producteur & Badge de Vérification */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <span style={{ fontWeight: 500 }}>Par {vendorName}</span>
+          {isVerified && (
+            <span 
+              title="Producteur vérifié par C-Connect" 
+              style={{ 
+                color: '#3897f0', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontSize: '0.85rem'
+              }}
+            >
+              <ShieldCheck size={14} aria-hidden="true" />
+            </span>
+          )}
+        </div>
+
+        <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+           <span>{product.category}</span>
+           <span style={{ opacity: 0.4 }}>·</span>
+           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={13} aria-hidden="true" /> {getRegionLabel(product.country)}</span>
+        </div>
+
+        {/* Moyenne des Avis */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+          {avgRating ? (
+            <>
+              <Star size={14} fill="#F59E0B" color="#F59E0B" aria-hidden="true" />
+              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{avgRating}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({ratings.length} avis)</span>
+            </>
+          ) : (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>Aucun avis</span>
+          )}
+        </div>
+
+        <div style={{ margin: '0.5rem 0 0.25rem 0', fontWeight: 800, fontSize: '1.75rem', color: 'var(--primary-color)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+          <span>{product.price.toLocaleString('fr-FR')}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>FCFA</span>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+          <Link
+            href={`/marketplace/${product.slug || product.id}`}
+            className={styles.productLink}
+            style={{ flex: 1 }}
+          >
+            Voir les détails
+          </Link>
+          <Button
+            variant={inCart ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={handleAddToCart}
+            disabled={product.stock === 0}
+            aria-label={`Ajouter ${product.name} au panier`}
+            title="Ajouter au panier"
+          >
+            <ShoppingCart size={16} aria-hidden="true" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+

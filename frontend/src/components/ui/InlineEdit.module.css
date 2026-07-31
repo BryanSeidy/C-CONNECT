@@ -1,0 +1,188 @@
+/* C-Connect — InlineEdit Component */
+
+/* ── Display row ── */
+.displayRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: default;
+  border-radius: var(--radius-xs);
+  padding: 0.15rem 0.25rem;
+  transition: background 0.15s;
+}
+
+.displayRow:hover {
+  background: var(--c-green-50);
+}
+
+.displayRow.compact { padding: 0; gap: 0.3rem; }
+
+.displayValue {
+  font-size: inherit;
+  color: inherit;
+  line-height: 1.4;
+}
+
+.empty { color: var(--text-muted); font-style: italic; }
+
+.editTrigger {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.displayRow:hover .editTrigger,
+.editTrigger:focus-visible { opacity: 1; }
+
+.editTrigger:hover {
+  color: var(--primary-color);
+  background: var(--c-green-100);
+}
+
+/* ── Edit wrap ── */
+.editWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.editWrap.compact { flex-direction: row; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+
+.input {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1.5px solid var(--primary-light);
+  border-radius: var(--radius-xs);
+  padding: 0.45rem 0.7rem;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(19, 53, 46, 0.08);
+}
+
+.inputError {
+  border-color: var(--error);
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+}
+
+.textarea { resize: vertical; min-height: 80px; }
+
+/* ── Action buttons ── */
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.confirmBtn,
+.cancelBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-xs);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.confirmBtn {
+  background: var(--primary-color);
+  color: var(--c-white);
+}
+
+.confirmBtn:hover:not(:disabled) { background: var(--c-green-700); }
+.confirmBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.cancelBtn {
+  background: var(--c-green-50);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: var(--error-bg);
+  color: var(--error);
+  border-color: rgba(192, 57, 43, 0.2);
+}
+
+.cancelBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Error */
+.errorMsg {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--error);
+  display: block;
+}
+
+/* Spinner */
+.spinner {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toggle ── */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.toggleOn { background: var(--primary-color); }
+
+.toggleThumb {
+  position: absolute;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.toggleOn .toggleThumb { transform: translateX(18px); }
+
+.toggleSpinner {
+  position: absolute;
+  right: -20px;
+  animation: spin 0.7s linear infinite;
+  color: var(--text-muted);
+}
+
+/* ── Compact ── */
+.compact .input { padding: 0.3rem 0.5rem; font-size: 0.8125rem; }
+.compact .confirmBtn,
+.compact .cancelBtn { width: 26px; height: 26px; }

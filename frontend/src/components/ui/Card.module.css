@@ -1,0 +1,51 @@
+/* C-Connect — Card Component */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.card.interactive:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Variants */
+.card.dark {
+  background: var(--c-green-800);
+  border-color: var(--c-green-700);
+  color: var(--c-white);
+}
+
+.card.ivory {
+  background: var(--c-ivory);
+  border-color: rgba(19,53,46,0.08);
+}
+
+.card.gold-accent {
+  border-left: 3px solid var(--c-gold-500);
+}
+
+.cardHeader {
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+  font-family: var(--font-ui);
+}
+
+.cardContent { padding: 1.5rem; }
+
+.cardFooter {
+  padding: 0.75rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}

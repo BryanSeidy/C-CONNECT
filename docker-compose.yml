@@ -1,0 +1,145 @@
+# ==============================================================================
+# C-Connect — Docker Compose (Développement Local)
+# ==============================================================================
+#
+# Architecture :
+#   • api  : Laravel 12 (PHP 8.4 FPM) — connecté à Neon.tech PostgreSQL
+#   • mail : Mailpit — intercepte les emails en dev (UI sur http://localhost:8025)
+#
+# Usage :
+#   docker compose up -d          # Démarrer tous les services
+#   docker compose up api         # Démarrer uniquement l'API
+#   docker compose logs -f api    # Suivre les logs de l'API
+#   docker compose exec api sh    # Shell dans le container API
+#   docker compose down           # Arrêter tous les services
+#
+# La base PostgreSQL est hébergée sur Neon.tech (production + dev).
+# Aucun container PostgreSQL local n'est nécessaire.
+#
+# Pré-requis : Docker Desktop ≥ 4.x, Docker Compose V2
+# ==============================================================================
+
+services:
+
+  # ===========================================================================
+  # API — Laravel 12 Backend (PHP 8.4 FPM, dev mode)
+  # ===========================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        # Permet de forcer un rebuild si la version PHP change
+        PHP_VERSION: "8.4"
+    container_name: cconnect-api
+    restart: unless-stopped
+
+    # -------------------------------------------------------------------------
+    # Variables d'environnement — lues depuis backend/.env
+    # -------------------------------------------------------------------------
+    env_file:
+      - ./backend/.env
+
+    # -------------------------------------------------------------------------
+    # Ports exposés
+    # -------------------------------------------------------------------------
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+    # -------------------------------------------------------------------------
+    # Volumes — Hot-reloading du code source en développement
+    # -------------------------------------------------------------------------
+    # Le code source est monté en bind mount pour le hot-reloading.
+    # vendor/ et node_modules/ sont en volumes Docker nommés pour éviter les
+    # conflits de performance et d'OS (Windows NTFS ↔ Linux ext4).
+    # -------------------------------------------------------------------------
+    volumes:
+      # Code source Laravel (bind mount → hot-reloading)
+      - ./backend:/var/www/html:cached
+
+      # Volumes nommés pour les dépendances (performance sur Windows/macOS)
+      - api_vendor:/var/www/html/vendor
+      - api_node_modules:/var/www/html/node_modules
+
+      # Persister le cache de Composer entre les rebuilds
+      - composer_cache:/root/.composer/cache
+
+    # -------------------------------------------------------------------------
+    # Commande de démarrage — php artisan serve en mode dev
+    # -------------------------------------------------------------------------
+    # En dev local, on utilise le serveur intégré de PHP plutôt que Nginx
+    # pour la simplicité et le hot-reloading. Le stage "dev" du Dockerfile
+    # est utilisé (PHP 8.4-fpm-alpine + Composer).
+    # -------------------------------------------------------------------------
+    command: >
+      sh -c "
+        echo '╔══════════════════════════════════════════════════════════╗' &&
+        echo '║  C-Connect API — Dev Mode (PHP 8.4 / Laravel 12)       ║' &&
+        echo '╚══════════════════════════════════════════════════════════╝' &&
+        composer install --no-interaction --prefer-dist &&
+        php artisan key:generate --force --no-interaction 2>/dev/null || true &&
+        php artisan migrate --no-interaction 2>/dev/null || true &&
+        php artisan storage:link --force 2>/dev/null || true &&
+        echo '' &&
+        echo '→ API prête sur http://localhost:${API_PORT:-8000}' &&
+        echo '→ Mailpit UI sur http://localhost:${MAIL_UI_PORT:-8025}' &&
+        echo '' &&
+        php artisan serve --host=0.0.0.0 --port=8000
+      "
+
+    # -------------------------------------------------------------------------
+    # Healthcheck — vérifie que le endpoint /up de Laravel répond
+    # -------------------------------------------------------------------------
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # -------------------------------------------------------------------------
+    # Réseau
+    # -------------------------------------------------------------------------
+    networks:
+      - cconnect-network
+
+  # ===========================================================================
+  # Mailpit — Intercepteur d'emails pour le développement
+  # ===========================================================================
+  # Configure dans backend/.env :
+  #   MAIL_MAILER=smtp
+  #   MAIL_HOST=mail
+  #   MAIL_PORT=1025
+  #   MAIL_ENCRYPTION=null
+  # ===========================================================================
+  mail:
+    image: axllent/mailpit:latest
+    container_name: cconnect-mail
+    restart: unless-stopped
+    ports:
+      # Interface web Mailpit (lecture des emails)
+      - "${MAIL_UI_PORT:-8025}:8025"
+      # SMTP (réception des emails depuis Laravel)
+      - "${MAIL_SMTP_PORT:-1025}:1025"
+    networks:
+      - cconnect-network
+
+# =============================================================================
+# Volumes nommés
+# =============================================================================
+volumes:
+  api_vendor:
+    driver: local
+  api_node_modules:
+    driver: local
+  composer_cache:
+    driver: local
+
+# =============================================================================
+# Réseau
+# =============================================================================
+networks:
+  cconnect-network:
+    driver: bridge
+    name: cconnect-network
