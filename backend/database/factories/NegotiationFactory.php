@@ -15,8 +15,8 @@ class NegotiationFactory extends Factory
 {
     public function definition(): array
     {
-        $quantity = fake()->numberBetween(10, 100);
-        $proposedPrice = fake()->randomFloat(2, 500, 5000);
+        $quantity = $this->faker->numberBetween(10, 100);
+        $proposedPrice = $this->faker->randomFloat(2, 500, 5000);
 
         return [
             'product_id' => Product::factory(),
@@ -25,7 +25,7 @@ class NegotiationFactory extends Factory
             'quantity' => $quantity,
             'proposed_price' => $proposedPrice,
             'counter_price' => null,
-            'message' => fake()->sentence(),
+            'message' => $this->faker->sentence(),
             'status' => 'PENDING',
             'order_id' => null,
         ];

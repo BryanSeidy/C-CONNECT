@@ -15,7 +15,6 @@
 # ║  STAGE 1 — DEVELOPMENT                                                    ║
 # ╚════════════════════════════════════════════════════════════════════════════╝
 FROM php:8.4-fpm-alpine AS dev
-$xE77Mgk6@$2.-N
 LABEL maintainer="C-Connect Team"
 LABEL description="C-Connect Laravel 12 API — Development Stage (PHP 8.4)"
 

@@ -14,14 +14,14 @@ class RfqBidFactory extends Factory
 {
     public function definition(): array
     {
-        $prix = fake()->randomFloat(2, 500, 10000);
+        $prix = $this->faker->randomFloat(2, 500, 10000);
 
         return [
             'rfq_id' => Rfq::factory(),
             'seller_id' => SellerProfile::factory(),
             'prix_unitaire_propose' => $prix,
-            'quantite_disponible' => fake()->numberBetween(50, 1000),
-            'message' => fake()->sentence(),
+            'quantite_disponible' => $this->faker->numberBetween(50, 1000),
+            'message' => $this->faker->sentence(),
             'statut' => 'en_attente',
         ];
     }

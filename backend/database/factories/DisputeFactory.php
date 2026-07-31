@@ -17,7 +17,7 @@ class DisputeFactory extends Factory
         return [
             'order_id' => Order::factory(),
             'initiateur_id' => User::factory()->buyer(),
-            'raison' => fake()->randomElement([
+            'raison' => $this->faker->randomElement([
                 'marchandise_non_recue',
                 'qualite_non_conforme',
                 'quantite_incorrecte',
@@ -25,7 +25,7 @@ class DisputeFactory extends Factory
                 'retard_livraison',
                 'autre',
             ]),
-            'description' => fake()->paragraph(),
+            'description' => $this->faker->paragraph(),
             'preuves_urls' => null,
             'statut' => 'ouvert',
             'notes_resolution' => null,

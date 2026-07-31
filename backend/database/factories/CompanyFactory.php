@@ -13,18 +13,18 @@ class CompanyFactory extends Factory
 {
     public function definition(): array
     {
-        $nom = fake()->company();
+        $nom = $this->faker->company();
 
         return [
             'nom' => $nom,
             'slug' => Str::slug($nom) . '-' . Str::random(6),
-            'type_entreprise' => fake()->randomElement(['cooperative', 'producteur', 'fabricant', 'pme', 'grossiste']),
-            'region' => fake()->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest']),
-            'ville' => fake()->city(),
-            'quartier' => fake()->streetName(),
-            'telephone' => fake()->phoneNumber(),
-            'email_professionnel' => fake()->companyEmail(),
-            'description' => fake()->paragraph(),
+            'type_entreprise' => $this->faker->randomElement(['cooperative', 'producteur', 'fabricant', 'pme', 'grossiste']),
+            'region' => $this->faker->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest']),
+            'ville' => $this->faker->city(),
+            'quartier' => $this->faker->streetName(),
+            'telephone' => $this->faker->phoneNumber(),
+            'email_professionnel' => $this->faker->companyEmail(),
+            'description' => $this->faker->paragraph(),
             'statut_verification' => 'non_verifie',
             'trust_score' => 50,
         ];

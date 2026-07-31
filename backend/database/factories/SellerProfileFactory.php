@@ -14,20 +14,20 @@ class SellerProfileFactory extends Factory
 {
     public function definition(): array
     {
-        $businessName = fake()->company();
+        $businessName = $this->faker->company();
 
         return [
             'user_id' => User::factory()->seller(),
             'business_name' => $businessName,
             'slug' => Str::slug($businessName) . '-' . Str::random(6),
-            'biographie' => fake()->paragraph(),
-            'region' => fake()->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest', 'Sud-Ouest']),
-            'ville' => fake()->city(),
-            'adresse' => fake()->streetAddress(),
-            'telephone_boutique' => fake()->phoneNumber(),
-            'is_female_owned' => fake()->boolean(30),
-            'is_local_producer' => fake()->boolean(60),
-            'is_cooperative' => fake()->boolean(20),
+            'biographie' => $this->faker->paragraph(),
+            'region' => $this->faker->randomElement(['Centre', 'Littoral', 'Ouest', 'Nord-Ouest', 'Sud-Ouest']),
+            'ville' => $this->faker->city(),
+            'adresse' => $this->faker->streetAddress(),
+            'telephone_boutique' => $this->faker->phoneNumber(),
+            'is_female_owned' => $this->faker->boolean(30),
+            'is_local_producer' => $this->faker->boolean(60),
+            'is_cooperative' => $this->faker->boolean(20),
             'verification_status' => 'verified',
             'verified_at' => now(),
         ];
