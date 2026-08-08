@@ -5,10 +5,12 @@
 # Architecture :
 #   • api  : Laravel 12 (PHP 8.4 FPM) — connecté à Neon.tech PostgreSQL
 #   • mail : Mailpit — intercepte les emails en dev (UI sur http://localhost:8025)
+#   • frontend : Next.js — application frontend (UI sur http://localhost:3000)
 #
 # Usage :
 #   docker compose up -d          # Démarrer tous les services
 #   docker compose up api         # Démarrer uniquement l'API
+#   docker compose up frontend -d # Démarrer UNIQUEMENT le Frontend Next.js
 #   docker compose logs -f api    # Suivre les logs de l'API
 #   docker compose exec api sh    # Shell dans le container API
 #   docker compose down           # Arrêter tous les services
@@ -22,7 +24,7 @@
 services:
 
   # ===========================================================================
-  # API — Laravel 12 Backend (PHP 8.4 FPM, dev mode)
+  # API — Laravel 13 Backend (PHP 8.4 FPM, dev mode)
   # ===========================================================================
   api:
     build:
@@ -30,14 +32,9 @@ services:
       dockerfile: Dockerfile
       target: dev
       args:
-        # Permet de forcer un rebuild si la version PHP change
         PHP_VERSION: "8.4"
     container_name: cconnect-api
     restart: unless-stopped
-
-    # -------------------------------------------------------------------------
-    # Variables d'environnement — lues depuis backend/.env
-    # -------------------------------------------------------------------------
     env_file:
       - ./backend/.env
 
@@ -75,7 +72,7 @@ services:
     command: >
       sh -c "
         echo '╔══════════════════════════════════════════════════════════╗' &&
-        echo '║  C-Connect API — Dev Mode (PHP 8.4 / Laravel 12)       ║' &&
+        echo '║  C-Connect API — Dev Mode (PHP 8.4 / Laravel 13)       ║' &&
         echo '╚══════════════════════════════════════════════════════════╝' &&
         composer install --no-interaction --prefer-dist &&
         php artisan key:generate --force --no-interaction 2>/dev/null || true &&
@@ -125,6 +122,41 @@ services:
     networks:
       - cconnect-network
 
+  # ===========================================================================
+  # FRONTEND — Next.js Application
+  # ===========================================================================
+  frontend:
+    image: node:20-alpine
+    container_name: cconnect-frontend
+    restart: unless-stopped
+    user: "root"
+    working_dir: /app
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app:cached
+      - front_node_modules:/app/node_modules
+    command: >
+      sh -c "
+        echo '╔══════════════════════════════════════════════════════════╗' &&
+        echo '║  C-Connect FRONTEND — Dev Mode (Node 20 / Next.js)       ║' &&
+        echo '╚══════════════════════════════════════════════════════════╝' &&
+        npm install &&
+        echo '' &&
+        echo '→ Frontend prêt sur http://localhost:${FRONTEND_PORT:-3000}' &&
+        echo '' &&
+        npm run dev
+      "
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - cconnect-network
+
 # =============================================================================
 # Volumes nommés
 # =============================================================================
@@ -134,6 +166,8 @@ volumes:
   api_node_modules:
     driver: local
   composer_cache:
+    driver: local
+  front_node_modules:
     driver: local
 
 # =============================================================================
